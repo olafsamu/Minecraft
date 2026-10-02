@@ -1,19 +1,21 @@
-```javascript
 /*
 =========================================================
 BLOCKWORLD
-Basic game engine
+Main Game File
 
-Current features:
-- 3D world
-- Blocks
-- Trees
-- Player
-- WASD
+This file handles:
+- Three.js setup
+- Lighting
+- Keyboard input
 - Mouse look
-- Jumping
-- Gravity
-- Collision
+- Pointer lock
+- Game startup
+- Game loop
+
+Other systems:
+- blocks.js  → block definitions
+- world.js   → world generation
+- player.js  → player movement and collision
 =========================================================
 */
 
@@ -114,454 +116,7 @@ scene.add(
 
 
 /* ======================================================
-   BLOCK KEY
-====================================================== */
-
-function blockKey(
-    x,
-    y,
-    z
-) {
-
-    return (
-        x + "," +
-        y + "," +
-        z
-    );
-
-}
-
-
-/* ======================================================
-   TERRAIN HEIGHT
-====================================================== */
-
-function terrainHeight(
-    x,
-    z
-) {
-
-    return Math.max(
-
-        1,
-
-        Math.min(
-
-            6,
-
-            Math.floor(
-
-                3 +
-
-                Math.sin(
-                    x * 0.4
-                ) +
-
-                Math.cos(
-                    z * 0.35
-                ) +
-
-                Math.sin(
-                    (x + z) * 0.2
-                )
-
-            )
-
-        )
-
-    );
-
-}
-
-
-/* ======================================================
-   ADD BLOCK
-====================================================== */
-
-function addBlock(
-    x,
-    y,
-    z,
-    type
-) {
-
-    const key =
-        blockKey(
-            x,
-            y,
-            z
-        );
-
-
-    if (
-        world.has(key)
-    ) {
-
-        return;
-
-    }
-
-
-    const geometry =
-        new THREE.BoxGeometry(
-            1,
-            1,
-            1
-        );
-
-
-    const material =
-        new THREE.MeshLambertMaterial({
-            color: type.color
-        });
-
-
-    const cube =
-        new THREE.Mesh(
-            geometry,
-            material
-        );
-
-
-    cube.position.set(
-        x + 0.5,
-        y + 0.5,
-        z + 0.5
-    );
-
-
-    cube.userData.key =
-        key;
-
-
-    cube.userData.type =
-        type;
-
-
-    scene.add(
-        cube
-    );
-
-
-    world.set(
-        key,
-        type
-    );
-
-
-    meshes.set(
-        key,
-        cube
-    );
-
-}
-
-
-/* ======================================================
-   GENERATE WORLD
-====================================================== */
-
-function generateWorld() {
-
-    /*
-       Remove previous blocks.
-    */
-
-    meshes.forEach(
-        cube => {
-
-            scene.remove(
-                cube
-            );
-
-            cube.geometry.dispose();
-
-            cube.material.dispose();
-
-        }
-    );
-
-
-    world.clear();
-
-    meshes.clear();
-
-
-    /*
-       Terrain.
-    */
-
-    for (
-        let x = 0;
-        x < WORLD_SIZE;
-        x++
-    ) {
-
-        for (
-            let z = 0;
-            z < WORLD_SIZE;
-            z++
-        ) {
-
-            const height =
-                terrainHeight(
-                    x,
-                    z
-                );
-
-
-            for (
-                let y = 0;
-                y <= height;
-                y++
-            ) {
-
-                let type;
-
-
-                if (
-                    y === height
-                ) {
-
-                    type =
-                        BLOCKS.grass;
-
-                }
-
-                else if (
-                    y >= height - 2
-                ) {
-
-                    type =
-                        BLOCKS.dirt;
-
-                }
-
-                else {
-
-                    type =
-                        BLOCKS.stone;
-
-                }
-
-
-                addBlock(
-                    x,
-                    y,
-                    z,
-                    type
-                );
-
-            }
-
-        }
-
-    }
-
-
-    /*
-       Trees.
-    */
-
-    const trees = [
-
-        [4, 5],
-        [10, 8],
-        [17, 5],
-        [18, 15],
-        [7, 18]
-
-    ];
-
-
-    trees.forEach(
-        ([x, z]) => {
-
-            const ground =
-                terrainHeight(
-                    x,
-                    z
-                );
-
-
-            /*
-               Trunk.
-            */
-
-            for (
-                let y = ground + 1;
-                y <= ground + 4;
-                y++
-            ) {
-
-                addBlock(
-                    x,
-                    y,
-                    z,
-                    BLOCKS.wood
-                );
-
-            }
-
-
-            /*
-               Leaves.
-            */
-
-            for (
-                let dx = -2;
-                dx <= 2;
-                dx++
-            ) {
-
-                for (
-                    let dz = -2;
-                    dz <= 2;
-                    dz++
-                ) {
-
-                    if (
-                        Math.abs(dx) +
-                        Math.abs(dz)
-                        <= 3
-                    ) {
-
-                        addBlock(
-                            x + dx,
-                            ground + 3,
-                            z + dz,
-                            BLOCKS.leaves
-                        );
-
-                    }
-
-                }
-
-            }
-
-        }
-    );
-
-}
-
-
-/* ======================================================
-   PLAYER
-====================================================== */
-
-const PLAYER_HEIGHT = 2;
-
-const PLAYER_RADIUS = 0.3;
-
-const EYE_HEIGHT = 1.7;
-
-
-let velocityY = 0;
-
-let grounded = false;
-
-
-/* ======================================================
-   COLLISION
-====================================================== */
-
-function collides(
-    x,
-    bottom,
-    z
-) {
-
-    const minX =
-        Math.floor(
-            x - PLAYER_RADIUS
-        );
-
-
-    const maxX =
-        Math.floor(
-            x + PLAYER_RADIUS
-        );
-
-
-    const minY =
-        Math.floor(
-            bottom
-        );
-
-
-    /*
-       Slightly reduce the upper
-       edge so standing directly
-       underneath a block does not
-       count as touching it.
-    */
-
-    const maxY =
-        Math.floor(
-            bottom +
-            PLAYER_HEIGHT -
-            0.001
-        );
-
-
-    const minZ =
-        Math.floor(
-            z - PLAYER_RADIUS
-        );
-
-
-    const maxZ =
-        Math.floor(
-            z + PLAYER_RADIUS
-        );
-
-
-    for (
-        let bx = minX;
-        bx <= maxX;
-        bx++
-    ) {
-
-        for (
-            let by = minY;
-            by <= maxY;
-            by++
-        ) {
-
-            for (
-                let bz = minZ;
-                bz <= maxZ;
-                bz++
-            ) {
-
-                if (
-                    world.has(
-                        blockKey(
-                            bx,
-                            by,
-                            bz
-                        )
-                    )
-                ) {
-
-                    return true;
-
-                }
-
-            }
-
-        }
-
-    }
-
-
-    return false;
-
-}
-
-
-/* ======================================================
-   MOVEMENT
+   KEYBOARD CONTROLS
 ====================================================== */
 
 const keys = {};
@@ -571,12 +126,14 @@ document.addEventListener(
     "keydown",
     event => {
 
-        keys[event.code] =
-            true;
+        keys[event.code] = true;
 
 
         /*
-           Jump.
+           Jumping is handled here for now.
+
+           player.js provides the grounded
+           variable and velocityY.
         */
 
         if (
@@ -598,251 +155,10 @@ document.addEventListener(
     "keyup",
     event => {
 
-        keys[event.code] =
-            false;
+        keys[event.code] = false;
 
     }
 );
-
-
-/* ======================================================
-   UPDATE PLAYER
-====================================================== */
-
-function updatePlayer(
-    delta
-) {
-
-    if (
-        !mouseLocked
-    ) {
-
-        return;
-
-    }
-
-
-    const speed =
-        5 * delta;
-
-
-    /*
-       Forward direction.
-    */
-
-    const forward =
-        new THREE.Vector3();
-
-
-    camera.getWorldDirection(
-        forward
-    );
-
-
-    forward.y = 0;
-
-    forward.normalize();
-
-
-    /*
-       Right direction.
-    */
-
-    const right =
-        new THREE.Vector3(
-            forward.z,
-            0,
-            -forward.x
-        );
-
-
-    /*
-       Movement vector.
-    */
-
-    const movement =
-        new THREE.Vector3();
-
-
-    if (
-        keys["KeyW"]
-    ) {
-
-        movement.add(
-            forward
-        );
-
-    }
-
-
-    if (
-        keys["KeyS"]
-    ) {
-
-        movement.sub(
-            forward
-        );
-
-    }
-
-
-    if (
-        keys["KeyA"]
-    ) {
-
-        movement.sub(
-            right
-        );
-
-    }
-
-
-    if (
-        keys["KeyD"]
-    ) {
-
-        movement.add(
-            right
-        );
-
-    }
-
-
-    if (
-        movement.length() > 0
-    ) {
-
-        movement.normalize();
-
-
-        const bottom =
-            camera.position.y -
-            EYE_HEIGHT;
-
-
-        /*
-           X movement.
-        */
-
-        const nextX =
-            camera.position.x +
-            movement.x *
-            speed;
-
-
-        if (
-            !collides(
-                nextX,
-                bottom,
-                camera.position.z
-            )
-        ) {
-
-            camera.position.x =
-                nextX;
-
-        }
-
-
-        /*
-           Z movement.
-        */
-
-        const nextZ =
-            camera.position.z +
-            movement.z *
-            speed;
-
-
-        if (
-            !collides(
-                camera.position.x,
-                bottom,
-                nextZ
-            )
-        ) {
-
-            camera.position.z =
-                nextZ;
-
-        }
-
-    }
-
-
-    /*
-       Gravity.
-    */
-
-    velocityY -=
-        20 * delta;
-
-
-    const newY =
-        camera.position.y +
-        velocityY *
-        delta;
-
-
-    const newBottom =
-        newY -
-        EYE_HEIGHT;
-
-
-    /*
-       Vertical collision.
-    */
-
-    if (
-        !collides(
-            camera.position.x,
-            newBottom,
-            camera.position.z
-        )
-    ) {
-
-        camera.position.y =
-            newY;
-
-        grounded = false;
-
-    }
-
-    else {
-
-        if (
-            velocityY < 0
-        ) {
-
-            grounded = true;
-
-        }
-
-
-        velocityY = 0;
-
-    }
-
-
-    /*
-       Respawn if we fall.
-    */
-
-    if (
-        camera.position.y < -10
-    ) {
-
-        camera.position.set(
-            12.5,
-            10,
-            12.5
-        );
-
-        velocityY = 0;
-
-    }
-
-}
 
 
 /* ======================================================
@@ -860,12 +176,8 @@ document.addEventListener(
     "mousemove",
     event => {
 
-        if (
-            !mouseLocked
-        ) {
-
+        if (!mouseLocked) {
             return;
-
         }
 
 
@@ -933,19 +245,14 @@ document.addEventListener(
 ====================================================== */
 
 document
-    .getElementById(
-        "startButton"
-    )
+    .getElementById("startButton")
     .addEventListener(
         "click",
         () => {
 
             document
-                .getElementById(
-                    "startScreen"
-                )
-                .style.display =
-                "none";
+                .getElementById("startScreen")
+                .style.display = "none";
 
 
             lockMouse();
@@ -955,7 +262,7 @@ document
 
 
 /* ======================================================
-   RESIZE
+   WINDOW RESIZE
 ====================================================== */
 
 window.addEventListener(
@@ -980,28 +287,36 @@ window.addEventListener(
 
 
 /* ======================================================
-   START POSITION
+   GENERATE WORLD
 ====================================================== */
 
 generateWorld();
 
 
+/* ======================================================
+   START PLAYER
+====================================================== */
+
 camera.position.set(
     12.5,
     terrainHeight(12, 12)
-    + EYE_HEIGHT
-    + 0.1,
+        + EYE_HEIGHT
+        + 0.1,
     12.5
 );
 
 
 /* ======================================================
-   GAME LOOP
+   GAME CLOCK
 ====================================================== */
 
 const clock =
     new THREE.Clock();
 
+
+/* ======================================================
+   GAME LOOP
+====================================================== */
 
 function gameLoop() {
 
@@ -1017,10 +332,20 @@ function gameLoop() {
         );
 
 
+    /*
+       Player movement and
+       collision are handled
+       inside player.js.
+    */
+
     updatePlayer(
         delta
     );
 
+
+    /*
+       Render the world.
+    */
 
     renderer.render(
         scene,
@@ -1030,5 +355,8 @@ function gameLoop() {
 }
 
 
+/* ======================================================
+   START GAME LOOP
+====================================================== */
+
 gameLoop();
-```
