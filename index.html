@@ -33,7 +33,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;ba
 .number{position:absolute;bottom:2px;left:5px;color:#fff;font-size:12px;text-shadow:1px 1px 2px #000}
 .amount{position:absolute;right:5px;bottom:3px;color:#fff;font-size:16px;font-weight:bold;text-shadow:2px 2px 2px #000}
 #reset{position:absolute;right:20px;bottom:105px;pointer-events:auto;padding:9px 14px;border:0;border-radius:7px;color:#fff;background:#0009;cursor:pointer}
-#crafting{position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;background:#0009;pointer-events:auto}
+#crafting{position:fixed;inset:0;z-index:9;display:none;align-items:center;justify-content:center;background:#0009;pointer-events:auto}
 #crafting.open{display:flex}
 .craftingWindow{width:min(760px,94vw);max-height:90vh;overflow:auto;padding:25px;background:#c6c6c6;border:4px solid #555;box-shadow:0 15px 50px #0009}
 .craftingTitle{font-size:26px;font-weight:bold;color:#222;margin-bottom:20px}
@@ -127,9 +127,98 @@ const key=(x,y,z)=>`${x},${y},${z}`;
 function terrainHeight(x,z){
  return Math.max(1,Math.min(6,Math.floor(3+Math.sin(x*.4)+Math.cos(z*.35)+Math.sin((x+z)*.2))));
 }
+// ---------------- CUSTOM BLOCKWORLD TEXTURES ----------------
+// These are original 16x16-style pixel textures generated in the browser.
+// You can later replace these with your own PNGs without changing the world code.
+const textureCache={};
+
+function pixelTexture(name,draw){
+ if(textureCache[name]) return textureCache[name];
+ const c=document.createElement("canvas"); c.width=16;c.height=16;
+ const ctx=c.getContext("2d",{willReadFrequently:false});
+ ctx.imageSmoothingEnabled=false;
+ draw(ctx);
+ const t=new THREE.CanvasTexture(c);
+ t.magFilter=THREE.NearestFilter;
+ t.minFilter=THREE.NearestFilter;
+ t.colorSpace=THREE.SRGBColorSpace;
+ textureCache[name]=t;
+ return t;
+}
+function noise(ctx,base,spots,count=45){
+ ctx.fillStyle=base;ctx.fillRect(0,0,16,16);
+ for(let i=0;i<count;i++){
+  const [col,size]=spots[Math.floor(Math.random()*spots.length)];
+  ctx.fillStyle=col;
+  const x=Math.floor(Math.random()*16),y=Math.floor(Math.random()*16);
+  ctx.fillRect(x,y,size,size);
+ }
+}
+function makeTextures(){
+ pixelTexture("dirt",ctx=>noise(ctx,"#86502a",[["#9b6030",1],["#6d4023",1],["#a66b39",1],["#70431f",2]],55));
+ pixelTexture("grassTop",ctx=>noise(ctx,"#4d9f36",[["#62b842",1],["#3f8b2d",1],["#73c94d",1],["#387d28",2]],55));
+ pixelTexture("grassSide",ctx=>{
+  noise(ctx,"#8a552d",[["#a56a39",1],["#6d4024",1],["#774722",1]],40);
+  ctx.fillStyle="#4d9f36";ctx.fillRect(0,0,16,4);
+  for(let x=0;x<16;x+=2){ctx.fillStyle=x%4?"#62b842":"#3c872d";ctx.fillRect(x,3,2,2)}
+ });
+ pixelTexture("stone",ctx=>noise(ctx,"#858585",[["#9b9b9b",1],["#707070",1],["#626262",1],["#aaa",2]],55));
+ pixelTexture("woodSide",ctx=>{
+  ctx.fillStyle="#70471f";ctx.fillRect(0,0,16,16);
+  for(let x=0;x<16;x+=3){ctx.fillStyle=x%2?"#8e5b29":"#5e3b1b";ctx.fillRect(x,0,2,16)}
+  for(let i=0;i<12;i++){ctx.fillStyle="#a36a31";ctx.fillRect(Math.floor(Math.random()*16),Math.floor(Math.random()*16),1,2)}
+ });
+ pixelTexture("woodTop",ctx=>{
+  ctx.fillStyle="#a87338";ctx.fillRect(0,0,16,16);
+  ctx.strokeStyle="#70471f";ctx.lineWidth=1;
+  ctx.strokeRect(2,2,12,12);ctx.strokeRect(5,5,6,6);ctx.fillStyle="#70471f";ctx.fillRect(7,7,2,2);
+ });
+ pixelTexture("leaves",ctx=>noise(ctx,"#31852f",[["#4da63b",2],["#267129",1],["#65b84b",1],["#1f6327",1]],60));
+ pixelTexture("planks",ctx=>{
+  ctx.fillStyle="#b67a3c";ctx.fillRect(0,0,16,16);
+  for(let y=0;y<16;y+=4){ctx.fillStyle="#8d5d2d";ctx.fillRect(0,y,16,1);ctx.fillStyle="#d0934c";ctx.fillRect(1,y+1,14,1)}
+  ctx.fillStyle="#9a652f";ctx.fillRect(5,0,1,4);ctx.fillRect(12,4,1,4);ctx.fillRect(3,8,1,4);ctx.fillRect(10,12,1,4);
+ });
+ pixelTexture("tableTop",ctx=>{
+  ctx.fillStyle="#a86d32";ctx.fillRect(0,0,16,16);
+  ctx.fillStyle="#70451f";ctx.fillRect(1,1,14,1);ctx.fillRect(1,14,14,1);
+  ctx.strokeStyle="#70451f";ctx.strokeRect(2,2,12,12);
+  ctx.strokeRect(5,5,6,6);ctx.fillStyle="#d08b42";ctx.fillRect(7,7,2,2);
+  ctx.fillStyle="#e0a053";ctx.fillRect(3,3,2,1);ctx.fillRect(11,11,2,1);
+ });
+ pixelTexture("tableSide",ctx=>{
+  ctx.fillStyle="#8a5528";ctx.fillRect(0,0,16,16);
+  ctx.fillStyle="#a86d32";ctx.fillRect(1,1,14,14);
+  ctx.strokeStyle="#70451f";ctx.strokeRect(2,2,12,12);
+  ctx.fillStyle="#5f3b1d";ctx.fillRect(0,0,16,2);ctx.fillRect(0,14,16,2);
+  ctx.fillStyle="#d08a40";ctx.fillRect(4,5,8,1);ctx.fillRect(4,10,8,1);
+ });
+}
+
+function materialsFor(type){
+ makeTextures();
+ const dirt=()=>new THREE.MeshLambertMaterial({map:textureCache.dirt});
+ const grassTop=()=>new THREE.MeshLambertMaterial({map:textureCache.grassTop});
+ const grassSide=()=>new THREE.MeshLambertMaterial({map:textureCache.grassSide});
+ const stone=()=>new THREE.MeshLambertMaterial({map:textureCache.stone});
+ const woodSide=()=>new THREE.MeshLambertMaterial({map:textureCache.woodSide});
+ const woodTop=()=>new THREE.MeshLambertMaterial({map:textureCache.woodTop});
+ const leaves=()=>new THREE.MeshLambertMaterial({map:textureCache.leaves,transparent:true});
+ const planks=()=>new THREE.MeshLambertMaterial({map:textureCache.planks});
+ const tableTop=()=>new THREE.MeshLambertMaterial({map:textureCache.tableTop});
+ const tableSide=()=>new THREE.MeshLambertMaterial({map:textureCache.tableSide});
+ if(type===BLOCKS.grass) return [dirt(),dirt(),grassTop(),dirt(),grassSide(),grassSide()];
+ if(type===BLOCKS.wood) return [woodSide(),woodSide(),woodTop(),woodTop(),woodSide(),woodSide()];
+ if(type===BLOCKS.leaves) return leaves();
+ if(type===BLOCKS.planks) return planks();
+ if(type===BLOCKS.crafting_table) return [tableSide(),tableSide(),tableTop(),planks(),tableSide(),tableSide()];
+ if(type===BLOCKS.stone) return stone();
+ return dirt();
+}
+
 function addBlock(x,y,z,type){
  const k=key(x,y,z); if(world.has(k))return;
- const cube=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshLambertMaterial({color:type.color}));
+ const cube=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),materialsFor(type));
  cube.position.set(x+.5,y+.5,z+.5);
  cube.userData={key:k,type};
  scene.add(cube);world.set(k,type);meshes.set(k,cube);
@@ -338,7 +427,10 @@ function craftSlotClick(i){
 document.getElementById("craftResult").onclick=()=>{
  const recipe=getRecipe();
  if(!recipe){showMessage("That recipe does not match.");return}
- recipe.ingredients.forEach(id=>{const i=craftGrid.indexOf(id);if(i>=0)craftGrid[i]=null});
+ recipe.ingredients.forEach(id=>{
+  const i=craftGrid.findIndex(x=>x===id);
+  if(i>=0)craftGrid[i]=null;
+ });
  inventory[recipe.output]+=recipe.count;updateHotbar();renderCrafting();showMessage("Crafted "+recipe.count+" "+(BLOCKS[recipe.output]||ITEMS[recipe.output]).name+(recipe.count>1?"s":"")+"!");
 };
 function getRecipe(){
@@ -375,7 +467,15 @@ document.getElementById("reset").onclick=e=>{
  e.stopPropagation();Object.keys(inventory).forEach(k=>inventory[k]=0);craftSelectedItem=null;generateWorld();updateHotbar();showMessage("World reset!");
 };
 document.addEventListener("click",e=>{
- if(craftingOpen&&e.target.closest(".slot")){const i=Number(e.target.closest(".slot").dataset.index);craftSelectedItem=hotbar[i].id;renderCrafting();showMessage("Selected "+hotbar[i].name)}
+ if(!craftingOpen)return;
+ const slot=e.target.closest(".slot");
+ if(slot){
+  const i=Number(slot.dataset.index);
+  craftSelectedItem=hotbar[i].id;
+  document.querySelectorAll(".slot").forEach((el,n)=>el.classList.toggle("selected",n===i));
+  renderCrafting();
+  showMessage("Selected "+hotbar[i].name+" for crafting");
+ }
 });
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 
