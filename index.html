@@ -62,8 +62,7 @@ html, body {
     font-size: 60px;
     color: #4caf50;
 
-    text-shadow:
-        3px 3px #2e7d32;
+    text-shadow: 3px 3px #2e7d32;
 
     margin-bottom: 15px;
 }
@@ -90,8 +89,7 @@ html, body {
 
     cursor: pointer;
 
-    box-shadow:
-        0 6px #2e7d32;
+    box-shadow: 0 6px #2e7d32;
 }
 
 #startButton:hover {
@@ -173,7 +171,6 @@ html, body {
     border-radius: 8px;
 
     font-size: 14px;
-
     line-height: 1.5;
 }
 
@@ -223,6 +220,28 @@ html, body {
         translateY(0);
 }
 
+#breakingText {
+    position: absolute;
+
+    left: 50%;
+    top: calc(50% + 25px);
+
+    transform: translateX(-50%);
+
+    color: white;
+
+    font-size: 13px;
+
+    text-shadow:
+        2px 2px 3px black;
+
+    opacity: 0;
+}
+
+#breakingText.show {
+    opacity: 1;
+}
+
 /* ================= HOTBAR ================= */
 
 #hotbar {
@@ -244,8 +263,8 @@ html, body {
 }
 
 .slot {
-    width: 60px;
-    height: 60px;
+    width: 65px;
+    height: 65px;
 
     display: flex;
     justify-content: center;
@@ -258,6 +277,10 @@ html, body {
     background: rgba(30,30,30,0.8);
 
     border-radius: 5px;
+
+    cursor: pointer;
+
+    pointer-events: auto;
 }
 
 .slot.selected {
@@ -268,8 +291,8 @@ html, body {
 }
 
 .preview {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
 
     border: 2px solid rgba(0,0,0,0.3);
 }
@@ -286,6 +309,21 @@ html, body {
 
     text-shadow:
         1px 1px 2px black;
+}
+
+.amount {
+    position: absolute;
+
+    right: 5px;
+    bottom: 3px;
+
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    text-shadow:
+        2px 2px 2px black;
 }
 
 /* ================= RESET ================= */
@@ -311,8 +349,185 @@ html, body {
     cursor: pointer;
 }
 
-#reset:hover {
-    background: rgba(0,0,0,0.8);
+/* ================= CRAFTING ================= */
+
+#crafting {
+    position: fixed;
+    inset: 0;
+
+    z-index: 500;
+
+    display: none;
+
+    justify-content: center;
+    align-items: center;
+
+    background: rgba(0,0,0,0.55);
+
+    pointer-events: auto;
+}
+
+#crafting.open {
+    display: flex;
+}
+
+.craftingWindow {
+    width: 620px;
+    max-width: 90vw;
+
+    padding: 25px;
+
+    background: #c6c6c6;
+
+    border: 4px solid #555;
+
+    box-shadow:
+        0 15px 50px rgba(0,0,0,0.6);
+}
+
+.craftingTitle {
+    font-size: 26px;
+    font-weight: bold;
+
+    color: #222;
+
+    margin-bottom: 20px;
+}
+
+.craftingLayout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 35px;
+}
+
+.craftingGrid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 70px);
+
+    grid-template-rows:
+        repeat(2, 70px);
+
+    gap: 5px;
+}
+
+.craftSlot {
+    width: 70px;
+    height: 70px;
+
+    background: #8b8b8b;
+
+    border: 4px solid #555;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    position: relative;
+
+    cursor: pointer;
+}
+
+.craftSlot:hover {
+    background: #999;
+}
+
+.craftItem {
+    width: 45px;
+    height: 45px;
+
+    border: 2px solid rgba(0,0,0,0.3);
+}
+
+.craftAmount {
+    position: absolute;
+
+    right: 5px;
+    bottom: 3px;
+
+    color: white;
+
+    font-weight: bold;
+
+    text-shadow:
+        2px 2px black;
+}
+
+.craftArrow {
+    font-size: 45px;
+    color: #333;
+}
+
+.craftResult {
+    width: 100px;
+    height: 100px;
+
+    background: #8b8b8b;
+
+    border: 4px solid #555;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    position: relative;
+
+    cursor: pointer;
+}
+
+.craftResult:hover {
+    background: #999;
+}
+
+.resultItem {
+    width: 55px;
+    height: 55px;
+}
+
+.resultAmount {
+    position: absolute;
+
+    right: 7px;
+    bottom: 5px;
+
+    color: white;
+
+    font-weight: bold;
+
+    text-shadow:
+        2px 2px black;
+}
+
+.craftingHint {
+    margin-top: 20px;
+
+    color: #333;
+
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.closeCrafting {
+    margin-top: 20px;
+
+    padding: 10px 25px;
+
+    border: none;
+
+    background: #555;
+
+    color: white;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.closeCrafting:hover {
+    background: #444;
 }
 
 /* ================= MOBILE ================= */
@@ -324,8 +539,8 @@ html, body {
     }
 
     .slot {
-        width: 48px;
-        height: 48px;
+        width: 50px;
+        height: 50px;
     }
 
     .preview {
@@ -335,6 +550,28 @@ html, body {
 
     #help {
         font-size: 11px;
+    }
+
+    .craftingLayout {
+        gap: 10px;
+    }
+
+    .craftSlot {
+        width: 55px;
+        height: 55px;
+    }
+
+    .craftingGrid {
+        grid-template-columns:
+            repeat(2, 55px);
+
+        grid-template-rows:
+            repeat(2, 55px);
+    }
+
+    .craftResult {
+        width: 75px;
+        height: 75px;
     }
 }
 </style>
@@ -353,9 +590,9 @@ html, body {
         <h1>BlockWorld</h1>
 
         <p>
-            A browser-based block building game.
+            Explore a world made of blocks.
             <br>
-            Explore, break blocks and build!
+            Break, collect, craft and build!
         </p>
 
         <button id="startButton">
@@ -377,9 +614,10 @@ html, body {
         WASD — Move<br>
         SPACE — Jump<br>
         Mouse — Look<br>
-        Left Click — Break<br>
+        Hold Left Click — Break<br>
         Right Click — Place<br>
         1–5 — Select block<br>
+        E — Crafting<br>
         ESC — Release mouse
     </div>
 
@@ -392,6 +630,10 @@ html, body {
         Block broken!
     </div>
 
+    <div id="breakingText">
+        Breaking...
+    </div>
+
     <button id="reset">
         Reset World
     </button>
@@ -399,48 +641,43 @@ html, body {
     <div id="hotbar">
 
         <div class="slot selected" data-index="0">
-            <div
-                class="preview"
-                style="background:#62b84b"
-            ></div>
+            <div class="preview"
+                 style="background:#62b84b"></div>
 
             <span class="number">1</span>
+            <span class="amount">0</span>
         </div>
 
         <div class="slot" data-index="1">
-            <div
-                class="preview"
-                style="background:#8b5a2b"
-            ></div>
+            <div class="preview"
+                 style="background:#8b5a2b"></div>
 
             <span class="number">2</span>
+            <span class="amount">0</span>
         </div>
 
         <div class="slot" data-index="2">
-            <div
-                class="preview"
-                style="background:#888"
-            ></div>
+            <div class="preview"
+                 style="background:#888"></div>
 
             <span class="number">3</span>
+            <span class="amount">0</span>
         </div>
 
         <div class="slot" data-index="3">
-            <div
-                class="preview"
-                style="background:#9b6b30"
-            ></div>
+            <div class="preview"
+                 style="background:#9b6b30"></div>
 
             <span class="number">4</span>
+            <span class="amount">0</span>
         </div>
 
         <div class="slot" data-index="4">
-            <div
-                class="preview"
-                style="background:#4c9f4c"
-            ></div>
+            <div class="preview"
+                 style="background:#4c9f4c"></div>
 
             <span class="number">5</span>
+            <span class="amount">0</span>
         </div>
 
     </div>
@@ -448,63 +685,94 @@ html, body {
 </div>
 
 
-<!-- =====================================================
-     THREE.JS
-===================================================== -->
+<!-- ================= CRAFTING ================= -->
+
+<div id="crafting">
+
+    <div class="craftingWindow">
+
+        <div class="craftingTitle">
+            Crafting
+        </div>
+
+        <div class="craftingLayout">
+
+            <div class="craftingGrid">
+
+                <div class="craftSlot"
+                     data-craft-slot="0"></div>
+
+                <div class="craftSlot"
+                     data-craft-slot="1"></div>
+
+                <div class="craftSlot"
+                     data-craft-slot="2"></div>
+
+                <div class="craftSlot"
+                     data-craft-slot="3"></div>
+
+            </div>
+
+            <div class="craftArrow">
+                →
+            </div>
+
+            <div
+                class="craftResult"
+                id="craftResult">
+
+                <div
+                    class="resultItem"
+                    style="background:#b47b3c">
+                </div>
+
+                <span
+                    class="resultAmount">
+                    0
+                </span>
+
+            </div>
+
+        </div>
+
+        <div class="craftingHint">
+
+            <b>Recipe:</b>
+            Put one Wood into any crafting slot
+            to make 4 Planks.
+
+            <br><br>
+
+            Click a filled crafting slot to take
+            the item back.
+
+        </div>
+
+        <button
+            class="closeCrafting"
+            id="closeCrafting">
+
+            Close
+
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ================= THREE.JS ================= -->
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-
 
 <script>
 
 /* =====================================================
-   CHECK THREE.JS
-===================================================== */
-
-if (typeof THREE === "undefined") {
-
-    alert(
-        "BlockWorld could not load its 3D engine. " +
-        "Please check your internet connection and reload the page."
-    );
-
-}
-
-
-/* =====================================================
-   VARIABLES
+   BASIC SETUP
 ===================================================== */
 
 const canvas =
     document.getElementById("game");
-
-const startScreen =
-    document.getElementById("startScreen");
-
-const startButton =
-    document.getElementById("startButton");
-
-const message =
-    document.getElementById("message");
-
-const selectedName =
-    document.getElementById("selectedName");
-
-const blockInfo =
-    document.getElementById("blockInfo");
-
-const resetButton =
-    document.getElementById("reset");
-
-
-let gameStarted = false;
-
-let selectedBlock = 0;
-
-
-/* =====================================================
-   SCENE
-===================================================== */
 
 const scene =
     new THREE.Scene();
@@ -520,10 +788,6 @@ scene.fog =
     );
 
 
-/* =====================================================
-   CAMERA
-===================================================== */
-
 const camera =
     new THREE.PerspectiveCamera(
         75,
@@ -533,16 +797,6 @@ const camera =
         200
     );
 
-camera.position.set(
-    12,
-    8,
-    12
-);
-
-
-/* =====================================================
-   RENDERER
-===================================================== */
 
 const renderer =
     new THREE.WebGLRenderer({
@@ -564,18 +818,26 @@ renderer.setPixelRatio(
 
 
 /* =====================================================
+   PLAYER
+===================================================== */
+
+const PLAYER_HEIGHT = 2;
+
+const EYE_HEIGHT = 1.7;
+
+const PLAYER_RADIUS = 0.3;
+
+
+/* =====================================================
    LIGHT
 ===================================================== */
 
-const skyLight =
+scene.add(
     new THREE.HemisphereLight(
         0xffffff,
         0x557755,
         1.8
-    );
-
-scene.add(
-    skyLight
+    )
 );
 
 
@@ -591,9 +853,7 @@ sun.position.set(
     20
 );
 
-scene.add(
-    sun
-);
+scene.add(sun);
 
 
 /* =====================================================
@@ -603,31 +863,78 @@ scene.add(
 const blocks = [
 
     {
+        id: "grass",
         name: "Grass",
-        color: 0x62b84b
+        color: 0x62b84b,
+        breakable: true
     },
 
     {
+        id: "dirt",
         name: "Dirt",
-        color: 0x8b5a2b
+        color: 0x8b5a2b,
+        breakable: true
     },
 
     {
+        id: "stone",
         name: "Stone",
-        color: 0x888888
+        color: 0x888888,
+        breakable: false
     },
 
     {
+        id: "wood",
         name: "Wood",
-        color: 0x9b6b30
+        color: 0x9b6b30,
+        breakable: true
     },
 
     {
+        id: "leaves",
         name: "Leaves",
-        color: 0x4c9f4c
+        color: 0x4c9f4c,
+        breakable: true
+    },
+
+    {
+        id: "planks",
+        name: "Planks",
+        color: 0xb47b3c,
+        breakable: true
     }
 
 ];
+
+
+/* =====================================================
+   HOTBAR BLOCKS
+===================================================== */
+
+const hotbarBlocks = [
+    blocks[0],
+    blocks[1],
+    blocks[2],
+    blocks[3],
+    blocks[4],
+    blocks[5]
+];
+
+
+/* =====================================================
+   INVENTORY
+===================================================== */
+
+const inventory = {
+
+    grass: 0,
+    dirt: 0,
+    stone: 0,
+    wood: 0,
+    leaves: 0,
+    planks: 0
+
+};
 
 
 /* =====================================================
@@ -640,7 +947,6 @@ const world =
 const meshes =
     new Map();
 
-
 const SIZE = 24;
 
 
@@ -648,7 +954,7 @@ const SIZE = 24;
    WORLD KEY
 ===================================================== */
 
-function key(
+function blockKey(
     x,
     y,
     z
@@ -703,8 +1009,8 @@ function addBlock(
     type
 ) {
 
-    const k =
-        key(
+    const key =
+        blockKey(
             x,
             y,
             z
@@ -712,7 +1018,7 @@ function addBlock(
 
 
     if (
-        world.has(k)
+        world.has(key)
     ) {
         return;
     }
@@ -728,8 +1034,7 @@ function addBlock(
 
     const material =
         new THREE.MeshLambertMaterial({
-            color:
-                type.color
+            color: type.color
         });
 
 
@@ -748,25 +1053,21 @@ function addBlock(
 
 
     cube.userData.key =
-        k;
+        key;
 
     cube.userData.type =
         type;
 
 
-    scene.add(
-        cube
-    );
-
+    scene.add(cube);
 
     world.set(
-        k,
+        key,
         type
     );
 
-
     meshes.set(
-        k,
+        key,
         cube
     );
 
@@ -783,8 +1084,8 @@ function removeBlock(
     z
 ) {
 
-    const k =
-        key(
+    const key =
+        blockKey(
             x,
             y,
             z
@@ -792,27 +1093,30 @@ function removeBlock(
 
 
     const cube =
-        meshes.get(k);
+        meshes.get(key);
 
 
     if (!cube) {
-        return;
+        return null;
     }
 
 
-    scene.remove(
-        cube
-    );
+    const type =
+        cube.userData.type;
 
+
+    scene.remove(cube);
 
     cube.geometry.dispose();
 
     cube.material.dispose();
 
+    meshes.delete(key);
 
-    meshes.delete(k);
+    world.delete(key);
 
-    world.delete(k);
+
+    return type;
 
 }
 
@@ -823,16 +1127,10 @@ function removeBlock(
 
 function generateWorld() {
 
-    /*
-       Delete old blocks.
-    */
-
     meshes.forEach(
         cube => {
 
-            scene.remove(
-                cube
-            );
+            scene.remove(cube);
 
             cube.geometry.dispose();
 
@@ -846,10 +1144,6 @@ function generateWorld() {
 
     meshes.clear();
 
-
-    /*
-       Terrain.
-    */
 
     for (
         let x = 0;
@@ -883,8 +1177,7 @@ function generateWorld() {
                     y === height
                 ) {
 
-                    type =
-                        blocks[0];
+                    type = blocks[0];
 
                 }
 
@@ -892,15 +1185,13 @@ function generateWorld() {
                     y >= height - 2
                 ) {
 
-                    type =
-                        blocks[1];
+                    type = blocks[1];
 
                 }
 
                 else {
 
-                    type =
-                        blocks[2];
+                    type = blocks[2];
 
                 }
 
@@ -995,122 +1286,103 @@ function generateWorld() {
     );
 
 
-    /*
-       Player spawn.
-    */
-
-    const sx = 12;
-    const sz = 12;
-
     camera.position.set(
-        sx + 0.5,
-        terrainHeight(
-            sx,
-            sz
-        ) + 2.2,
-        sz + 0.5
+        12.5,
+        terrainHeight(12, 12)
+        + EYE_HEIGHT,
+        12.5
     );
 
 }
 
 
 /* =====================================================
-   MOUSE LOOK
+   COLLISION
 ===================================================== */
 
-let yaw = 0;
-let pitch = 0;
+function collides(
+    x,
+    bottom,
+    z
+) {
 
-let mouseLocked = false;
+    const minX =
+        Math.floor(
+            x - PLAYER_RADIUS
+        );
+
+    const maxX =
+        Math.floor(
+            x + PLAYER_RADIUS
+        );
+
+    const minY =
+        Math.floor(bottom);
+
+    const maxY =
+        Math.floor(
+            bottom + PLAYER_HEIGHT
+        );
+
+    const minZ =
+        Math.floor(
+            z - PLAYER_RADIUS
+        );
+
+    const maxZ =
+        Math.floor(
+            z + PLAYER_RADIUS
+        );
 
 
-document.addEventListener(
-    "mousemove",
-    event => {
+    for (
+        let bx = minX;
+        bx <= maxX;
+        bx++
+    ) {
 
-        if (
-            !mouseLocked
+        for (
+            let by = minY;
+            by <= maxY;
+            by++
         ) {
-            return;
+
+            for (
+                let bz = minZ;
+                bz <= maxZ;
+                bz++
+            ) {
+
+                /*
+                   ALL blocks are solid:
+                   grass, dirt, stone,
+                   wood, leaves and planks.
+                */
+
+                if (
+                    world.has(
+                        blockKey(
+                            bx,
+                            by,
+                            bz
+                        )
+                    )
+                ) {
+
+                    return true;
+
+                }
+
+            }
+
         }
 
-
-        yaw -=
-            event.movementX
-            * 0.002;
-
-
-        pitch -=
-            event.movementY
-            * 0.002;
-
-
-        pitch =
-            Math.max(
-                -Math.PI / 2 + 0.1,
-                Math.min(
-                    Math.PI / 2 - 0.1,
-                    pitch
-                )
-            );
-
-
-        camera.rotation.order =
-            "YXZ";
-
-
-        camera.rotation.y =
-            yaw;
-
-        camera.rotation.x =
-            pitch;
-
     }
-);
 
 
-/* =====================================================
-   POINTER LOCK
-===================================================== */
-
-function lockMouse() {
-
-    document.body.requestPointerLock();
+    return false;
 
 }
-
-
-document.addEventListener(
-    "pointerlockchange",
-    () => {
-
-        mouseLocked =
-            document.pointerLockElement
-            === document.body;
-
-    }
-);
-
-
-/* =====================================================
-   START GAME
-===================================================== */
-
-startButton.addEventListener(
-    "click",
-    event => {
-
-        event.preventDefault();
-
-        gameStarted = true;
-
-        startScreen.style.display =
-            "none";
-
-        lockMouse();
-
-    }
-);
 
 
 /* =====================================================
@@ -1137,23 +1409,28 @@ document.addEventListener(
             grounded
         ) {
 
-            velocityY =
-                8;
+            velocityY = 8;
 
-            grounded =
-                false;
+            grounded = false;
 
         }
 
 
         if (
-            event.code.startsWith(
-                "Digit"
-            )
+            event.code === "KeyE"
+        ) {
+
+            toggleCrafting();
+
+        }
+
+
+        if (
+            event.code.startsWith("Digit")
         ) {
 
             const number =
-                parseInt(
+                Number(
                     event.code.replace(
                         "Digit",
                         ""
@@ -1163,7 +1440,7 @@ document.addEventListener(
 
             if (
                 number >= 1 &&
-                number <= 5
+                number <= hotbarBlocks.length
             ) {
 
                 selectBlock(
@@ -1190,7 +1467,7 @@ document.addEventListener(
 
 
 /* =====================================================
-   PLAYER MOVEMENT
+   PLAYER UPDATE
 ===================================================== */
 
 function updatePlayer(
@@ -1198,10 +1475,12 @@ function updatePlayer(
 ) {
 
     if (
-        !gameStarted ||
-        !mouseLocked
+        !mouseLocked ||
+        craftingOpen
     ) {
+
         return;
+
     }
 
 
@@ -1235,48 +1514,17 @@ function updatePlayer(
         new THREE.Vector3();
 
 
-    if (
-        keys["KeyW"]
-    ) {
+    if (keys["KeyW"])
+        movement.add(forward);
 
-        movement.add(
-            forward
-        );
+    if (keys["KeyS"])
+        movement.sub(forward);
 
-    }
+    if (keys["KeyA"])
+        movement.sub(right);
 
-
-    if (
-        keys["KeyS"]
-    ) {
-
-        movement.sub(
-            forward
-        );
-
-    }
-
-
-    if (
-        keys["KeyA"]
-    ) {
-
-        movement.sub(
-            right
-        );
-
-    }
-
-
-    if (
-        keys["KeyD"]
-    ) {
-
-        movement.add(
-            right
-        );
-
-    }
+    if (keys["KeyD"])
+        movement.add(right);
 
 
     if (
@@ -1285,11 +1533,56 @@ function updatePlayer(
 
         movement.normalize();
 
-        camera.position.x +=
+
+        const bottom =
+            camera.position.y -
+            EYE_HEIGHT;
+
+
+        const nextX =
+            camera.position.x +
             movement.x * speed;
 
-        camera.position.z +=
+
+        const nextZ =
+            camera.position.z +
             movement.z * speed;
+
+
+        /*
+           X collision.
+        */
+
+        if (
+            !collides(
+                nextX,
+                bottom,
+                camera.position.z
+            )
+        ) {
+
+            camera.position.x =
+                nextX;
+
+        }
+
+
+        /*
+           Z collision.
+        */
+
+        if (
+            !collides(
+                camera.position.x,
+                bottom,
+                nextZ
+            )
+        ) {
+
+            camera.position.z =
+                nextZ;
+
+        }
 
     }
 
@@ -1302,35 +1595,57 @@ function updatePlayer(
         20 * delta;
 
 
-    camera.position.y +=
+    const newY =
+        camera.position.y +
         velocityY * delta;
 
 
-    /*
-       Ground.
-    */
-
-    const ground =
-        terrainHeight(
-            Math.floor(
-                camera.position.x
-            ),
-            Math.floor(
-                camera.position.z
-            )
-        ) + 1.8;
+    const newBottom =
+        newY -
+        EYE_HEIGHT;
 
 
     if (
-        camera.position.y <= ground
+        !collides(
+            camera.position.x,
+            newBottom,
+            camera.position.z
+        )
     ) {
 
         camera.position.y =
-            ground;
+            newY;
+
+        grounded = false;
+
+    }
+
+    else {
+
+        if (
+            velocityY < 0
+        ) {
+
+            grounded = true;
+
+        }
 
         velocityY = 0;
 
-        grounded = true;
+    }
+
+
+    if (
+        camera.position.y < -10
+    ) {
+
+        camera.position.set(
+            12.5,
+            10,
+            12.5
+        );
+
+        velocityY = 0;
 
     }
 
@@ -1338,51 +1653,110 @@ function updatePlayer(
 
 
 /* =====================================================
-   SELECT BLOCK
+   MOUSE LOOK
 ===================================================== */
 
-function selectBlock(
-    index
-) {
+let yaw = 0;
 
-    selectedBlock =
-        index;
+let pitch = 0;
 
-
-    document
-        .querySelectorAll(
-            ".slot"
-        )
-        .forEach(
-            slot => {
-
-                slot.classList.remove(
-                    "selected"
-                );
-
-            }
-        );
+let mouseLocked = false;
 
 
-    const slot =
-        document.querySelector(
-            `.slot[data-index="${index}"]`
-        );
+document.addEventListener(
+    "mousemove",
+    event => {
+
+        if (
+            !mouseLocked ||
+            craftingOpen
+        ) {
+
+            return;
+
+        }
 
 
-    if (slot) {
+        yaw -=
+            event.movementX * 0.002;
 
-        slot.classList.add(
-            "selected"
-        );
+        pitch -=
+            event.movementY * 0.002;
+
+
+        pitch =
+            Math.max(
+                -Math.PI / 2 + 0.05,
+                Math.min(
+                    Math.PI / 2 - 0.05,
+                    pitch
+                )
+            );
+
+
+        camera.rotation.order =
+            "YXZ";
+
+        camera.rotation.y =
+            yaw;
+
+        camera.rotation.x =
+            pitch;
+
+    }
+);
+
+
+/* =====================================================
+   POINTER LOCK
+===================================================== */
+
+function lockMouse() {
+
+    if (
+        !craftingOpen
+    ) {
+
+        document.body.requestPointerLock();
 
     }
 
-
-    selectedName.textContent =
-        blocks[index].name;
-
 }
+
+
+document.addEventListener(
+    "pointerlockchange",
+    () => {
+
+        mouseLocked =
+            document.pointerLockElement
+            === document.body;
+
+    }
+);
+
+
+/* =====================================================
+   START
+===================================================== */
+
+document
+    .getElementById("startButton")
+    .addEventListener(
+        "click",
+        () => {
+
+            document
+                .getElementById(
+                    "startScreen"
+                )
+                .style.display =
+                "none";
+
+            lockMouse();
+
+        }
+    );
 
 
 /* =====================================================
@@ -1392,12 +1766,8 @@ function selectBlock(
 const raycaster =
     new THREE.Raycaster();
 
-
 const center =
-    new THREE.Vector2(
-        0,
-        0
-    );
+    new THREE.Vector2(0, 0);
 
 
 function getTarget() {
@@ -1444,119 +1814,384 @@ function getTarget() {
 
 
 /* =====================================================
-   BREAK BLOCK
+   CRACK EFFECT
 ===================================================== */
 
-function breakBlock() {
+const crackCanvas =
+    document.createElement("canvas");
+
+crackCanvas.width = 256;
+
+crackCanvas.height = 256;
+
+
+const crackContext =
+    crackCanvas.getContext("2d");
+
+
+const crackTexture =
+    new THREE.CanvasTexture(
+        crackCanvas
+    );
+
+
+const crackMaterial =
+    new THREE.MeshBasicMaterial({
+
+        map: crackTexture,
+
+        transparent: true,
+
+        opacity: 1,
+
+        depthWrite: false,
+
+        polygonOffset: true,
+
+        polygonOffsetFactor: -4,
+
+        polygonOffsetUnits: -4
+
+    });
+
+
+const crackMesh =
+    new THREE.Mesh(
+        new THREE.BoxGeometry(
+            1.004,
+            1.004,
+            1.004
+        ),
+        crackMaterial
+    );
+
+
+crackMesh.visible = false;
+
+scene.add(crackMesh);
+
+
+/* =====================================================
+   DRAW CRACK
+===================================================== */
+
+function drawCracks(
+    stage
+) {
+
+    const ctx =
+        crackContext;
+
+
+    ctx.clearRect(
+        0,
+        0,
+        256,
+        256
+    );
+
+
+    ctx.strokeStyle =
+        "rgba(15,15,15,0.95)";
+
+    ctx.lineWidth = 7;
+
+    ctx.lineCap =
+        "round";
+
+
+    const cracks = [
+
+        [
+            [25,20],
+            [80,70],
+            [55,120]
+        ],
+
+        [
+            [180,15],
+            [140,80],
+            [190,130]
+        ],
+
+        [
+            [120,30],
+            [105,100],
+            [135,155]
+        ],
+
+        [
+            [20,180],
+            [80,150],
+            [100,220]
+        ],
+
+        [
+            [235,175],
+            [175,145],
+            [155,220]
+        ],
+
+        [
+            [75,70],
+            [145,70],
+            [180,115]
+        ],
+
+        [
+            [55,120],
+            [110,115],
+            [170,145]
+        ]
+
+    ];
+
+
+    const count =
+        Math.ceil(
+            cracks.length *
+            stage
+        );
+
+
+    for (
+        let i = 0;
+        i < count;
+        i++
+    ) {
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            cracks[i][0][0],
+            cracks[i][0][1]
+        );
+
+
+        for (
+            let j = 1;
+            j < cracks[i].length;
+            j++
+        ) {
+
+            ctx.lineTo(
+                cracks[i][j][0],
+                cracks[i][j][1]
+            );
+
+        }
+
+        ctx.stroke();
+
+    }
+
+
+    crackTexture.needsUpdate =
+        true;
+
+}
+
+
+/* =====================================================
+   BREAKING
+===================================================== */
+
+let breaking = false;
+
+let breakingKey = null;
+
+let breakingStart = 0;
+
+const BREAK_TIME = 500;
+
+let leftMouseDown = false;
+
+
+function stopBreaking() {
+
+    breaking = false;
+
+    breakingKey = null;
+
+    crackMesh.visible = false;
+
+}
+
+
+function updateBreaking() {
+
+    if (
+        !mouseLocked ||
+        craftingOpen ||
+        !leftMouseDown
+    ) {
+
+        stopBreaking();
+
+        return;
+
+    }
+
 
     const hit =
         getTarget();
 
 
     if (!hit) {
+
+        stopBreaking();
+
         return;
+
+    }
+
+
+    const key =
+        hit.object.userData.key;
+
+
+    if (
+        !breaking ||
+        breakingKey !== key
+    ) {
+
+        breaking = true;
+
+        breakingKey = key;
+
+        breakingStart =
+            performance.now();
+
+    }
+
+
+    const progress =
+        Math.min(
+            1,
+            (
+                performance.now()
+                - breakingStart
+            )
+            / BREAK_TIME
+        );
+
+
+    /*
+       If it is stone, don't
+       complete the breaking.
+    */
+
+    const type =
+        hit.object.userData.type;
+
+
+    if (
+        !type.breakable
+    ) {
+
+        crackMesh.visible = false;
+
+        showMessage(
+            "⛏️ You need a pickaxe to break stone!"
+        );
+
+        return;
+
+    }
+
+
+    drawCracks(
+        Math.max(
+            0.1,
+            progress
+        )
+    );
+
+
+    crackMesh.position.copy(
+        hit.object.position
+    );
+
+
+    crackMesh.visible = true;
+
+
+    if (
+        progress >= 1
+    ) {
+
+        breakBlock(
+            hit.object
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   BREAK BLOCK
+===================================================== */
+
+function breakBlock(
+    cube
+) {
+
+    const type =
+        cube.userData.type;
+
+
+    if (
+        !type.breakable
+    ) {
+
+        stopBreaking();
+
+        return;
+
     }
 
 
     const parts =
-        hit.object.userData
-            .key
+        cube.userData.key
             .split(",")
             .map(Number);
 
 
-    removeBlock(
-        parts[0],
-        parts[1],
-        parts[2]
-    );
+    const removed =
+        removeBlock(
+            parts[0],
+            parts[1],
+            parts[2]
+        );
 
 
-    showMessage(
-        "💥 Block broken!"
-    );
+    if (removed) {
+
+        inventory[
+            removed.id
+        ]++;
+
+
+        updateInventory();
+
+
+        showMessage(
+            "Collected " +
+            removed.name +
+            "!"
+        );
+
+    }
+
+
+    stopBreaking();
 
 }
 
 
 /* =====================================================
-   PLACE BLOCK
-===================================================== */
-
-function placeBlock() {
-
-    const hit =
-        getTarget();
-
-
-    if (!hit) {
-        return;
-    }
-
-
-    const position =
-        hit.object.position;
-
-
-    const normal =
-        hit.face.normal;
-
-
-    const x =
-        Math.floor(
-            position.x +
-            normal.x
-        );
-
-
-    const y =
-        Math.floor(
-            position.y +
-            normal.y
-        );
-
-
-    const z =
-        Math.floor(
-            position.z +
-            normal.z
-        );
-
-
-    if (
-        world.has(
-            key(
-                x,
-                y,
-                z
-            )
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    addBlock(
-        x,
-        y,
-        z,
-        blocks[
-            selectedBlock
-        ]
-    );
-
-
-    showMessage(
-        "🧱 Block placed!"
-    );
-
-}
-
-
-/* =====================================================
-   MOUSE CLICK
+   MOUSE
 ===================================================== */
 
 document.addEventListener(
@@ -1564,10 +2199,12 @@ document.addEventListener(
     event => {
 
         if (
-            !gameStarted ||
-            !mouseLocked
+            !mouseLocked ||
+            craftingOpen
         ) {
+
             return;
+
         }
 
 
@@ -1575,7 +2212,7 @@ document.addEventListener(
             event.button === 0
         ) {
 
-            breakBlock();
+            leftMouseDown = true;
 
         }
 
@@ -1585,6 +2222,24 @@ document.addEventListener(
         ) {
 
             placeBlock();
+
+        }
+
+    }
+);
+
+
+document.addEventListener(
+    "mouseup",
+    event => {
+
+        if (
+            event.button === 0
+        ) {
+
+            leftMouseDown = false;
+
+            stopBreaking();
 
         }
 
@@ -1603,64 +2258,627 @@ document.addEventListener(
 
 
 /* =====================================================
-   MESSAGE
+   PLACE BLOCK
 ===================================================== */
 
-let messageTimer;
+function placeBlock() {
+
+    const hit =
+        getTarget();
 
 
-function showMessage(
-    text
+    if (!hit) {
+        return;
+    }
+
+
+    const type =
+        hotbarBlocks[
+            selectedBlock
+        ];
+
+
+    if (
+        !type
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        inventory[type.id] <= 0
+    ) {
+
+        showMessage(
+            "You don't have any " +
+            type.name +
+            "!"
+        );
+
+        return;
+
+    }
+
+
+    const position =
+        hit.object.position;
+
+
+    const normal =
+        hit.face.normal;
+
+
+    const x =
+        Math.floor(
+            position.x +
+            normal.x
+        );
+
+    const y =
+        Math.floor(
+            position.y +
+            normal.y
+        );
+
+    const z =
+        Math.floor(
+            position.z +
+            normal.z
+        );
+
+
+    /*
+       Don't place inside player.
+    */
+
+    const bottom =
+        camera.position.y -
+        EYE_HEIGHT;
+
+
+    if (
+        camera.position.x + PLAYER_RADIUS > x &&
+        camera.position.x - PLAYER_RADIUS < x + 1 &&
+        camera.position.z + PLAYER_RADIUS > z &&
+        camera.position.z - PLAYER_RADIUS < z + 1 &&
+        bottom + PLAYER_HEIGHT > y &&
+        bottom < y + 1
+    ) {
+
+        showMessage(
+            "You cannot place a block here!"
+        );
+
+        return;
+
+    }
+
+
+    addBlock(
+        x,
+        y,
+        z,
+        type
+    );
+
+
+    inventory[type.id]--;
+
+    updateInventory();
+
+
+    showMessage(
+        "Placed " +
+        type.name
+    );
+
+}
+
+
+/* =====================================================
+   HOTBAR
+===================================================== */
+
+let selectedBlock = 0;
+
+
+function selectBlock(
+    index
 ) {
 
-    message.textContent =
-        text;
+    if (
+        index >= hotbarBlocks.length
+    ) {
 
-    message.classList.add(
-        "show"
-    );
+        return;
 
-
-    clearTimeout(
-        messageTimer
-    );
+    }
 
 
-    messageTimer =
-        setTimeout(
-            () => {
+    selectedBlock =
+        index;
 
-                message.classList.remove(
-                    "show"
+
+    document
+        .querySelectorAll(
+            ".slot"
+        )
+        .forEach(
+            slot => {
+
+                slot.classList.remove(
+                    "selected"
                 );
 
-            },
-            1200
+            }
+        );
+
+
+    const slot =
+        document.querySelector(
+            `.slot[data-index="${index}"]`
+        );
+
+
+    if (slot) {
+
+        slot.classList.add(
+            "selected"
+        );
+
+    }
+
+
+    document
+        .getElementById(
+            "selectedName"
+        )
+        .textContent =
+        hotbarBlocks[index].name;
+
+}
+
+
+document
+    .querySelectorAll(".slot")
+    .forEach(
+        slot => {
+
+            slot.addEventListener(
+                "click",
+                event => {
+
+                    event.stopPropagation();
+
+                    selectBlock(
+                        Number(
+                            slot.dataset.index
+                        )
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+/* =====================================================
+   INVENTORY UI
+===================================================== */
+
+function updateInventory() {
+
+    document
+        .querySelectorAll(".slot")
+        .forEach(
+            (slot, index) => {
+
+                const type =
+                    hotbarBlocks[index];
+
+
+                slot
+                    .querySelector(
+                        ".amount"
+                    )
+                    .textContent =
+                    inventory[type.id] || 0;
+
+            }
         );
 
 }
 
 
 /* =====================================================
+   CRAFTING
+===================================================== */
+
+let craftingOpen = false;
+
+
+/*
+   Four slots for the 2x2 crafting grid.
+*/
+
+const craftingGrid = [
+    null,
+    null,
+    null,
+    null
+];
+
+
+function toggleCrafting() {
+
+    if (
+        craftingOpen
+    ) {
+
+        closeCrafting();
+
+    }
+
+    else {
+
+        openCrafting();
+
+    }
+
+}
+
+
+function openCrafting() {
+
+    craftingOpen = true;
+
+    stopBreaking();
+
+    document
+        .getElementById(
+            "crafting"
+        )
+        .classList.add(
+            "open"
+        );
+
+
+    if (
+        document.pointerLockElement
+    ) {
+
+        document.exitPointerLock();
+
+    }
+
+
+    renderCrafting();
+
+}
+
+
+function closeCrafting() {
+
+    craftingOpen = false;
+
+    document
+        .getElementById(
+            "crafting"
+        )
+        .classList.remove(
+            "open"
+        );
+
+
+    lockMouse();
+
+}
+
+
+/* =====================================================
+   CRAFTING GRID CLICK
+===================================================== */
+
+document
+    .querySelectorAll(
+        ".craftSlot"
+    )
+    .forEach(
+        slot => {
+
+            slot.addEventListener(
+                "click",
+                () => {
+
+                    const index =
+                        Number(
+                            slot.dataset.craftSlot
+                        );
+
+
+                    /*
+                       If empty, take one wood
+                       from inventory.
+                    */
+
+                    if (
+                        craftingGrid[index]
+                        === null
+                    ) {
+
+                        if (
+                            inventory.wood > 0
+                        ) {
+
+                            inventory.wood--;
+
+                            craftingGrid[index] =
+                                "wood";
+
+                        }
+
+                    }
+
+                    /*
+                       If occupied, return it.
+                    */
+
+                    else {
+
+                        const item =
+                            craftingGrid[index];
+
+
+                        inventory[item]++;
+
+
+                        craftingGrid[index] =
+                            null;
+
+                    }
+
+
+                    updateInventory();
+
+                    renderCrafting();
+
+                }
+            );
+
+        }
+    );
+
+
+/* =====================================================
+   CRAFTING RESULT
+===================================================== */
+
+document
+    .getElementById(
+        "craftResult"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            /*
+               Recipe:
+
+               1 Wood
+               =
+               4 Planks
+            */
+
+            const woodCount =
+                craftingGrid.filter(
+                    item =>
+                        item === "wood"
+                ).length;
+
+
+            if (
+                woodCount < 1
+            ) {
+
+                showMessage(
+                    "Put Wood in the crafting grid!"
+                );
+
+                return;
+
+            }
+
+
+            /*
+               Remove one wood.
+            */
+
+            const index =
+                craftingGrid.indexOf(
+                    "wood"
+                );
+
+
+            craftingGrid[index] =
+                null;
+
+
+            /*
+               Give 4 planks.
+            */
+
+            inventory.planks += 4;
+
+
+            updateInventory();
+
+            renderCrafting();
+
+
+            showMessage(
+                "Crafted 4 Planks!"
+            );
+
+        }
+    );
+
+
+/* =====================================================
+   RENDER CRAFTING
+===================================================== */
+
+function renderCrafting() {
+
+    document
+        .querySelectorAll(
+            ".craftSlot"
+        )
+        .forEach(
+            (slot, index) => {
+
+                slot.innerHTML = "";
+
+
+                const item =
+                    craftingGrid[index];
+
+
+                if (
+                    item
+                ) {
+
+                    const block =
+                        blocks.find(
+                            b =>
+                                b.id === item
+                        );
+
+
+                    const div =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    div.className =
+                        "craftItem";
+
+
+                    div.style.background =
+                        "#" +
+                        block.color
+                            .toString(16)
+                            .padStart(
+                                6,
+                                "0"
+                            );
+
+
+                    slot.appendChild(
+                        div
+                    );
+
+                }
+
+            }
+        );
+
+
+    const woodCount =
+        craftingGrid.filter(
+            item =>
+                item === "wood"
+        ).length;
+
+
+    document
+        .querySelector(
+            ".resultAmount"
+        )
+        .textContent =
+        woodCount > 0
+            ? "4"
+            : "0";
+
+}
+
+
+/* =====================================================
+   CLOSE BUTTON
+===================================================== */
+
+document
+    .getElementById(
+        "closeCrafting"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            closeCrafting();
+
+        }
+    );
+
+
+/* =====================================================
    RESET
 ===================================================== */
 
-resetButton.addEventListener(
-    "click",
-    event => {
+document
+    .getElementById(
+        "reset"
+    )
+    .addEventListener(
+        "click",
+        event => {
 
-        event.stopPropagation();
+            event.stopPropagation();
 
-        generateWorld();
 
-        velocityY = 0;
+            Object.keys(
+                inventory
+            ).forEach(
+                key => {
 
-        showMessage(
-            "🌍 World regenerated!"
-        );
+                    inventory[key] = 0;
 
-    }
-);
+                }
+            );
+
+
+            for (
+                let i = 0;
+                i < craftingGrid.length;
+                i++
+            ) {
+
+                craftingGrid[i] =
+                    null;
+
+            }
+
+
+            updateInventory();
+
+            renderCrafting();
+
+            generateWorld();
+
+            stopBreaking();
+
+            velocityY = 0;
+
+
+            showMessage(
+                "World reset!"
+            );
+
+        }
+    );
 
 
 /* =====================================================
@@ -1687,10 +2905,14 @@ window.addEventListener(
 
 
 /* =====================================================
-   START
+   INITIALIZE
 ===================================================== */
 
 generateWorld();
+
+updateInventory();
+
+renderCrafting();
 
 
 /* =====================================================
@@ -1718,6 +2940,9 @@ function animate() {
     updatePlayer(
         delta
     );
+
+
+    updateBreaking();
 
 
     renderer.render(
