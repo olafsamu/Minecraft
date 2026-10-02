@@ -1,50 +1,8 @@
 const PLAYER_HEIGHT = 2;
-const PLAYER_RADIUS = 0.3;
 const EYE_HEIGHT = 1.7;
 
 let velocityY = 0;
 let grounded = false;
-
-
-/* ======================================================
-   COLLISION
-====================================================== */
-
-function collides(x, bottom, z) {
-
-    const minX = Math.floor(x - PLAYER_RADIUS);
-    const maxX = Math.floor(x + PLAYER_RADIUS);
-
-    const minY = Math.floor(bottom + 0.001);
-    const maxY = Math.floor(
-        bottom + PLAYER_HEIGHT - 0.001
-    );
-
-    const minZ = Math.floor(z - PLAYER_RADIUS);
-    const maxZ = Math.floor(z + PLAYER_RADIUS);
-
-    for (let bx = minX; bx <= maxX; bx++) {
-
-        for (let by = minY; by <= maxY; by++) {
-
-            for (let bz = minZ; bz <= maxZ; bz++) {
-
-                if (
-                    world.has(
-                        blockKey(bx, by, bz)
-                    )
-                ) {
-                    return true;
-                }
-
-            }
-
-        }
-
-    }
-
-    return false;
-}
 
 
 /* ======================================================
@@ -55,8 +13,7 @@ function updatePlayer(delta) {
 
     const speed = 5;
 
-    const forward =
-        new THREE.Vector3();
+    const forward = new THREE.Vector3();
 
     camera.getWorldDirection(forward);
 
@@ -67,17 +24,17 @@ function updatePlayer(delta) {
     }
 
 
-    const right =
-        new THREE.Vector3(
-            forward.z,
-            0,
-            -forward.x
-        );
+    const right = new THREE.Vector3(
+        forward.z,
+        0,
+        -forward.x
+    );
 
 
-    const movement =
-        new THREE.Vector3();
+    const movement = new THREE.Vector3();
 
+
+    /* WASD */
 
     if (keys["KeyW"]) {
         movement.add(forward);
@@ -96,59 +53,17 @@ function updatePlayer(delta) {
     }
 
 
-    /* ==================================================
-       HORIZONTAL MOVEMENT
-    ================================================== */
+    /* Move */
 
     if (movement.length() > 0) {
 
         movement.normalize();
 
-        const moveX =
-            movement.x *
-            speed *
-            delta;
+        camera.position.x +=
+            movement.x * speed * delta;
 
-        const moveZ =
-            movement.z *
-            speed *
-            delta;
-
-
-        const bottom =
-            camera.position.y -
-            EYE_HEIGHT;
-
-
-        /* Move on X */
-
-        if (
-            !collides(
-                camera.position.x + moveX,
-                bottom,
-                camera.position.z
-            )
-        ) {
-
-            camera.position.x += moveX;
-
-        }
-
-
-        /* Move on Z */
-
-        if (
-            !collides(
-                camera.position.x,
-                bottom,
-                camera.position.z + moveZ
-            )
-        ) {
-
-            camera.position.z += moveZ;
-
-        }
-
+        camera.position.z +=
+            movement.z * speed * delta;
     }
 
 
@@ -158,52 +73,50 @@ function updatePlayer(delta) {
 
     velocityY -= 20 * delta;
 
-
-    const newY =
-        camera.position.y +
+    camera.position.y +=
         velocityY * delta;
 
 
-    const newBottom =
-        newY -
-        EYE_HEIGHT;
+    /* Keep player above the terrain */
+
+    const groundY =
+        terrainHeight(
+            Math.floor(camera.position.x),
+            Math.floor(camera.position.z)
+        ) + 1 + EYE_HEIGHT;
 
 
     if (
-        !collides(
-            camera.position.x,
-            newBottom,
-            camera.position.z
-        )
+        camera.position.y < groundY
     ) {
 
-        camera.position.y = newY;
+        camera.position.y =
+            groundY;
 
-        grounded = false;
+        velocityY = 0;
+
+        grounded = true;
 
     } else {
 
-        if (velocityY < 0) {
-            grounded = true;
-        }
-
-        velocityY = 0;
+        grounded = false;
 
     }
 
 
     /* ==================================================
-       FALLING OUT OF WORLD
+       FALL PROTECTION
     ================================================== */
 
-    if (camera.position.y < -10) {
+    if (
+        camera.position.y < -20
+    ) {
 
         camera.position.set(
             12.5,
             terrainHeight(12, 12)
                 + 1
-                + EYE_HEIGHT
-                + 0.1,
+                + EYE_HEIGHT,
             12.5
         );
 
