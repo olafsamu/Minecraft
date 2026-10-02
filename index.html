@@ -244,8 +244,8 @@ html, body {
 }
 
 .slot {
-    width: 60px;
-    height: 60px;
+    width: 65px;
+    height: 65px;
 
     display: flex;
     justify-content: center;
@@ -268,8 +268,8 @@ html, body {
 }
 
 .preview {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
 
     border: 2px solid rgba(0,0,0,0.3);
 }
@@ -286,6 +286,21 @@ html, body {
 
     text-shadow:
         1px 1px 2px black;
+}
+
+.amount {
+    position: absolute;
+
+    right: 5px;
+    bottom: 3px;
+
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    text-shadow:
+        2px 2px 2px black;
 }
 
 /* ================= RESET ================= */
@@ -315,6 +330,30 @@ html, body {
     background: rgba(0,0,0,0.8);
 }
 
+/* ================= BREAKING INDICATOR ================= */
+
+#breakingText {
+    position: absolute;
+
+    left: 50%;
+    top: calc(50% + 25px);
+
+    transform: translateX(-50%);
+
+    color: white;
+
+    font-size: 13px;
+
+    text-shadow:
+        2px 2px 3px black;
+
+    opacity: 0;
+}
+
+#breakingText.show {
+    opacity: 1;
+}
+
 /* ================= MOBILE ================= */
 
 @media (max-width: 700px) {
@@ -324,8 +363,8 @@ html, body {
     }
 
     .slot {
-        width: 48px;
-        height: 48px;
+        width: 50px;
+        height: 50px;
     }
 
     .preview {
@@ -353,9 +392,9 @@ html, body {
         <h1>BlockWorld</h1>
 
         <p>
-            A browser-based block building game.
+            Explore a world made of blocks.
             <br>
-            Explore, break blocks and build!
+            Break, collect and build!
         </p>
 
         <button id="startButton">
@@ -377,7 +416,7 @@ html, body {
         WASD — Move<br>
         SPACE — Jump<br>
         Mouse — Look<br>
-        Left Click — Break<br>
+        Hold Left Click — Break<br>
         Right Click — Place<br>
         1–5 — Select block<br>
         ESC — Release mouse
@@ -392,6 +431,10 @@ html, body {
         Block broken!
     </div>
 
+    <div id="breakingText">
+        Breaking...
+    </div>
+
     <button id="reset">
         Reset World
     </button>
@@ -399,48 +442,38 @@ html, body {
     <div id="hotbar">
 
         <div class="slot selected" data-index="0">
-            <div
-                class="preview"
-                style="background:#62b84b"
-            ></div>
-
+            <div class="preview"
+                 style="background:#62b84b"></div>
             <span class="number">1</span>
+            <span class="amount">0</span>
         </div>
 
         <div class="slot" data-index="1">
-            <div
-                class="preview"
-                style="background:#8b5a2b"
-            ></div>
-
+            <div class="preview"
+                 style="background:#8b5a2b"></div>
             <span class="number">2</span>
+            <span class="amount">0</span>
         </div>
 
         <div class="slot" data-index="2">
-            <div
-                class="preview"
-                style="background:#888"
-            ></div>
-
+            <div class="preview"
+                 style="background:#888"></div>
             <span class="number">3</span>
+            <span class="amount">0</span>
         </div>
 
         <div class="slot" data-index="3">
-            <div
-                class="preview"
-                style="background:#9b6b30"
-            ></div>
-
+            <div class="preview"
+                 style="background:#9b6b30"></div>
             <span class="number">4</span>
+            <span class="amount">0</span>
         </div>
 
         <div class="slot" data-index="4">
-            <div
-                class="preview"
-                style="background:#4c9f4c"
-            ></div>
-
+            <div class="preview"
+                 style="background:#4c9f4c"></div>
             <span class="number">5</span>
+            <span class="amount">0</span>
         </div>
 
     </div>
@@ -458,53 +491,11 @@ html, body {
 <script>
 
 /* =====================================================
-   CHECK THREE.JS
-===================================================== */
-
-if (typeof THREE === "undefined") {
-
-    alert(
-        "BlockWorld could not load its 3D engine. " +
-        "Please check your internet connection and reload the page."
-    );
-
-}
-
-
-/* =====================================================
-   VARIABLES
+   SCENE
 ===================================================== */
 
 const canvas =
     document.getElementById("game");
-
-const startScreen =
-    document.getElementById("startScreen");
-
-const startButton =
-    document.getElementById("startButton");
-
-const message =
-    document.getElementById("message");
-
-const selectedName =
-    document.getElementById("selectedName");
-
-const blockInfo =
-    document.getElementById("blockInfo");
-
-const resetButton =
-    document.getElementById("reset");
-
-
-let gameStarted = false;
-
-let selectedBlock = 0;
-
-
-/* =====================================================
-   SCENE
-===================================================== */
 
 const scene =
     new THREE.Scene();
@@ -532,6 +523,21 @@ const camera =
         0.1,
         200
     );
+
+
+/*
+   PLAYER HEIGHT = 2 BLOCKS
+*/
+
+const PLAYER_HEIGHT = 2;
+
+
+/*
+   The camera sits around eye height.
+*/
+
+const EYE_HEIGHT = 1.7;
+
 
 camera.position.set(
     12,
@@ -564,18 +570,15 @@ renderer.setPixelRatio(
 
 
 /* =====================================================
-   LIGHT
+   LIGHTING
 ===================================================== */
 
-const skyLight =
+scene.add(
     new THREE.HemisphereLight(
         0xffffff,
         0x557755,
         1.8
-    );
-
-scene.add(
-    skyLight
+    )
 );
 
 
@@ -591,9 +594,7 @@ sun.position.set(
     20
 );
 
-scene.add(
-    sun
-);
+scene.add(sun);
 
 
 /* =====================================================
@@ -603,31 +604,56 @@ scene.add(
 const blocks = [
 
     {
+        id: "grass",
         name: "Grass",
-        color: 0x62b84b
+        color: 0x62b84b,
+        breakable: true
     },
 
     {
+        id: "dirt",
         name: "Dirt",
-        color: 0x8b5a2b
+        color: 0x8b5a2b,
+        breakable: true
     },
 
     {
+        id: "stone",
         name: "Stone",
-        color: 0x888888
+        color: 0x888888,
+        breakable: false
     },
 
     {
+        id: "wood",
         name: "Wood",
-        color: 0x9b6b30
+        color: 0x9b6b30,
+        breakable: true
     },
 
     {
+        id: "leaves",
         name: "Leaves",
-        color: 0x4c9f4c
+        color: 0x4c9f4c,
+        breakable: true
     }
 
 ];
+
+
+/* =====================================================
+   INVENTORY
+===================================================== */
+
+const inventory = {
+
+    grass: 0,
+    dirt: 0,
+    stone: 0,
+    wood: 0,
+    leaves: 0
+
+};
 
 
 /* =====================================================
@@ -640,15 +666,14 @@ const world =
 const meshes =
     new Map();
 
-
 const SIZE = 24;
 
 
 /* =====================================================
-   WORLD KEY
+   BLOCK KEY
 ===================================================== */
 
-function key(
+function blockKey(
     x,
     y,
     z
@@ -703,8 +728,8 @@ function addBlock(
     type
 ) {
 
-    const k =
-        key(
+    const key =
+        blockKey(
             x,
             y,
             z
@@ -712,7 +737,7 @@ function addBlock(
 
 
     if (
-        world.has(k)
+        world.has(key)
     ) {
         return;
     }
@@ -728,8 +753,7 @@ function addBlock(
 
     const material =
         new THREE.MeshLambertMaterial({
-            color:
-                type.color
+            color: type.color
         });
 
 
@@ -748,25 +772,21 @@ function addBlock(
 
 
     cube.userData.key =
-        k;
+        key;
 
     cube.userData.type =
         type;
 
 
-    scene.add(
-        cube
-    );
-
+    scene.add(cube);
 
     world.set(
-        k,
+        key,
         type
     );
 
-
     meshes.set(
-        k,
+        key,
         cube
     );
 
@@ -783,8 +803,8 @@ function removeBlock(
     z
 ) {
 
-    const k =
-        key(
+    const key =
+        blockKey(
             x,
             y,
             z
@@ -792,27 +812,31 @@ function removeBlock(
 
 
     const cube =
-        meshes.get(k);
+        meshes.get(key);
 
 
     if (!cube) {
-        return;
+        return null;
     }
 
 
-    scene.remove(
-        cube
-    );
+    const type =
+        cube.userData.type;
 
+
+    scene.remove(cube);
 
     cube.geometry.dispose();
 
     cube.material.dispose();
 
 
-    meshes.delete(k);
+    meshes.delete(key);
 
-    world.delete(k);
+    world.delete(key);
+
+
+    return type;
 
 }
 
@@ -823,16 +847,10 @@ function removeBlock(
 
 function generateWorld() {
 
-    /*
-       Delete old blocks.
-    */
-
     meshes.forEach(
         cube => {
 
-            scene.remove(
-                cube
-            );
+            scene.remove(cube);
 
             cube.geometry.dispose();
 
@@ -846,10 +864,6 @@ function generateWorld() {
 
     meshes.clear();
 
-
-    /*
-       Terrain.
-    */
 
     for (
         let x = 0;
@@ -996,19 +1010,23 @@ function generateWorld() {
 
 
     /*
-       Player spawn.
+       Spawn player.
     */
 
-    const sx = 12;
-    const sz = 12;
+    const spawnX = 12;
+    const spawnZ = 12;
+
+    const ground =
+        terrainHeight(
+            spawnX,
+            spawnZ
+        );
+
 
     camera.position.set(
-        sx + 0.5,
-        terrainHeight(
-            sx,
-            sz
-        ) + 2.2,
-        sz + 0.5
+        spawnX + 0.5,
+        ground + EYE_HEIGHT,
+        spawnZ + 0.5
     );
 
 }
@@ -1028,28 +1046,23 @@ document.addEventListener(
     "mousemove",
     event => {
 
-        if (
-            !mouseLocked
-        ) {
+        if (!mouseLocked) {
             return;
         }
 
 
         yaw -=
-            event.movementX
-            * 0.002;
-
+            event.movementX * 0.002;
 
         pitch -=
-            event.movementY
-            * 0.002;
+            event.movementY * 0.002;
 
 
         pitch =
             Math.max(
-                -Math.PI / 2 + 0.1,
+                -Math.PI / 2 + 0.05,
                 Math.min(
-                    Math.PI / 2 - 0.1,
+                    Math.PI / 2 - 0.05,
                     pitch
                 )
             );
@@ -1057,7 +1070,6 @@ document.addEventListener(
 
         camera.rotation.order =
             "YXZ";
-
 
         camera.rotation.y =
             yaw;
@@ -1093,24 +1105,27 @@ document.addEventListener(
 
 
 /* =====================================================
-   START GAME
+   START BUTTON
 ===================================================== */
 
-startButton.addEventListener(
-    "click",
-    event => {
+document
+    .getElementById("startButton")
+    .addEventListener(
+        "click",
+        () => {
 
-        event.preventDefault();
+            document
+                .getElementById(
+                    "startScreen"
+                )
+                .style.display =
+                "none";
 
-        gameStarted = true;
 
-        startScreen.style.display =
-            "none";
+            lockMouse();
 
-        lockMouse();
-
-    }
-);
+        }
+    );
 
 
 /* =====================================================
@@ -1132,19 +1147,25 @@ document.addEventListener(
             true;
 
 
+        /*
+           Jump.
+        */
+
         if (
             event.code === "Space" &&
             grounded
         ) {
 
-            velocityY =
-                8;
+            velocityY = 8;
 
-            grounded =
-                false;
+            grounded = false;
 
         }
 
+
+        /*
+           Hotbar.
+        */
 
         if (
             event.code.startsWith(
@@ -1153,7 +1174,7 @@ document.addEventListener(
         ) {
 
             const number =
-                parseInt(
+                Number(
                     event.code.replace(
                         "Digit",
                         ""
@@ -1190,17 +1211,109 @@ document.addEventListener(
 
 
 /* =====================================================
-   PLAYER MOVEMENT
+   PLAYER COLLISION
+===================================================== */
+
+const PLAYER_RADIUS =
+    0.3;
+
+
+/*
+   Check if the two-block-tall
+   player would collide.
+*/
+
+function collides(
+    x,
+    y,
+    z
+) {
+
+    const minX =
+        Math.floor(
+            x - PLAYER_RADIUS
+        );
+
+    const maxX =
+        Math.floor(
+            x + PLAYER_RADIUS
+        );
+
+
+    const minY =
+        Math.floor(y);
+
+
+    const maxY =
+        Math.floor(
+            y + PLAYER_HEIGHT
+        );
+
+
+    const minZ =
+        Math.floor(
+            z - PLAYER_RADIUS
+        );
+
+    const maxZ =
+        Math.floor(
+            z + PLAYER_RADIUS
+        );
+
+
+    for (
+        let bx = minX;
+        bx <= maxX;
+        bx++
+    ) {
+
+        for (
+            let by = minY;
+            by <= maxY;
+            by++
+        ) {
+
+            for (
+                let bz = minZ;
+                bz <= maxZ;
+                bz++
+            ) {
+
+                if (
+                    world.has(
+                        blockKey(
+                            bx,
+                            by,
+                            bz
+                        )
+                    )
+                ) {
+
+                    return true;
+
+                }
+
+            }
+
+        }
+
+    }
+
+
+    return false;
+
+}
+
+
+/* =====================================================
+   PLAYER UPDATE
 ===================================================== */
 
 function updatePlayer(
     delta
 ) {
 
-    if (
-        !gameStarted ||
-        !mouseLocked
-    ) {
+    if (!mouseLocked) {
         return;
     }
 
@@ -1235,48 +1348,17 @@ function updatePlayer(
         new THREE.Vector3();
 
 
-    if (
-        keys["KeyW"]
-    ) {
+    if (keys["KeyW"])
+        movement.add(forward);
 
-        movement.add(
-            forward
-        );
+    if (keys["KeyS"])
+        movement.sub(forward);
 
-    }
+    if (keys["KeyA"])
+        movement.sub(right);
 
-
-    if (
-        keys["KeyS"]
-    ) {
-
-        movement.sub(
-            forward
-        );
-
-    }
-
-
-    if (
-        keys["KeyA"]
-    ) {
-
-        movement.sub(
-            right
-        );
-
-    }
-
-
-    if (
-        keys["KeyD"]
-    ) {
-
-        movement.add(
-            right
-        );
-
-    }
+    if (keys["KeyD"])
+        movement.add(right);
 
 
     if (
@@ -1285,11 +1367,53 @@ function updatePlayer(
 
         movement.normalize();
 
-        camera.position.x +=
+
+        const nextX =
+            camera.position.x +
             movement.x * speed;
 
-        camera.position.z +=
+
+        const nextZ =
+            camera.position.z +
             movement.z * speed;
+
+
+        /*
+           Convert camera eye position
+           into player bottom position.
+        */
+
+        const bottom =
+            camera.position.y -
+            EYE_HEIGHT;
+
+
+        if (
+            !collides(
+                nextX,
+                bottom,
+                camera.position.z
+            )
+        ) {
+
+            camera.position.x =
+                nextX;
+
+        }
+
+
+        if (
+            !collides(
+                camera.position.x,
+                bottom,
+                nextZ
+            )
+        ) {
+
+            camera.position.z =
+                nextZ;
+
+        }
 
     }
 
@@ -1302,85 +1426,64 @@ function updatePlayer(
         20 * delta;
 
 
-    camera.position.y +=
+    const newY =
+        camera.position.y +
         velocityY * delta;
 
 
-    /*
-       Ground.
-    */
-
-    const ground =
-        terrainHeight(
-            Math.floor(
-                camera.position.x
-            ),
-            Math.floor(
-                camera.position.z
-            )
-        ) + 1.8;
+    const newBottom =
+        newY -
+        EYE_HEIGHT;
 
 
     if (
-        camera.position.y <= ground
+        !collides(
+            camera.position.x,
+            newBottom,
+            camera.position.z
+        )
     ) {
 
         camera.position.y =
-            ground;
+            newY;
+
+        grounded = false;
+
+    }
+
+    else {
+
+        if (
+            velocityY < 0
+        ) {
+
+            grounded = true;
+
+        }
+
 
         velocityY = 0;
 
-        grounded = true;
-
-    }
-
-}
-
-
-/* =====================================================
-   SELECT BLOCK
-===================================================== */
-
-function selectBlock(
-    index
-) {
-
-    selectedBlock =
-        index;
-
-
-    document
-        .querySelectorAll(
-            ".slot"
-        )
-        .forEach(
-            slot => {
-
-                slot.classList.remove(
-                    "selected"
-                );
-
-            }
-        );
-
-
-    const slot =
-        document.querySelector(
-            `.slot[data-index="${index}"]`
-        );
-
-
-    if (slot) {
-
-        slot.classList.add(
-            "selected"
-        );
-
     }
 
 
-    selectedName.textContent =
-        blocks[index].name;
+    /*
+       Respawn.
+    */
+
+    if (
+        camera.position.y < -10
+    ) {
+
+        camera.position.set(
+            12.5,
+            10,
+            12.5
+        );
+
+        velocityY = 0;
+
+    }
 
 }
 
@@ -1444,39 +1547,565 @@ function getTarget() {
 
 
 /* =====================================================
-   BREAK BLOCK
+   BREAKING STATE
 ===================================================== */
 
-function breakBlock() {
+let breaking = false;
+
+let breakingKey = null;
+
+let breakingStart = 0;
+
+const BREAK_TIME =
+    500;
+
+
+/* =====================================================
+   CRACK MATERIAL
+===================================================== */
+
+/*
+   This creates the Minecraft-style
+   progressive crack effect.
+
+   The cracks are drawn procedurally
+   so no external texture file is needed.
+*/
+
+const crackCanvas =
+    document.createElement("canvas");
+
+crackCanvas.width = 256;
+crackCanvas.height = 256;
+
+
+const crackContext =
+    crackCanvas.getContext("2d");
+
+
+const crackTexture =
+    new THREE.CanvasTexture(
+        crackCanvas
+    );
+
+
+const crackMaterial =
+    new THREE.MeshBasicMaterial({
+
+        map: crackTexture,
+
+        transparent: true,
+
+        opacity: 0,
+
+        depthWrite: false,
+
+        polygonOffset: true,
+
+        polygonOffsetFactor: -4,
+
+        polygonOffsetUnits: -4
+
+    });
+
+
+const crackMesh =
+    new THREE.Mesh(
+        new THREE.BoxGeometry(
+            1.004,
+            1.004,
+            1.004
+        ),
+        crackMaterial
+    );
+
+
+crackMesh.visible = false;
+
+scene.add(
+    crackMesh
+);
+
+
+/* =====================================================
+   DRAW CRACKS
+===================================================== */
+
+function drawCracks(
+    stage
+) {
+
+    const ctx =
+        crackContext;
+
+
+    ctx.clearRect(
+        0,
+        0,
+        256,
+        256
+    );
+
+
+    /*
+       Transparent background.
+    */
+
+    ctx.strokeStyle =
+        "rgba(20,20,20,0.95)";
+
+
+    ctx.lineWidth =
+        7;
+
+    ctx.lineCap =
+        "round";
+
+
+    /*
+       Different crack stages.
+    */
+
+    const cracks = [
+
+        [
+            [25,20],
+            [80,70],
+            [55,120]
+        ],
+
+        [
+            [180,15],
+            [140,80],
+            [190,130]
+        ],
+
+        [
+            [120,30],
+            [105,100],
+            [135,155]
+        ],
+
+        [
+            [20,180],
+            [80,150],
+            [100,220]
+        ],
+
+        [
+            [235,175],
+            [175,145],
+            [155,220]
+        ],
+
+        [
+            [75,70],
+            [145,70],
+            [180,115]
+        ],
+
+        [
+            [55,120],
+            [110,115],
+            [170,145]
+        ]
+
+    ];
+
+
+    const count =
+        Math.ceil(
+            cracks.length *
+            stage
+        );
+
+
+    for (
+        let i = 0;
+        i < count;
+        i++
+    ) {
+
+        const crack =
+            cracks[i];
+
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            crack[0][0],
+            crack[0][1]
+        );
+
+
+        for (
+            let j = 1;
+            j < crack.length;
+            j++
+        ) {
+
+            ctx.lineTo(
+                crack[j][0],
+                crack[j][1]
+            );
+
+        }
+
+
+        ctx.stroke();
+
+    }
+
+
+    crackTexture.needsUpdate =
+        true;
+
+}
+
+
+/* =====================================================
+   UPDATE CRACK
+===================================================== */
+
+function updateCrack(
+    hit
+) {
+
+    if (!hit) {
+
+        crackMesh.visible =
+            false;
+
+        return;
+
+    }
+
+
+    const key =
+        hit.object.userData.key;
+
+
+    const now =
+        performance.now();
+
+
+    if (
+        !breaking ||
+        breakingKey !== key
+    ) {
+
+        breaking =
+            true;
+
+        breakingKey =
+            key;
+
+        breakingStart =
+            now;
+
+    }
+
+
+    const progress =
+        Math.min(
+            1,
+            (now - breakingStart) /
+            BREAK_TIME
+        );
+
+
+    /*
+       10 Minecraft-like stages.
+    */
+
+    const stage =
+        Math.ceil(
+            progress * 10
+        ) / 10;
+
+
+    drawCracks(
+        Math.max(
+            0.1,
+            stage
+        )
+    );
+
+
+    crackMesh.visible =
+        true;
+
+
+    crackMesh.position.copy(
+        hit.object.position
+    );
+
+
+    /*
+       Slightly larger so the crack
+       appears over the block.
+    */
+
+    crackMesh.scale.set(
+        1,
+        1,
+        1
+    );
+
+
+    if (
+        progress >= 1
+    ) {
+
+        finishBreaking(
+            hit.object
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   FINISH BREAKING
+===================================================== */
+
+function finishBreaking(
+    cube
+) {
+
+    const type =
+        cube.userData.type;
+
+
+    /*
+       Stone cannot be broken by hand.
+    */
+
+    if (
+        !type.breakable
+    ) {
+
+        showMessage(
+            "⛏️ You need a pickaxe to break stone!"
+        );
+
+        stopBreaking();
+
+        return;
+
+    }
+
+
+    const parts =
+        cube.userData.key
+            .split(",")
+            .map(Number);
+
+
+    const removed =
+        removeBlock(
+            parts[0],
+            parts[1],
+            parts[2]
+        );
+
+
+    if (removed) {
+
+        inventory[
+            removed.id
+        ]++;
+
+
+        updateInventory();
+
+
+        showMessage(
+            "🧱 Collected " +
+            removed.name +
+            "!"
+        );
+
+    }
+
+
+    stopBreaking();
+
+}
+
+
+/* =====================================================
+   STOP BREAKING
+===================================================== */
+
+function stopBreaking() {
+
+    breaking =
+        false;
+
+    breakingKey =
+        null;
+
+    crackMesh.visible =
+        false;
+
+    crackContext.clearRect(
+        0,
+        0,
+        256,
+        256
+    );
+
+    crackTexture.needsUpdate =
+        true;
+
+}
+
+
+/* =====================================================
+   BREAK / PLACE MOUSE
+===================================================== */
+
+document.addEventListener(
+    "mousedown",
+    event => {
+
+        if (
+            !mouseLocked
+        ) {
+            return;
+        }
+
+
+        /*
+           Right click = place.
+        */
+
+        if (
+            event.button === 2
+        ) {
+
+            placeBlock();
+
+        }
+
+    }
+);
+
+
+document.addEventListener(
+    "mouseup",
+    event => {
+
+        /*
+           Releasing left click cancels
+           the breaking process.
+        */
+
+        if (
+            event.button === 0
+        ) {
+
+            stopBreaking();
+
+        }
+
+    }
+);
+
+
+/* =====================================================
+   BREAK UPDATE
+===================================================== */
+
+function updateBreaking() {
+
+    if (!mouseLocked) {
+
+        stopBreaking();
+
+        return;
+
+    }
+
+
+    /*
+       Only break while left mouse
+       button is held.
+    */
+
+    if (
+        !leftMouseDown
+    ) {
+
+        stopBreaking();
+
+        return;
+
+    }
+
 
     const hit =
         getTarget();
 
 
     if (!hit) {
+
+        stopBreaking();
+
         return;
+
     }
 
 
-    const parts =
-        hit.object.userData
-            .key
-            .split(",")
-            .map(Number);
-
-
-    removeBlock(
-        parts[0],
-        parts[1],
-        parts[2]
-    );
-
-
-    showMessage(
-        "💥 Block broken!"
+    updateCrack(
+        hit
     );
 
 }
+
+
+/* =====================================================
+   LEFT MOUSE STATE
+===================================================== */
+
+let leftMouseDown =
+    false;
+
+
+document.addEventListener(
+    "mousedown",
+    event => {
+
+        if (
+            event.button === 0
+        ) {
+
+            leftMouseDown =
+                true;
+
+        }
+
+    }
+);
+
+
+document.addEventListener(
+    "mouseup",
+    event => {
+
+        if (
+            event.button === 0
+        ) {
+
+            leftMouseDown =
+                false;
+
+        }
+
+    }
+);
 
 
 /* =====================================================
@@ -1491,6 +2120,31 @@ function placeBlock() {
 
     if (!hit) {
         return;
+    }
+
+
+    const type =
+        blocks[
+            selectedBlock
+        ];
+
+
+    /*
+       Check inventory.
+    */
+
+    if (
+        inventory[type.id] <= 0
+    ) {
+
+        showMessage(
+            "You don't have any " +
+            type.name +
+            "!"
+        );
+
+        return;
+
     }
 
 
@@ -1523,15 +2177,53 @@ function placeBlock() {
         );
 
 
+    /*
+       Do not place a block inside
+       the player.
+    */
+
+    const playerBottom =
+        camera.position.y -
+        EYE_HEIGHT;
+
+
     if (
-        world.has(
-            key(
-                x,
-                y,
-                z
-            )
+        collides(
+            camera.position.x,
+            playerBottom,
+            camera.position.z
         )
     ) {
+
+        return;
+
+    }
+
+
+    /*
+       Simple player/block check.
+    */
+
+    const playerX =
+        camera.position.x;
+
+
+    const playerZ =
+        camera.position.z;
+
+
+    if (
+        playerX + PLAYER_RADIUS > x &&
+        playerX - PLAYER_RADIUS < x + 1 &&
+        playerZ + PLAYER_RADIUS > z &&
+        playerZ - PLAYER_RADIUS < z + 1 &&
+        playerBottom + PLAYER_HEIGHT > y &&
+        playerBottom < y + 1
+    ) {
+
+        showMessage(
+            "🚫 You cannot place a block inside yourself!"
+        );
 
         return;
 
@@ -1542,64 +2234,101 @@ function placeBlock() {
         x,
         y,
         z,
-        blocks[
-            selectedBlock
-        ]
+        type
     );
 
 
+    inventory[type.id]--;
+
+    updateInventory();
+
+
     showMessage(
-        "🧱 Block placed!"
+        "🧱 Placed " +
+        type.name
     );
 
 }
 
 
 /* =====================================================
-   MOUSE CLICK
+   INVENTORY UI
 ===================================================== */
 
-document.addEventListener(
-    "mousedown",
-    event => {
+function updateInventory() {
 
-        if (
-            !gameStarted ||
-            !mouseLocked
-        ) {
-            return;
-        }
+    document
+        .querySelectorAll(".slot")
+        .forEach(
+            (slot, index) => {
 
-
-        if (
-            event.button === 0
-        ) {
-
-            breakBlock();
-
-        }
+                const type =
+                    blocks[index];
 
 
-        if (
-            event.button === 2
-        ) {
+                const amount =
+                    inventory[
+                        type.id
+                    ];
 
-            placeBlock();
 
-        }
+                slot
+                    .querySelector(
+                        ".amount"
+                    )
+                    .textContent =
+                    amount;
+
+            }
+        );
+
+}
+
+
+/* =====================================================
+   SELECT BLOCK
+===================================================== */
+
+function selectBlock(
+    index
+) {
+
+    selectedBlock =
+        index;
+
+
+    document
+        .querySelectorAll(".slot")
+        .forEach(
+            slot => {
+
+                slot.classList.remove(
+                    "selected"
+                );
+
+            }
+        );
+
+
+    const slot =
+        document.querySelector(
+            `.slot[data-index="${index}"]`
+        );
+
+
+    if (slot) {
+
+        slot.classList.add(
+            "selected"
+        );
 
     }
-);
 
 
-document.addEventListener(
-    "contextmenu",
-    event => {
+    selectedName.textContent =
+        blocks[index].name;
 
-        event.preventDefault();
-
-    }
-);
+}
 
 
 /* =====================================================
@@ -1615,6 +2344,7 @@ function showMessage(
 
     message.textContent =
         text;
+
 
     message.classList.add(
         "show"
@@ -1635,7 +2365,7 @@ function showMessage(
                 );
 
             },
-            1200
+            1400
         );
 
 }
@@ -1651,12 +2381,32 @@ resetButton.addEventListener(
 
         event.stopPropagation();
 
+        /*
+           Empty inventory.
+        */
+
+        Object.keys(
+            inventory
+        ).forEach(
+            key => {
+
+                inventory[key] =
+                    0;
+
+            }
+        );
+
+
+        updateInventory();
+
+        stopBreaking();
+
         generateWorld();
 
         velocityY = 0;
 
         showMessage(
-            "🌍 World regenerated!"
+            "🌍 World reset!"
         );
 
     }
@@ -1687,10 +2437,12 @@ window.addEventListener(
 
 
 /* =====================================================
-   START
+   INITIALIZE
 ===================================================== */
 
 generateWorld();
+
+updateInventory();
 
 
 /* =====================================================
@@ -1718,6 +2470,9 @@ function animate() {
     updatePlayer(
         delta
     );
+
+
+    updateBreaking();
 
 
     renderer.render(
