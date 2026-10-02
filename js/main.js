@@ -3,19 +3,19 @@
 BLOCKWORLD
 Main Game File
 
-This file handles:
+Handles:
 - Three.js setup
 - Lighting
-- Keyboard input
-- Mouse look
-- Pointer lock
-- Game startup
+- Window resizing
+- World startup
+- Player startup
 - Game loop
 
 Other systems:
-- blocks.js  → block definitions
-- world.js   → world generation
-- player.js  → player movement and collision
+- blocks.js
+- world.js
+- player.js
+- controls.js
 =========================================================
 */
 
@@ -116,152 +116,6 @@ scene.add(
 
 
 /* ======================================================
-   KEYBOARD CONTROLS
-====================================================== */
-
-const keys = {};
-
-
-document.addEventListener(
-    "keydown",
-    event => {
-
-        keys[event.code] = true;
-
-
-        /*
-           Jumping is handled here for now.
-
-           player.js provides the grounded
-           variable and velocityY.
-        */
-
-        if (
-            event.code === "Space" &&
-            grounded
-        ) {
-
-            velocityY = 8;
-
-            grounded = false;
-
-        }
-
-    }
-);
-
-
-document.addEventListener(
-    "keyup",
-    event => {
-
-        keys[event.code] = false;
-
-    }
-);
-
-
-/* ======================================================
-   MOUSE LOOK
-====================================================== */
-
-let yaw = 0;
-
-let pitch = 0;
-
-let mouseLocked = false;
-
-
-document.addEventListener(
-    "mousemove",
-    event => {
-
-        if (!mouseLocked) {
-            return;
-        }
-
-
-        yaw -=
-            event.movementX *
-            0.002;
-
-
-        pitch -=
-            event.movementY *
-            0.002;
-
-
-        pitch =
-            Math.max(
-                -Math.PI / 2 + 0.05,
-
-                Math.min(
-                    Math.PI / 2 - 0.05,
-                    pitch
-                )
-            );
-
-
-        camera.rotation.order =
-            "YXZ";
-
-
-        camera.rotation.y =
-            yaw;
-
-
-        camera.rotation.x =
-            pitch;
-
-    }
-);
-
-
-/* ======================================================
-   POINTER LOCK
-====================================================== */
-
-function lockMouse() {
-
-    document.body.requestPointerLock();
-
-}
-
-
-document.addEventListener(
-    "pointerlockchange",
-    () => {
-
-        mouseLocked =
-            document.pointerLockElement
-            === document.body;
-
-    }
-);
-
-
-/* ======================================================
-   START BUTTON
-====================================================== */
-
-document
-    .getElementById("startButton")
-    .addEventListener(
-        "click",
-        () => {
-
-            document
-                .getElementById("startScreen")
-                .style.display = "none";
-
-
-            lockMouse();
-
-        }
-    );
-
-
-/* ======================================================
    WINDOW RESIZE
 ====================================================== */
 
@@ -332,20 +186,10 @@ function gameLoop() {
         );
 
 
-    /*
-       Player movement and
-       collision are handled
-       inside player.js.
-    */
-
     updatePlayer(
         delta
     );
 
-
-    /*
-       Render the world.
-    */
 
     renderer.render(
         scene,
@@ -356,7 +200,7 @@ function gameLoop() {
 
 
 /* ======================================================
-   START GAME LOOP
+   START GAME
 ====================================================== */
 
 gameLoop();
