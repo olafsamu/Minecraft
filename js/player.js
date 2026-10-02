@@ -1,4 +1,5 @@
 const PLAYER_HEIGHT = 2;
+const PLAYER_RADIUS = 0.3;
 const EYE_HEIGHT = 1.7;
 
 let velocityY = 0;
@@ -6,43 +7,74 @@ let grounded = false;
 
 
 /* ======================================================
-   CHECK IF A BLOCK EXISTS
+   BLOCK COLLISION
 ====================================================== */
 
-function blockExists(x, y, z) {
+function collidesAt(x, bottom, z) {
 
-    return world.has(
-        blockKey(x, y, z)
-    );
+    const minX =
+        Math.floor(x - PLAYER_RADIUS);
 
-}
+    const maxX =
+        Math.floor(x + PLAYER_RADIUS);
 
+    const minY =
+        Math.floor(bottom + 0.001);
 
-/* ======================================================
-   CHECK PLAYER POSITION
-====================================================== */
-
-function canStandAt(x, z) {
-
-    /*
-       Find the block directly underneath
-       the player's feet.
-    */
-
-    const blockX =
-        Math.floor(x);
-
-    const blockZ =
-        Math.floor(z);
-
-    const groundY =
-        terrainHeight(
-            blockX,
-            blockZ
+    const maxY =
+        Math.floor(
+            bottom +
+            PLAYER_HEIGHT -
+            0.001
         );
 
-    return groundY + 1;
+    const minZ =
+        Math.floor(z - PLAYER_RADIUS);
 
+    const maxZ =
+        Math.floor(z + PLAYER_RADIUS);
+
+
+    for (
+        let bx = minX;
+        bx <= maxX;
+        bx++
+    ) {
+
+        for (
+            let by = minY;
+            by <= maxY;
+            by++
+        ) {
+
+            for (
+                let bz = minZ;
+                bz <= maxZ;
+                bz++
+            ) {
+
+                if (
+                    world.has(
+                        blockKey(
+                            bx,
+                            by,
+                            bz
+                        )
+                    )
+                ) {
+
+                    return true;
+
+                }
+
+            }
+
+        }
+
+    }
+
+
+    return false;
 
 }
 
@@ -108,7 +140,7 @@ function updatePlayer(delta) {
 
 
     /* ==================================================
-       HORIZONTAL MOVEMENT
+       HORIZONTAL COLLISION
     ================================================== */
 
     if (movement.length() > 0) {
@@ -127,69 +159,55 @@ function updatePlayer(delta) {
             delta;
 
 
-        /*
-           Current position.
-        */
-
-        let newX =
-            camera.position.x;
-
-        let newZ =
-            camera.position.z;
+        const bottom =
+            camera.position.y -
+            EYE_HEIGHT;
 
 
         /*
-           Try X movement.
+           X movement.
         */
 
-        const testX =
+        const nextX =
             camera.position.x +
             moveX;
 
 
-        /*
-           Keep the player inside
-           the generated world.
-        */
-
         if (
-            testX >= 0.35 &&
-            testX <= 23.65
+            !collidesAt(
+                nextX,
+                bottom,
+                camera.position.z
+            )
         ) {
 
-            newX = testX;
+            camera.position.x =
+                nextX;
 
         }
 
 
         /*
-           Try Z movement.
+           Z movement.
         */
 
-        const testZ =
+        const nextZ =
             camera.position.z +
             moveZ;
 
 
         if (
-            testZ >= 0.35 &&
-            testZ <= 23.65
+            !collidesAt(
+                camera.position.x,
+                bottom,
+                nextZ
+            )
         ) {
 
-            newZ = testZ;
+            camera.position.z =
+                nextZ;
 
         }
-
-
-        /*
-           Apply movement.
-        */
-
-        camera.position.x =
-            newX;
-
-        camera.position.z =
-            newZ;
 
     }
 
@@ -202,48 +220,72 @@ function updatePlayer(delta) {
         20 * delta;
 
 
-    camera.position.y +=
+    const nextY =
+        camera.position.y +
         velocityY * delta;
 
 
+    const nextBottom =
+        nextY -
+        EYE_HEIGHT;
+
+
+    /*
+       Check vertical collision.
+    */
+
+    if (
+        !collidesAt(
+            camera.position.x,
+            nextBottom,
+            camera.position.z
+        )
+    ) {
+
+        camera.position.y =
+            nextY;
+
+        grounded = false;
+
+    } else {
+
+        /*
+           If falling, we landed.
+        */
+
+        if (velocityY < 0) {
+
+            grounded = true;
+
+        }
+
+        velocityY = 0;
+
+    }
+
+
     /* ==================================================
-       GROUND COLLISION
+       WORLD BOUNDARY
     ================================================== */
 
-    const groundBlockY =
-        terrainHeight(
-            Math.floor(
+    camera.position.x =
+        Math.max(
+            0.35,
+            Math.min(
+                23.65,
                 camera.position.x
-            ),
-            Math.floor(
-                camera.position.z
             )
         );
 
 
-    const groundHeight =
-        groundBlockY +
-        1 +
-        EYE_HEIGHT;
-
-
-    if (
-        camera.position.y <
-        groundHeight
-    ) {
-
-        camera.position.y =
-            groundHeight;
-
-        velocityY = 0;
-
-        grounded = true;
-
-    } else {
-
-        grounded = false;
-
-    }
+    camera.position.z =
+        Math.max(
+            0.35,
+            Math.min(
+                23.65,
+                camera.position.z
+            )
+        );
 
 
     /* ==================================================
