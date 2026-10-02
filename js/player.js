@@ -6,6 +6,48 @@ let grounded = false;
 
 
 /* ======================================================
+   CHECK IF A BLOCK EXISTS
+====================================================== */
+
+function blockExists(x, y, z) {
+
+    return world.has(
+        blockKey(x, y, z)
+    );
+
+}
+
+
+/* ======================================================
+   CHECK PLAYER POSITION
+====================================================== */
+
+function canStandAt(x, z) {
+
+    /*
+       Find the block directly underneath
+       the player's feet.
+    */
+
+    const blockX =
+        Math.floor(x);
+
+    const blockZ =
+        Math.floor(z);
+
+    const groundY =
+        terrainHeight(
+            blockX,
+            blockZ
+        );
+
+    return groundY + 1;
+
+
+}
+
+
+/* ======================================================
    PLAYER MOVEMENT
 ====================================================== */
 
@@ -13,9 +55,17 @@ function updatePlayer(delta) {
 
     const speed = 5;
 
-    const forward = new THREE.Vector3();
 
-    camera.getWorldDirection(forward);
+    /* ==================================================
+       CAMERA DIRECTION
+    ================================================== */
+
+    const forward =
+        new THREE.Vector3();
+
+    camera.getWorldDirection(
+        forward
+    );
 
     forward.y = 0;
 
@@ -24,17 +74,21 @@ function updatePlayer(delta) {
     }
 
 
-    const right = new THREE.Vector3(
-        forward.z,
-        0,
-        -forward.x
-    );
+    const right =
+        new THREE.Vector3(
+            forward.z,
+            0,
+            -forward.x
+        );
 
 
-    const movement = new THREE.Vector3();
+    /* ==================================================
+       MOVEMENT INPUT
+    ================================================== */
 
+    const movement =
+        new THREE.Vector3();
 
-    /* WASD */
 
     if (keys["KeyW"]) {
         movement.add(forward);
@@ -53,17 +107,90 @@ function updatePlayer(delta) {
     }
 
 
-    /* Move */
+    /* ==================================================
+       HORIZONTAL MOVEMENT
+    ================================================== */
 
     if (movement.length() > 0) {
 
         movement.normalize();
 
-        camera.position.x +=
-            movement.x * speed * delta;
 
-        camera.position.z +=
-            movement.z * speed * delta;
+        const moveX =
+            movement.x *
+            speed *
+            delta;
+
+        const moveZ =
+            movement.z *
+            speed *
+            delta;
+
+
+        /*
+           Current position.
+        */
+
+        let newX =
+            camera.position.x;
+
+        let newZ =
+            camera.position.z;
+
+
+        /*
+           Try X movement.
+        */
+
+        const testX =
+            camera.position.x +
+            moveX;
+
+
+        /*
+           Keep the player inside
+           the generated world.
+        */
+
+        if (
+            testX >= 0.35 &&
+            testX <= 23.65
+        ) {
+
+            newX = testX;
+
+        }
+
+
+        /*
+           Try Z movement.
+        */
+
+        const testZ =
+            camera.position.z +
+            moveZ;
+
+
+        if (
+            testZ >= 0.35 &&
+            testZ <= 23.65
+        ) {
+
+            newZ = testZ;
+
+        }
+
+
+        /*
+           Apply movement.
+        */
+
+        camera.position.x =
+            newX;
+
+        camera.position.z =
+            newZ;
+
     }
 
 
@@ -71,27 +198,42 @@ function updatePlayer(delta) {
        GRAVITY
     ================================================== */
 
-    velocityY -= 20 * delta;
+    velocityY -=
+        20 * delta;
+
 
     camera.position.y +=
         velocityY * delta;
 
 
-    /* Keep player above the terrain */
+    /* ==================================================
+       GROUND COLLISION
+    ================================================== */
 
-    const groundY =
+    const groundBlockY =
         terrainHeight(
-            Math.floor(camera.position.x),
-            Math.floor(camera.position.z)
-        ) + 1 + EYE_HEIGHT;
+            Math.floor(
+                camera.position.x
+            ),
+            Math.floor(
+                camera.position.z
+            )
+        );
+
+
+    const groundHeight =
+        groundBlockY +
+        1 +
+        EYE_HEIGHT;
 
 
     if (
-        camera.position.y < groundY
+        camera.position.y <
+        groundHeight
     ) {
 
         camera.position.y =
-            groundY;
+            groundHeight;
 
         velocityY = 0;
 
