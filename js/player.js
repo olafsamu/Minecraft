@@ -5,6 +5,11 @@ const EYE_HEIGHT = 1.7;
 let velocityY = 0;
 let grounded = false;
 
+
+/* ======================================================
+   COLLISION
+====================================================== */
+
 function collides(x, bottom, z) {
 
     const minX =
@@ -56,22 +61,33 @@ function collides(x, bottom, z) {
                         )
                     )
                 ) {
+
                     return true;
+
                 }
+
             }
+
         }
+
     }
 
     return false;
 }
 
+
+/* ======================================================
+   PLAYER MOVEMENT
+====================================================== */
+
 function updatePlayer(delta) {
 
-    if (!mouseLocked) {
-        return;
-    }
+    const speed = 5;
 
-    const speed = 5 * delta;
+    /*
+       Get the direction the camera
+       is looking.
+    */
 
     const forward =
         new THREE.Vector3();
@@ -81,7 +97,16 @@ function updatePlayer(delta) {
     );
 
     forward.y = 0;
-    forward.normalize();
+
+    if (forward.length() > 0) {
+        forward.normalize();
+    }
+
+
+    /*
+       Create a direction pointing
+       to the player's right.
+    */
 
     const right =
         new THREE.Vector3(
@@ -90,8 +115,14 @@ function updatePlayer(delta) {
             -forward.x
         );
 
+
+    /*
+       Calculate movement.
+    */
+
     const movement =
         new THREE.Vector3();
+
 
     if (keys["KeyW"]) {
         movement.add(forward);
@@ -109,54 +140,87 @@ function updatePlayer(delta) {
         movement.add(right);
     }
 
+
+    /*
+       Move horizontally.
+    */
+
     if (movement.length() > 0) {
 
         movement.normalize();
+
+
+        const moveX =
+            movement.x *
+            speed *
+            delta;
+
+        const moveZ =
+            movement.z *
+            speed *
+            delta;
+
 
         const bottom =
             camera.position.y -
             EYE_HEIGHT;
 
-        const nextX =
-            camera.position.x +
-            movement.x * speed;
+
+        /*
+           X movement.
+        */
 
         if (
             !collides(
-                nextX,
+                camera.position.x + moveX,
                 bottom,
                 camera.position.z
             )
         ) {
-            camera.position.x =
-                nextX;
+
+            camera.position.x +=
+                moveX;
+
         }
 
-        const nextZ =
-            camera.position.z +
-            movement.z * speed;
+
+        /*
+           Z movement.
+        */
 
         if (
             !collides(
                 camera.position.x,
                 bottom,
-                nextZ
+                camera.position.z + moveZ
             )
         ) {
-            camera.position.z =
-                nextZ;
+
+            camera.position.z +=
+                moveZ;
+
         }
+
     }
 
-    velocityY -= 20 * delta;
+
+    /* ==================================================
+       GRAVITY
+    ================================================== */
+
+    velocityY -=
+        20 * delta;
+
 
     const newY =
         camera.position.y +
         velocityY * delta;
 
+
     const newBottom =
         newY -
         EYE_HEIGHT;
+
 
     if (
         !collides(
@@ -178,7 +242,14 @@ function updatePlayer(delta) {
         }
 
         velocityY = 0;
+
     }
+
+
+    /*
+       Respawn if the player
+       falls out of the world.
+    */
 
     if (
         camera.position.y < -10
@@ -186,10 +257,14 @@ function updatePlayer(delta) {
 
         camera.position.set(
             12.5,
-            10,
+            terrainHeight(12, 12)
+                + EYE_HEIGHT
+                + 1,
             12.5
         );
 
         velocityY = 0;
+
     }
+
 }
