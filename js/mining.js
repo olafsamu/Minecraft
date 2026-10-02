@@ -1,12 +1,9 @@
 /*
 =========================================================
 BLOCKWORLD
-Mining System
-
-Left click = break block
+Mining + Block Placement
 =========================================================
 */
-
 
 const REACH_DISTANCE = 6;
 
@@ -14,7 +11,7 @@ let targetedBlock = null;
 
 
 /* ======================================================
-   FIND BLOCK THE PLAYER IS LOOKING AT
+   GET BLOCK THE PLAYER IS LOOKING AT
 ====================================================== */
 
 function getTargetBlock() {
@@ -45,9 +42,7 @@ function getTargetBlock() {
         return null;
     }
 
-
     const hit = hits[0];
-
 
     if (
         hit.distance >
@@ -58,7 +53,6 @@ function getTargetBlock() {
 
         return null;
     }
-
 
     targetedBlock =
         hit.object;
@@ -76,79 +70,217 @@ function breakBlock() {
     const block =
         getTargetBlock();
 
+    if (!block) {
+        return;
+    }
+
+    const key =
+        block.userData.key;
+
+    if (!key) {
+        return;
+    }
+
+    world.delete(key);
+
+    scene.remove(block);
+
+    meshes.delete(key);
+
+    block.geometry.dispose();
+
+    block.material.dispose();
+
+    targetedBlock = null;
+}
+
+
+/* ======================================================
+   PLACE BLOCK
+====================================================== */
+
+function placeBlock() {
+
+    const block =
+        getTargetBlock();
 
     if (!block) {
         return;
     }
 
 
+    /*
+       Get the face that was clicked.
+    */
+
+    const raycaster =
+        new THREE.Raycaster();
+
+    raycaster.setFromCamera(
+        new THREE.Vector2(0, 0),
+        camera
+    );
+
+
+    const hits =
+        raycaster.intersectObject(
+            block
+        );
+
+
+    if (hits.length === 0) {
+        return;
+    }
+
+
+    const hit =
+        hits[0];
+
+
+    /*
+       The normal tells us which
+       side of the block we hit.
+    */
+
+    const normal =
+        hit.face.normal;
+
+
+    const position =
+        block.position.clone();
+
+
+    position.add(normal);
+
+
+    const x =
+        Math.floor(
+            position.x
+        );
+
+    const y =
+        Math.floor(
+            position.y
+        );
+
+    const z =
+        Math.floor(
+            position.z
+        );
+
+
     const key =
-        block.userData.key;
+        blockKey(
+            x,
+            y,
+            z
+        );
 
 
-    if (!key) {
+    /*
+       Don't place a block where
+       one already exists.
+    */
+
+    if (world.has(key)) {
         return;
     }
 
 
     /*
-       Remove the block from
-       the world data.
+       Don't place a block inside
+       the player's body.
     */
 
-    world.delete(key);
+    const playerX =
+        camera.position.x;
+
+    const playerY =
+        camera.position.y -
+        EYE_HEIGHT;
+
+    const playerZ =
+        camera.position.z;
+
+
+    if (
+        x + 1 > playerX - PLAYER_RADIUS &&
+        x < playerX + PLAYER_RADIUS &&
+        y + 1 > playerY &&
+        y < playerY + PLAYER_HEIGHT &&
+        z + 1 > playerZ - PLAYER_RADIUS &&
+        z < playerZ + PLAYER_RADIUS
+    ) {
+
+        return;
+    }
 
 
     /*
-       Remove the block visually.
+       Place a dirt block for now.
     */
 
-    scene.remove(block);
-
-
-    /*
-       Remove the mesh from
-       the mesh collection.
-    */
-
-    meshes.delete(key);
-
-
-    /*
-       Free Three.js memory.
-    */
-
-    block.geometry.dispose();
-
-    block.material.dispose();
-
-
-    targetedBlock = null;
+    addBlock(
+        x,
+        y,
+        z,
+        BLOCKS.dirt
+    );
 
 }
 
 
 /* ======================================================
-   LEFT CLICK
+   MOUSE CONTROLS
 ====================================================== */
 
 document.addEventListener(
     "mousedown",
     event => {
 
-        if (
-            event.button !== 0
-        ) {
-            return;
-        }
-
-
         if (!mouseLocked) {
             return;
         }
 
 
-        breakBlock();
+        /*
+           Left click = break
+        */
+
+        if (
+            event.button === 0
+        ) {
+
+            breakBlock();
+
+        }
+
+
+        /*
+           Right click = place
+        */
+
+        if (
+            event.button === 2
+        ) {
+
+            placeBlock();
+
+        }
+
+    }
+);
+
+
+/* ======================================================
+   PREVENT RIGHT CLICK MENU
+====================================================== */
+
+document.addEventListener(
+    "contextmenu",
+    event => {
+
+        event.preventDefault();
 
     }
 );
