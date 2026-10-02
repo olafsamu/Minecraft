@@ -1,0 +1,49 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>BlockWorld</title>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <canvas id="game"></canvas>
+
+    <div id="crosshair">+</div>
+
+    <div id="instructions">
+        <b>BlockWorld</b><br><br>
+        WASD — Move<br>
+        SPACE — Jump<br>
+        Mouse — Look around<br>
+        ESC — Release mouse
+    </div>
+
+    <div id="startScreen">
+        <div class="startBox">
+            <h1>BlockWorld</h1>
+
+            <p>
+                A tiny Minecraft-inspired browser game.
+            </p>
+
+            <button id="startButton">
+                START GAME
+            </button>
+        </div>
+    </div>
+
+    <!-- Three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+
+    <!-- BlockWorld -->
+    <script src="js/main.js"></script>
+
+</body>
+</html>
+```
