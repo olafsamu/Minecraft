@@ -12,58 +12,29 @@ let grounded = false;
 
 function collides(x, bottom, z) {
 
-    const minX =
-        Math.floor(x - PLAYER_RADIUS);
+    const minX = Math.floor(x - PLAYER_RADIUS);
+    const maxX = Math.floor(x + PLAYER_RADIUS);
 
-    const maxX =
-        Math.floor(x + PLAYER_RADIUS);
+    const minY = Math.floor(bottom + 0.001);
+    const maxY = Math.floor(
+        bottom + PLAYER_HEIGHT - 0.001
+    );
 
-    const minY =
-        Math.floor(bottom);
+    const minZ = Math.floor(z - PLAYER_RADIUS);
+    const maxZ = Math.floor(z + PLAYER_RADIUS);
 
-    const maxY =
-        Math.floor(
-            bottom +
-            PLAYER_HEIGHT -
-            0.001
-        );
+    for (let bx = minX; bx <= maxX; bx++) {
 
-    const minZ =
-        Math.floor(z - PLAYER_RADIUS);
+        for (let by = minY; by <= maxY; by++) {
 
-    const maxZ =
-        Math.floor(z + PLAYER_RADIUS);
-
-    for (
-        let bx = minX;
-        bx <= maxX;
-        bx++
-    ) {
-
-        for (
-            let by = minY;
-            by <= maxY;
-            by++
-        ) {
-
-            for (
-                let bz = minZ;
-                bz <= maxZ;
-                bz++
-            ) {
+            for (let bz = minZ; bz <= maxZ; bz++) {
 
                 if (
                     world.has(
-                        blockKey(
-                            bx,
-                            by,
-                            bz
-                        )
+                        blockKey(bx, by, bz)
                     )
                 ) {
-
                     return true;
-
                 }
 
             }
@@ -84,17 +55,10 @@ function updatePlayer(delta) {
 
     const speed = 5;
 
-    /*
-       Get the direction the camera
-       is looking.
-    */
-
     const forward =
         new THREE.Vector3();
 
-    camera.getWorldDirection(
-        forward
-    );
+    camera.getWorldDirection(forward);
 
     forward.y = 0;
 
@@ -103,11 +67,6 @@ function updatePlayer(delta) {
     }
 
 
-    /*
-       Create a direction pointing
-       to the player's right.
-    */
-
     const right =
         new THREE.Vector3(
             forward.z,
@@ -115,10 +74,6 @@ function updatePlayer(delta) {
             -forward.x
         );
 
-
-    /*
-       Calculate movement.
-    */
 
     const movement =
         new THREE.Vector3();
@@ -141,14 +96,13 @@ function updatePlayer(delta) {
     }
 
 
-    /*
-       Move horizontally.
-    */
+    /* ==================================================
+       HORIZONTAL MOVEMENT
+    ================================================== */
 
     if (movement.length() > 0) {
 
         movement.normalize();
-
 
         const moveX =
             movement.x *
@@ -166,9 +120,7 @@ function updatePlayer(delta) {
             EYE_HEIGHT;
 
 
-        /*
-           X movement.
-        */
+        /* Move on X */
 
         if (
             !collides(
@@ -178,15 +130,12 @@ function updatePlayer(delta) {
             )
         ) {
 
-            camera.position.x +=
-                moveX;
+            camera.position.x += moveX;
 
         }
 
 
-        /*
-           Z movement.
-        */
+        /* Move on Z */
 
         if (
             !collides(
@@ -196,8 +145,7 @@ function updatePlayer(delta) {
             )
         ) {
 
-            camera.position.z +=
-                moveZ;
+            camera.position.z += moveZ;
 
         }
 
@@ -208,8 +156,7 @@ function updatePlayer(delta) {
        GRAVITY
     ================================================== */
 
-    velocityY -=
-        20 * delta;
+    velocityY -= 20 * delta;
 
 
     const newY =
@@ -230,8 +177,7 @@ function updatePlayer(delta) {
         )
     ) {
 
-        camera.position.y =
-            newY;
+        camera.position.y = newY;
 
         grounded = false;
 
@@ -246,20 +192,18 @@ function updatePlayer(delta) {
     }
 
 
-    /*
-       Respawn if the player
-       falls out of the world.
-    */
+    /* ==================================================
+       FALLING OUT OF WORLD
+    ================================================== */
 
-    if (
-        camera.position.y < -10
-    ) {
+    if (camera.position.y < -10) {
 
         camera.position.set(
             12.5,
             terrainHeight(12, 12)
+                + 1
                 + EYE_HEIGHT
-                + 1,
+                + 0.1,
             12.5
         );
 

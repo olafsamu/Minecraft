@@ -1,44 +1,16 @@
-/*
-=========================================================
-BLOCKWORLD
-Main Game File
-
-Handles:
-- Three.js setup
-- Lighting
-- Window resizing
-- World startup
-- Player startup
-- Game loop
-
-Other systems:
-- blocks.js
-- world.js
-- player.js
-- controls.js
-=========================================================
-*/
-
-
-/* ======================================================
-   CANVAS
-====================================================== */
-
 const canvas =
     document.getElementById("game");
 
 
 /* ======================================================
-   THREE.JS
+   SCENE
 ====================================================== */
 
 const scene =
     new THREE.Scene();
 
-
 scene.background =
     new THREE.Color(0x87ceeb);
-
 
 scene.fog =
     new THREE.Fog(
@@ -47,6 +19,10 @@ scene.fog =
         80
     );
 
+
+/* ======================================================
+   CAMERA
+====================================================== */
 
 const camera =
     new THREE.PerspectiveCamera(
@@ -58,18 +34,20 @@ const camera =
     );
 
 
+/* ======================================================
+   RENDERER
+====================================================== */
+
 const renderer =
     new THREE.WebGLRenderer({
         canvas: canvas,
         antialias: false
     });
 
-
 renderer.setSize(
     window.innerWidth,
     window.innerHeight
 );
-
 
 renderer.setPixelRatio(
     Math.min(
@@ -90,10 +68,7 @@ const skyLight =
         1.8
     );
 
-
-scene.add(
-    skyLight
-);
+scene.add(skyLight);
 
 
 const sun =
@@ -102,17 +77,13 @@ const sun =
         1.5
     );
 
-
 sun.position.set(
     30,
     50,
     20
 );
 
-
-scene.add(
-    sun
-);
+scene.add(sun);
 
 
 /* ======================================================
@@ -121,15 +92,13 @@ scene.add(
 
 window.addEventListener(
     "resize",
-    () => {
+    function() {
 
         camera.aspect =
             window.innerWidth /
             window.innerHeight;
 
-
         camera.updateProjectionMatrix();
-
 
         renderer.setSize(
             window.innerWidth,
@@ -141,19 +110,20 @@ window.addEventListener(
 
 
 /* ======================================================
-   GENERATE WORLD
+   WORLD
 ====================================================== */
 
 generateWorld();
 
 
 /* ======================================================
-   START PLAYER
+   PLAYER SPAWN
 ====================================================== */
 
 camera.position.set(
     12.5,
     terrainHeight(12, 12)
+        + 1
         + EYE_HEIGHT
         + 0.1,
     12.5
@@ -161,16 +131,12 @@ camera.position.set(
 
 
 /* ======================================================
-   GAME CLOCK
+   GAME LOOP
 ====================================================== */
 
 const clock =
     new THREE.Clock();
 
-
-/* ======================================================
-   GAME LOOP
-====================================================== */
 
 function gameLoop() {
 
@@ -186,9 +152,7 @@ function gameLoop() {
         );
 
 
-    updatePlayer(
-        delta
-    );
+    updatePlayer(delta);
 
 
     renderer.render(
@@ -198,9 +162,5 @@ function gameLoop() {
 
 }
 
-
-/* ======================================================
-   START GAME
-====================================================== */
 
 gameLoop();
