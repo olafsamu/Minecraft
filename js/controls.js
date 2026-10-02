@@ -1,10 +1,3 @@
-/*
-=========================================================
-BLOCKWORLD
-Controls
-=========================================================
-*/
-
 const keys = {};
 
 let yaw = 0;
@@ -12,18 +5,15 @@ let pitch = 0;
 let mouseLocked = false;
 
 
-/* ======================================================
+/* ================================
    KEYBOARD
-====================================================== */
+================================ */
 
-document.addEventListener("keydown", event => {
+document.addEventListener("keydown", function(event) {
 
     keys[event.code] = true;
 
-    if (
-        event.code === "Space" &&
-        grounded
-    ) {
+    if (event.code === "Space" && grounded) {
         velocityY = 8;
         grounded = false;
     }
@@ -31,25 +21,24 @@ document.addEventListener("keydown", event => {
 });
 
 
-document.addEventListener("keyup", event => {
+document.addEventListener("keyup", function(event) {
 
     keys[event.code] = false;
 
 });
 
 
-/* ======================================================
-   MOUSE LOOK
-====================================================== */
+/* ================================
+   MOUSE
+================================ */
 
-document.addEventListener("mousemove", event => {
+document.addEventListener("mousemove", function(event) {
 
     if (!mouseLocked) {
         return;
     }
 
     yaw -= event.movementX * 0.002;
-
     pitch -= event.movementY * 0.002;
 
     pitch = Math.max(
@@ -63,26 +52,18 @@ document.addEventListener("mousemove", event => {
     camera.rotation.order = "YXZ";
 
     camera.rotation.y = yaw;
-
     camera.rotation.x = pitch;
 
 });
 
 
-/* ======================================================
+/* ================================
    POINTER LOCK
-====================================================== */
-
-function lockMouse() {
-
-    canvas.requestPointerLock();
-
-}
-
+================================ */
 
 document.addEventListener(
     "pointerlockchange",
-    () => {
+    function() {
 
         mouseLocked =
             document.pointerLockElement === canvas;
@@ -91,45 +72,27 @@ document.addEventListener(
 );
 
 
-/* ======================================================
-   ESCAPE
-====================================================== */
+/* ================================
+   START GAME
+================================ */
 
-document.addEventListener(
-    "keydown",
-    event => {
+function startGame() {
 
-        if (event.code === "Escape") {
+    const startScreen =
+        document.getElementById("startScreen");
 
-            if (
-                document.pointerLockElement
-            ) {
-
-                document.exitPointerLock();
-
-            }
-
-        }
-
+    if (startScreen) {
+        startScreen.style.display = "none";
     }
-);
 
+    canvas.requestPointerLock();
 
-/* ======================================================
-   START BUTTON
-====================================================== */
+}
+
 
 document
     .getElementById("startButton")
     .addEventListener(
         "click",
-        () => {
-
-            document
-                .getElementById("startScreen")
-                .style.display = "none";
-
-            lockMouse();
-
-        }
+        startGame
     );
