@@ -157,8 +157,8 @@ function generateWorld(){
 const PLAYER_HEIGHT=2, EYE_HEIGHT=1.7, PLAYER_RADIUS=.3;
 function collides(x,bottom,z){
  const minX=Math.floor(x-PLAYER_RADIUS),maxX=Math.floor(x+PLAYER_RADIUS);
- const minY=Math.floor(bottom),maxY=Math.floor(bottom+PLAYER_HEIGHT);
- const minZ=Math.floor(z-PLAYER_RADIUS),maxZ=Math.floor(z+PLAYER_RADIUS);
+ const minY=Math.floor(bottom+0.001),maxY=Math.floor(bottom+PLAYER_HEIGHT-0.001);
+ const minZ=Math.floor(z-PLAYER_RADIUS+0.001),maxZ=Math.floor(z+PLAYER_RADIUS-0.001);
  for(let bx=minX;bx<=maxX;bx++)for(let by=minY;by<=maxY;by++)for(let bz=minZ;bz<=maxZ;bz++)
   if(world.has(key(bx,by,bz)))return true;
  return false;
@@ -181,7 +181,10 @@ document.addEventListener("mousemove",e=>{
  pitch=Math.max(-Math.PI/2+.05,Math.min(Math.PI/2-.05,pitch));
  camera.rotation.order="YXZ";camera.rotation.y=yaw;camera.rotation.x=pitch;
 });
-document.addEventListener("pointerlockchange",()=>mouseLocked=document.pointerLockElement===document.body);
+document.addEventListener("pointerlockchange",()=>{
+ mouseLocked=document.pointerLockElement===document.body;
+ if(mouseLocked) showMessage("WASD to move • Mouse to look");
+});
 function lockMouse(){if(!craftingOpen&&!document.pointerLockElement)document.body.requestPointerLock()}
 
 function updatePlayer(dt){
@@ -363,7 +366,11 @@ function getRecipe(){
 };
 
 document.querySelectorAll(".slot").forEach(()=>{});
-document.getElementById("startButton").onclick=()=>{document.getElementById("startScreen").style.display="none";lockMouse()};
+document.getElementById("startButton").onclick=()=>{
+ document.getElementById("startScreen").style.display="none";
+ // Request pointer lock directly from the button click.
+ document.body.requestPointerLock();
+};
 document.getElementById("reset").onclick=e=>{
  e.stopPropagation();Object.keys(inventory).forEach(k=>inventory[k]=0);craftSelectedItem=null;generateWorld();updateHotbar();showMessage("World reset!");
 };
