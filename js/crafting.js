@@ -1,7 +1,7 @@
 /*
 =========================================================
 BLOCKWORLD
-2x2 Crafting System
+Crafting System
 =========================================================
 */
 
@@ -33,11 +33,6 @@ function toggleCrafting() {
 
     if (craftingOpen) {
 
-        /*
-           Release mouse so the crafting menu
-           can be used.
-        */
-
         if (
             document.pointerLockElement
         ) {
@@ -54,11 +49,6 @@ function toggleCrafting() {
 
         menu.style.display = "none";
 
-
-        /*
-           Give the browser a moment before
-           requesting pointer lock again.
-        */
 
         setTimeout(() => {
 
@@ -85,49 +75,76 @@ function toggleCrafting() {
 
 
 /* ======================================================
-   CHECK RECIPE
+   COUNT ITEMS
 ====================================================== */
 
-function getCraftingResult() {
+function countCraftingItem(type) {
 
-    /*
-       Recipe:
-
-       WOOD
-
-       =
-       
-       4 PLANKS
-    */
-
-    let woodCount = 0;
-
+    let count = 0;
 
     for (let i = 0; i < 4; i++) {
 
         if (
-            craftingGrid[i] === "wood"
+            craftingGrid[i] === type
         ) {
 
-            woodCount++;
+            count++;
 
         }
 
     }
 
+    return count;
+
+}
+
+
+/* ======================================================
+   CHECK CRAFTING RECIPE
+====================================================== */
+
+function getCraftingResult() {
+
+    const wood =
+        countCraftingItem("wood");
+
+    const planks =
+        countCraftingItem("planks");
+
 
     /*
-       Exactly one wood makes
-       four planks.
+       1 WOOD
+       =
+       4 PLANKS
     */
 
     if (
-        woodCount === 1
+        wood === 1 &&
+        planks === 0
     ) {
 
         return {
             type: "planks",
             amount: 4
+        };
+
+    }
+
+
+    /*
+       4 PLANKS
+       =
+       1 CRAFTING TABLE
+    */
+
+    if (
+        planks === 4 &&
+        wood === 0
+    ) {
+
+        return {
+            type: "crafting_table",
+            amount: 1
         };
 
     }
@@ -169,26 +186,31 @@ function putCraftingItem(slot) {
 
 
     /*
-       Only wood can currently
-       be placed in the grid.
+       Only wood and planks can
+       currently be crafted.
     */
 
     if (
-        selected.type !== "wood"
+        selected.type !== "wood" &&
+        selected.type !== "planks"
     ) {
+
         return;
+
     }
 
 
     if (
         craftingGrid[slot] !== null
     ) {
+
         return;
+
     }
 
 
     craftingGrid[slot] =
-        "wood";
+        selected.type;
 
 
     selected.amount--;
@@ -228,18 +250,31 @@ function takeCraftingResult() {
 
 
     /*
-       Give the player 4 planks.
+       Add result to inventory.
     */
 
-    addItem(
-        result.type,
-        result.amount
-    );
+    const added =
+        addItem(
+            result.type,
+            result.amount
+        );
 
 
     /*
-       Remove the wood from
-       the crafting grid.
+       If inventory is full,
+       don't consume the ingredients.
+    */
+
+    if (!added) {
+        return;
+    }
+
+
+    /*
+       Remove ingredients.
+
+       For now, the whole recipe
+       is consumed.
     */
 
     for (let i = 0; i < 4; i++) {
@@ -281,6 +316,14 @@ function updateCraftingUI() {
 
         }
 
+        else if (
+            craftingGrid[i] === "planks"
+        ) {
+
+            slot.textContent = "🟫";
+
+        }
+
         else {
 
             slot.textContent = "";
@@ -307,8 +350,24 @@ function updateCraftingUI() {
 
     if (result) {
 
-        resultSlot.textContent =
-            "🪵 × 4";
+        if (
+            result.type === "planks"
+        ) {
+
+            resultSlot.textContent =
+                "🟫 × 4";
+
+        }
+
+        else if (
+            result.type === "crafting_table"
+        ) {
+
+            resultSlot.textContent =
+                "🧱 × 1";
+
+        }
+
 
         resultSlot.classList.add(
             "crafting-result-ready"
@@ -330,7 +389,7 @@ function updateCraftingUI() {
 
 
 /* ======================================================
-   CRAFTING CLICK EVENTS
+   CLICK CRAFTING SLOTS
 ====================================================== */
 
 document.addEventListener(
@@ -340,10 +399,6 @@ document.addEventListener(
         const target =
             event.target;
 
-
-        /*
-           Click a crafting slot.
-        */
 
         if (
             target.classList.contains(
@@ -363,10 +418,6 @@ document.addEventListener(
 
         }
 
-
-        /*
-           Click crafting result.
-        */
 
         if (
             target.id ===
