@@ -330,6 +330,8 @@ function stopMining() {
 
     miningProgress = 0;
 
+    removeCrackOverlay();
+
 }
 
 
