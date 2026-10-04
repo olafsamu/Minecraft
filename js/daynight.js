@@ -13,16 +13,11 @@ Sun + Moon + Sky Dome + Stars
 
 let dayTime = 0.25;
 
-
-/*
-   600 seconds = 10 minutes.
-*/
-
 const DAY_LENGTH = 600;
 
 
 /* ======================================================
-   COLORS
+   SKY COLORS
 ====================================================== */
 
 const DAY_SKY =
@@ -198,7 +193,7 @@ function createMoonTexture() {
 
 
     /*
-       Small moon craters.
+       Moon craters.
     */
 
     ctx.fillStyle =
@@ -206,6 +201,7 @@ function createMoonTexture() {
 
 
     ctx.beginPath();
+
     ctx.arc(
         45,
         48,
@@ -213,10 +209,12 @@ function createMoonTexture() {
         0,
         Math.PI * 2
     );
+
     ctx.fill();
 
 
     ctx.beginPath();
+
     ctx.arc(
         78,
         72,
@@ -224,10 +222,12 @@ function createMoonTexture() {
         0,
         Math.PI * 2
     );
+
     ctx.fill();
 
 
     ctx.beginPath();
+
     ctx.arc(
         62,
         35,
@@ -235,6 +235,7 @@ function createMoonTexture() {
         0,
         Math.PI * 2
     );
+
     ctx.fill();
 
 
@@ -318,7 +319,14 @@ function createSun() {
 
             opacity: 1,
 
-            depthTest: false,
+            /*
+               IMPORTANT:
+
+               The sun now checks the depth buffer.
+               Blocks can therefore hide it.
+            */
+
+            depthTest: true,
 
             depthWrite: false,
 
@@ -335,7 +343,7 @@ function createSun() {
 
 
     /*
-       Size of the sun.
+       Large bright sun.
     */
 
     sunMesh.scale.set(
@@ -345,8 +353,13 @@ function createSun() {
     );
 
 
+    /*
+       Render after the terrain,
+       but still respect depth.
+    */
+
     sunMesh.renderOrder =
-        1000;
+        1;
 
 
     scene.add(
@@ -375,7 +388,7 @@ function createMoon() {
 
             opacity: 1,
 
-            depthTest: false,
+            depthTest: true,
 
             depthWrite: false
 
@@ -396,7 +409,7 @@ function createMoon() {
 
 
     moonMesh.renderOrder =
-        1000;
+        1;
 
 
     scene.add(
@@ -405,7 +418,7 @@ function createMoon() {
 
 
     /*
-       Separate soft moon glow.
+       Moon glow.
     */
 
     const glowMaterial =
@@ -417,7 +430,7 @@ function createMoon() {
 
             opacity: 0.15,
 
-            depthTest: false,
+            depthTest: true,
 
             depthWrite: false,
 
@@ -441,7 +454,7 @@ function createMoon() {
 
 
     moonGlow.renderOrder =
-        999;
+        1;
 
 
     scene.add(
@@ -486,7 +499,8 @@ function createStars() {
         i++
     ) {
 
-        const radius = 145;
+        const radius =
+            145;
 
 
         const theta =
@@ -556,7 +570,7 @@ function createStars() {
             opacity: 0,
 
             /*
-               Stars respect terrain and blocks.
+               Stars also respect terrain.
             */
 
             depthTest: true,
@@ -640,7 +654,7 @@ function updateDayNight(delta) {
 
 
     /* ==================================================
-       SUN
+       SUN POSITION
     ================================================== */
 
     const sunX =
@@ -682,7 +696,7 @@ function updateDayNight(delta) {
 
 
     /* ==================================================
-       MOON
+       MOON POSITION
     ================================================== */
 
     const moonX =
