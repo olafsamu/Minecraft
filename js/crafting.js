@@ -295,6 +295,87 @@ function getCraftingResult() {
 
 
     /*
+       2 PLANKS
+       =
+       4 STICKS
+
+       The two planks can be placed
+       next to each other horizontally
+       or vertically.
+    */
+
+    if (
+        planks === 2 &&
+        wood === 0
+    ) {
+
+        /*
+           Horizontal:
+
+           [P][P]
+           [ ][ ]
+
+           OR
+
+           [ ][ ]
+           [P][P]
+        */
+
+        if (
+            (
+                craftingGrid[0] === "planks" &&
+                craftingGrid[1] === "planks"
+            )
+            ||
+            (
+                craftingGrid[2] === "planks" &&
+                craftingGrid[3] === "planks"
+            )
+        ) {
+
+            return {
+                type: "sticks",
+                amount: 4
+            };
+
+        }
+
+
+        /*
+           Vertical:
+
+           [P][ ]
+           [P][ ]
+
+           OR
+
+           [ ][P]
+           [ ][P]
+        */
+
+        if (
+            (
+                craftingGrid[0] === "planks" &&
+                craftingGrid[2] === "planks"
+            )
+            ||
+            (
+                craftingGrid[1] === "planks" &&
+                craftingGrid[3] === "planks"
+            )
+        ) {
+
+            return {
+                type: "sticks",
+                amount: 4
+            };
+
+        }
+
+    }
+
+
+    /*
        4 PLANKS
        =
        1 CRAFTING TABLE
@@ -560,6 +641,15 @@ function updateCraftingUI() {
 
             resultSlot.textContent =
                 "🟫 × 4";
+
+        }
+
+        else if (
+            result.type === "sticks"
+        ) {
+
+            resultSlot.textContent =
+                "🪵 × 4";
 
         }
 
