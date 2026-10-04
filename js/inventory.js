@@ -44,6 +44,24 @@ let selectedHotbarSlot = 0;
 
 
 /* ======================================================
+   NORMALIZE ITEM NAME
+====================================================== */
+
+function normalizeItemName(type) {
+
+    if (!type) {
+        return "";
+    }
+
+    return String(type)
+        .toLowerCase()
+        .replaceAll(" ", "_")
+        .replaceAll("-", "_");
+
+}
+
+
+/* ======================================================
    SELECT HOTBAR SLOT
 ====================================================== */
 
@@ -81,9 +99,12 @@ function getSelectedItem() {
 
 function addItem(type, amount = 1) {
 
+    const normalizedType =
+        normalizeItemName(type);
+
+
     /*
-       First try to find an existing
-       stack of the same item.
+       First look for an existing stack.
     */
 
     for (
@@ -97,7 +118,9 @@ function addItem(type, amount = 1) {
 
         if (
             slot &&
-            slot.type === type
+            normalizeItemName(
+                slot.type
+            ) === normalizedType
         ) {
 
             slot.amount += amount;
@@ -111,8 +134,7 @@ function addItem(type, amount = 1) {
 
 
     /*
-       If no existing stack was found,
-       find an empty slot.
+       Otherwise find an empty slot.
     */
 
     for (
@@ -126,7 +148,7 @@ function addItem(type, amount = 1) {
         ) {
 
             hotbar[i] = {
-                type: type,
+                type: normalizedType,
                 amount: amount
             };
 
@@ -137,10 +159,6 @@ function addItem(type, amount = 1) {
 
     }
 
-
-    /*
-       Inventory is full.
-    */
 
     return false;
 
@@ -153,11 +171,17 @@ function addItem(type, amount = 1) {
 
 function removeItem(type, amount = 1) {
 
+    const normalizedType =
+        normalizeItemName(type);
+
+
     const item =
         hotbar.find(
             slot =>
                 slot &&
-                slot.type === type
+                normalizeItemName(
+                    slot.type
+                ) === normalizedType
         );
 
 
@@ -294,3 +318,10 @@ document.addEventListener(
 
     }
 );
+
+
+/* ======================================================
+   INITIAL UI UPDATE
+====================================================== */
+
+updateHotbarUI();
