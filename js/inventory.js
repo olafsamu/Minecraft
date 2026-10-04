@@ -9,50 +9,23 @@ const HOTBAR_SIZE = 9;
 
 const hotbar = [
 
-    {
-        type: "grass",
-        amount: 0
-    },
+    null,
 
-    {
-        type: "dirt",
-        amount: 10
-    },
+    null,
 
-    {
-        type: "stone",
-        amount: 0
-    },
+    null,
 
-    {
-        type: "wood",
-        amount: 0
-    },
+    null,
 
-    {
-        type: "leaves",
-        amount: 0
-    },
+    null,
 
-    {
-        type: "planks",
-        amount: 0
-    },
+    null,
 
-    {
-        type: "crafting_table",
-        amount: 0
-    },
+    null,
 
-    {
-        type: "sticks",
-        amount: 0
-    },
+    null,
 
-    {
-        type: "pickaxe",
-        amount: 0
-    }
+    null
 
 ];
 
@@ -88,7 +61,9 @@ function selectHotbarSlot(slot) {
         slot < 0 ||
         slot >= HOTBAR_SIZE
     ) {
+
         return;
+
     }
 
     selectedHotbarSlot = slot;
@@ -187,6 +162,10 @@ function addItem(
     }
 
 
+    /*
+       No inventory space.
+    */
+
     return false;
 
 }
@@ -216,14 +195,18 @@ function removeItem(
 
 
     if (!item) {
+
         return false;
+
     }
 
 
     if (
         item.amount < amount
     ) {
+
         return false;
+
     }
 
 
@@ -262,56 +245,38 @@ function getIconClass(type) {
         case "grass":
             return "grass-icon";
 
-
         case "dirt":
             return "dirt-icon";
-
 
         case "stone":
             return "stone-icon";
 
-
         case "wood":
             return "wood-icon";
-
 
         case "leaves":
             return "leaves-icon";
 
-
         case "planks":
             return "planks-icon";
-
 
         case "crafting_table":
             return "crafting-table-icon";
 
-
         case "sticks":
             return "sticks-icon";
-
 
         case "pickaxe":
             return "pickaxe-icon";
 
-
-        /*
-        ==================================================
-        NEW ORE ICONS
-        ==================================================
-        */
-
         case "coal_ore":
             return "coal-ore-icon";
-
 
         case "iron_ore":
             return "iron-ore-icon";
 
-
         case "diamond_ore":
             return "diamond-ore-icon";
-
 
         default:
             return "";
@@ -611,11 +576,6 @@ document.querySelectorAll(
 
                 }
 
-
-                /*
-                   Prevent the click from
-                   being treated as a game click.
-                */
 
                 event.stopPropagation();
 
