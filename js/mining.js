@@ -54,20 +54,372 @@ targetProxy.visible = false;
 
 function getTargetBlock() {
 
+    const origin =
+        camera.position.clone();
+
+
     const direction =
         new THREE.Vector3();
+
 
     camera.getWorldDirection(
         direction
     );
 
+
     direction.normalize();
 
 
-    const origin =
-        camera.position.clone();
-    const start =
-        camera.position.clone();
+    let x =
+        Math.floor(
+            origin.x
+        );
+
+
+    let y =
+        Math.floor(
+            origin.y
+        );
+
+
+    let z =
+        Math.floor(
+            origin.z
+        );
+
+
+    const stepX =
+        direction.x >= 0
+            ? 1
+            : -1;
+
+
+    const stepY =
+        direction.y >= 0
+            ? 1
+            : -1;
+
+
+    const stepZ =
+        direction.z >= 0
+            ? 1
+            : -1;
+
+
+    const tDeltaX =
+        direction.x === 0
+            ? Infinity
+            : Math.abs(
+                1 /
+                direction.x
+            );
+
+
+    const tDeltaY =
+        direction.y === 0
+            ? Infinity
+            : Math.abs(
+                1 /
+                direction.y
+            );
+
+
+    const tDeltaZ =
+        direction.z === 0
+            ? Infinity
+            : Math.abs(
+                1 /
+                direction.z
+            );
+
+
+    let tMaxX;
+
+    let tMaxY;
+
+    let tMaxZ;
+
+
+    if (
+        direction.x >= 0
+    ) {
+
+        tMaxX =
+            (
+                x + 1 -
+                origin.x
+            ) /
+            direction.x;
+
+    }
+
+    else {
+
+        tMaxX =
+            (
+                x -
+                origin.x
+            ) /
+            direction.x;
+
+    }
+
+
+    if (
+        direction.y >= 0
+    ) {
+
+        tMaxY =
+            (
+                y + 1 -
+                origin.y
+            ) /
+            direction.y;
+
+    }
+
+    else {
+
+        tMaxY =
+            (
+                y -
+                origin.y
+            ) /
+            direction.y;
+
+    }
+
+
+    if (
+        direction.z >= 0
+    ) {
+
+        tMaxZ =
+            (
+                z + 1 -
+                origin.z
+            ) /
+            direction.z;
+
+    }
+
+    else {
+
+        tMaxZ =
+            (
+                z -
+                origin.z
+            ) /
+            direction.z;
+
+    }
+
+
+    /*
+       Prevent division-by-zero problems.
+    */
+
+    if (
+        direction.x === 0
+    ) {
+
+        tMaxX =
+            Infinity;
+
+    }
+
+
+    if (
+        direction.y === 0
+    ) {
+
+        tMaxY =
+            Infinity;
+
+    }
+
+
+    if (
+        direction.z === 0
+    ) {
+
+        tMaxZ =
+            Infinity;
+
+    }
+
+
+    let travelled =
+        0;
+
+
+    let faceNormal =
+        new THREE.Vector3();
+
+
+    while (
+        travelled <=
+        REACH_DISTANCE
+    ) {
+
+        const key =
+            blockKey(
+                x,
+                y,
+                z
+            );
+
+
+        if (
+            world.has(
+                key
+            )
+        ) {
+
+            const type =
+                world.get(
+                    key
+                );
+
+
+            if (!type) {
+
+                return null;
+
+            }
+
+
+            targetProxy.position.set(
+
+                x + 0.5,
+
+                y + 0.5,
+
+                z + 0.5
+
+            );
+
+
+            targetProxy.userData.key =
+                key;
+
+
+            targetProxy.userData.type =
+                type;
+
+
+            targetProxy.userData.x =
+                x;
+
+
+            targetProxy.userData.y =
+                y;
+
+
+            targetProxy.userData.z =
+                z;
+
+
+            targetProxy.userData.faceNormal =
+                faceNormal.clone();
+
+
+            targetedBlock =
+                targetProxy;
+
+
+            return targetProxy;
+
+        }
+
+
+        if (
+            tMaxX <
+            tMaxY &&
+            tMaxX <
+            tMaxZ
+        ) {
+
+            x += stepX;
+
+            travelled =
+                tMaxX;
+
+            tMaxX +=
+                tDeltaX;
+
+
+            faceNormal.set(
+
+                -stepX,
+
+                0,
+
+                0
+
+            );
+
+        }
+
+        else if (
+            tMaxY <
+            tMaxZ
+        ) {
+
+            y += stepY;
+
+            travelled =
+                tMaxY;
+
+            tMaxY +=
+                tDeltaY;
+
+
+            faceNormal.set(
+
+                0,
+
+                -stepY,
+
+                0
+
+            );
+
+        }
+
+        else {
+
+            z += stepZ;
+
+            travelled =
+                tMaxZ;
+
+            tMaxZ +=
+                tDeltaZ;
+
+
+            faceNormal.set(
+
+                0,
+
+                0,
+
+                -stepZ
+
+            );
+
+        }
+
+    }
+
+
+    targetedBlock =
+        null;
+
+
+    return null;
+
+}
 
 
     /*
