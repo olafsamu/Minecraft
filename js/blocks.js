@@ -13,13 +13,16 @@ const BLOCKS = {
         requiresTool: false
     },
 
-    stone: {
-        name: "Stone",
-        color: 0x888888,
-        breakTime: 500,
-        requiresTool: true,
-        requiredTool: "pickaxe"
-    },
+stone: {
+    name: "Stone",
+    color: 0x888888,
+
+    // Time needed with the correct tool
+    breakTime: 800,
+
+    requiresTool: true,
+    requiredTool: "pickaxe"
+},
 
     wood: {
         name: "Wood",
