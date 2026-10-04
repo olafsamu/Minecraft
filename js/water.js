@@ -4,23 +4,23 @@ BLOCKWORLD
 Water System
 =========================================================
 
-Water exists as real blocks in the world for:
-
-- Collision
-- Future swimming
-- Future underwater physics
-- Future water interactions
-
-Visually, however, water behaves like a liquid surface.
-
 IMPORTANT:
 
-Only the TOP face of a water block is visible.
+Water is stored as full blocks in world data.
 
-The vertical faces are completely transparent.
+However, water is NOT rendered as full cubes.
 
-This prevents the large glass-wall effect caused by
-rendering many transparent cube sides on top of each other.
+Only the TOPMOST water block in each vertical column
+gets a visible water surface.
+
+This prevents:
+
+- Glass-wall effects
+- Repeated transparent layers
+- Visible water cube sides
+- Weird transparent stacking
+
+Water remains non-solid for the player.
 
 =========================================================
 */
@@ -53,7 +53,7 @@ const WATER_LEVEL = 4;
 
 
 /* ======================================================
-   REGISTER AS INSTANCED BLOCK
+   REGISTER WATER AS INSTANCED BLOCK
 ====================================================== */
 
 if (
@@ -106,7 +106,7 @@ function createWaterTexture() {
 
 
     /*
-       Water base.
+       Base water.
     */
 
     ctx.fillStyle =
@@ -122,7 +122,7 @@ function createWaterTexture() {
 
 
     /*
-       Light water reflections.
+       Light reflections.
     */
 
     ctx.fillStyle =
@@ -162,7 +162,7 @@ function createWaterTexture() {
 
 
     /*
-       Dark water variation.
+       Darker variation.
     */
 
     ctx.fillStyle =
@@ -217,105 +217,17 @@ function createWaterTexture() {
 
 
 /* ======================================================
-   CREATE INVISIBLE MATERIAL
+   CREATE SHARED WATER CUBE MATERIALS
 ====================================================== */
 
-function createInvisibleWaterMaterial() {
+/*
+   The chunk renderer expects water to have a normal
+   shared material set.
 
-    const material =
-        new THREE.MeshBasicMaterial({
-
-            transparent:
-                true,
-
-            opacity:
-                0,
-
-            depthWrite:
-                false,
-
-            side:
-                THREE.DoubleSide
-
-        });
-
-
-    material.userData.sharedBlockMaterial =
-        true;
-
-
-    material.userData.sharedBlockTexture =
-        true;
-
-
-    /*
-       Never dispose shared material.
-    */
-
-    material.dispose =
-        function() {};
-
-    
-    return material;
-
-}
-
-
-/* ======================================================
-   CREATE WATER SURFACE MATERIAL
-====================================================== */
-
-function createWaterSurfaceMaterial() {
-
-    const texture =
-        createWaterTexture();
-
-
-    const material =
-        new THREE.MeshLambertMaterial({
-
-            map:
-                texture,
-
-            transparent:
-                true,
-
-            opacity:
-                0.58,
-
-            depthWrite:
-                true,
-
-            side:
-                THREE.DoubleSide
-
-        });
-
-
-    material.userData.sharedBlockMaterial =
-        true;
-
-
-    material.userData.sharedBlockTexture =
-        true;
-
-
-    /*
-       Never dispose shared material.
-    */
-
-    material.dispose =
-        function() {};
-
-
-    return material;
-
-}
-
-
-/* ======================================================
-   CREATE SHARED WATER MATERIAL SET
-====================================================== */
+   These materials are only used temporarily by the
+   generic chunk builder before we replace the visual
+   representation with the proper water surface.
+*/
 
 function createSharedWaterMaterials() {
 
@@ -328,41 +240,42 @@ function createSharedWaterMaterials() {
     }
 
 
-    /*
-       The cube still exists underneath,
-       but only its TOP face is visible.
-
-       THREE.BoxGeometry material order:
-
-       0 = right
-       1 = left
-       2 = top
-       3 = bottom
-       4 = front
-       5 = back
-    */
-
-    const invisible =
-        createInvisibleWaterMaterial();
+    const texture =
+        createWaterTexture();
 
 
-    const surface =
-        createWaterSurfaceMaterial();
+    const material =
+        createSharedMaterial(
+
+            texture,
+
+            {
+
+                transparent:
+                    true,
+
+                opacity:
+                    0.55,
+
+                depthWrite:
+                    false,
+
+                side:
+                    THREE.DoubleSide
+
+            }
+
+        );
 
 
     const materials = [
 
-        invisible,
-
-        invisible,
-
-        surface,
-
-        invisible,
-
-        invisible,
-
-        invisible
+        material,
+        material,
+        material,
+        material,
+        material,
+        material
 
     ];
 
@@ -377,7 +290,7 @@ function createSharedWaterMaterials() {
 
 
 /* ======================================================
-   EXTEND MATERIAL SYSTEM
+   EXTEND SHARED MATERIAL SYSTEM
 ====================================================== */
 
 const waterOriginalGetSharedMaterials =
@@ -406,7 +319,617 @@ getSharedMaterials =
 
 
 /* ======================================================
-   LAKE NOISE
+   WATER SURFACE GEOMETRY
+====================================================== */
+
+const WATER_SURFACE_GEOMETRY =
+    new THREE.PlaneGeometry(
+        1,
+        1
+    );
+
+
+/* ======================================================
+   WATER SURFACE MATERIAL
+====================================================== */
+
+let waterSurfaceMaterial =
+    null;
+
+
+function getWaterSurfaceMaterial() {
+
+    if (
+        waterSurfaceMaterial
+    ) {
+
+        return waterSurfaceMaterial;
+
+    }
+
+
+    const texture =
+        createWaterTexture();
+
+
+    waterSurfaceMaterial =
+        new THREE.MeshLambertMaterial({
+
+            map:
+                texture,
+
+            transparent:
+                true,
+
+            opacity:
+                0.62,
+
+            depthWrite:
+                false,
+
+            side:
+                THREE.DoubleSide
+
+        });
+
+
+    /*
+       Mark it as shared.
+
+       Our other systems may call dispose()
+       when a chunk is removed.
+    */
+
+    waterSurfaceMaterial
+        .userData
+        .sharedBlockMaterial =
+        true;
+
+
+    waterSurfaceMaterial
+        .userData
+        .sharedBlockTexture =
+        true;
+
+
+    const originalDispose =
+        waterSurfaceMaterial.dispose;
+
+
+    waterSurfaceMaterial.dispose =
+        function() {
+
+            /*
+               The material belongs to the global
+               water rendering system.
+
+               Keep it alive while the game runs.
+            */
+
+        };
+
+
+    return waterSurfaceMaterial;
+
+}
+
+
+/* ======================================================
+   FIND TOP WATER BLOCKS
+====================================================== */
+
+function getWaterSurfaceBlocks(
+    chunkX,
+    chunkZ
+) {
+
+    const key =
+        chunkKey(
+            chunkX,
+            chunkZ
+        );
+
+
+    const members =
+        chunkMembers.get(
+            key
+        );
+
+
+    if (!members) {
+
+        return [];
+
+    }
+
+
+    const surfaces = [];
+
+
+    members.forEach(
+        blockKeyValue => {
+
+            const type =
+                world.get(
+                    blockKeyValue
+                );
+
+
+            if (!type) {
+
+                return;
+
+            }
+
+
+            const name =
+                normalizeChunkBlockName(
+                    type
+                );
+
+
+            if (
+                name !== "water"
+            ) {
+
+                return;
+
+            }
+
+
+            const parts =
+                blockKeyValue.split(
+                    ","
+                );
+
+
+            if (
+                parts.length !== 3
+            ) {
+
+                return;
+
+            }
+
+
+            const x =
+                Number(
+                    parts[0]
+                );
+
+
+            const y =
+                Number(
+                    parts[1]
+                );
+
+
+            const z =
+                Number(
+                    parts[2]
+                );
+
+
+            /*
+               We ONLY render this water block if
+               there is no water directly above it.
+
+               This gives us exactly one surface per
+               vertical water column.
+            */
+
+            const blockAbove =
+                world.get(
+
+                    blockKey(
+
+                        x,
+
+                        y + 1,
+
+                        z
+
+                    )
+
+                );
+
+
+            if (blockAbove) {
+
+                const aboveName =
+                    normalizeChunkBlockName(
+                        blockAbove
+                    );
+
+
+                if (
+                    aboveName ===
+                    "water"
+                ) {
+
+                    return;
+
+                }
+
+            }
+
+
+            /*
+               There is a solid block above.
+
+               No visible water surface belongs here.
+            */
+
+            if (
+                blockAbove
+            ) {
+
+                return;
+
+            }
+
+
+            surfaces.push({
+
+                x: x,
+
+                y: y,
+
+                z: z
+
+            });
+
+        }
+    );
+
+
+    return surfaces;
+
+}
+
+
+/* ======================================================
+   BUILD WATER SURFACE
+====================================================== */
+
+function buildWaterSurface(
+    chunkX,
+    chunkZ
+) {
+
+    const surfaces =
+        getWaterSurfaceBlocks(
+            chunkX,
+            chunkZ
+        );
+
+
+    if (
+        surfaces.length === 0
+    ) {
+
+        return null;
+
+    }
+
+
+    const material =
+        getWaterSurfaceMaterial();
+
+
+    /*
+       One InstancedMesh contains ALL water
+       surfaces in this chunk.
+    */
+
+    const mesh =
+        new THREE.InstancedMesh(
+
+            WATER_SURFACE_GEOMETRY,
+
+            material,
+
+            surfaces.length
+
+        );
+
+
+    /*
+       The plane initially faces +Z.
+
+       Rotate it so it lies horizontally.
+    */
+
+    const matrix =
+        new THREE.Matrix4();
+
+
+    const rotation =
+        new THREE.Matrix4();
+
+
+    rotation.makeRotationX(
+        -Math.PI / 2
+    );
+
+
+    const translation =
+        new THREE.Matrix4();
+
+
+    const finalMatrix =
+        new THREE.Matrix4();
+
+
+    surfaces.forEach(
+        (
+            water,
+            index
+        ) => {
+
+            translation.makeTranslation(
+
+                water.x +
+                0.5,
+
+                water.y +
+                0.995,
+
+                water.z +
+                0.5
+
+            );
+
+
+            finalMatrix.multiplyMatrices(
+
+                translation,
+
+                rotation
+
+            );
+
+
+            matrix.copy(
+                finalMatrix
+            );
+
+
+            mesh.setMatrixAt(
+
+                index,
+
+                matrix
+
+            );
+
+        }
+    );
+
+
+    mesh.instanceMatrix.needsUpdate =
+        true;
+
+
+    mesh.frustumCulled =
+        true;
+
+
+    mesh.computeBoundingSphere();
+
+
+    mesh.userData.blockType =
+        "water";
+
+
+    mesh.userData.chunkX =
+        chunkX;
+
+
+    mesh.userData.chunkZ =
+        chunkZ;
+
+
+    scene.add(
+        mesh
+    );
+
+
+    return mesh;
+
+}
+
+
+/* ======================================================
+   REPLACE GENERIC WATER RENDERING
+====================================================== */
+
+/*
+   Save the original chunk renderer.
+*/
+
+const waterOriginalBuildChunkRender =
+    buildChunkRender;
+
+
+buildChunkRender =
+    function(
+        chunkX,
+        chunkZ
+    ) {
+
+        /*
+           Let the normal chunk renderer build the
+           terrain first.
+        */
+
+        waterOriginalBuildChunkRender(
+
+            chunkX,
+
+            chunkZ
+
+        );
+
+
+        const key =
+            chunkKey(
+                chunkX,
+                chunkZ
+            );
+
+
+        const renderInfo =
+            chunkRenderObjects.get(
+                key
+            );
+
+
+        if (!renderInfo) {
+
+            return;
+
+        }
+
+
+        /*
+           Find the generic water InstancedMesh.
+
+           It exists because water is registered as
+           an instanced block type.
+        */
+
+        const oldWaterMeshes = [];
+
+
+        renderInfo.instancedMeshes
+            .forEach(
+                mesh => {
+
+                    if (
+                        mesh.userData &&
+                        mesh.userData.blockType ===
+                        "water"
+                    ) {
+
+                        oldWaterMeshes.push(
+                            mesh
+                        );
+
+                    }
+
+                }
+            );
+
+
+        /*
+           Remove the old cube representation.
+        */
+
+        oldWaterMeshes.forEach(
+            mesh => {
+
+                scene.remove(
+                    mesh
+                );
+
+
+                const index =
+                    renderInfo
+                        .instancedMeshes
+                        .indexOf(
+                            mesh
+                        );
+
+
+                if (
+                    index !== -1
+                ) {
+
+                    renderInfo
+                        .instancedMeshes
+                        .splice(
+                            index,
+                            1
+                        );
+
+                }
+
+            }
+        );
+
+
+        /*
+           Create the proper flat water surface.
+        */
+
+        const waterSurface =
+            buildWaterSurface(
+
+                chunkX,
+
+                chunkZ
+
+            );
+
+
+        if (
+            waterSurface
+        ) {
+
+            renderInfo
+                .instancedMeshes
+                .push(
+                    waterSurface
+                );
+
+        }
+
+    };
+
+
+/* ======================================================
+   PREVENT TREES FROM SPAWNING INSIDE LAKES
+====================================================== */
+
+const waterOriginalShouldGenerateTree =
+    shouldGenerateTree;
+
+
+shouldGenerateTree =
+    function(
+        x,
+        z
+    ) {
+
+        /*
+           Don't generate trees in areas that
+           will become flooded.
+        */
+
+        if (
+            terrainHeight(
+                x,
+                z
+            ) <
+            WATER_LEVEL
+        ) {
+
+            return false;
+
+        }
+
+
+        return waterOriginalShouldGenerateTree(
+            x,
+            z
+        );
+
+    };
+
+
+/* ======================================================
+   LAKE GENERATION
 ====================================================== */
 
 function getLakeNoise(
@@ -454,7 +977,7 @@ function shouldGenerateWater(
 ) {
 
     /*
-       High terrain remains land.
+       High ground stays land.
     */
 
     if (
@@ -477,12 +1000,12 @@ function shouldGenerateWater(
     const variation =
         (
 
-            Math.sin(
-                x * 0.19 +
-                z * 0.11
-            ) +
+        Math.sin(
+            x * 0.19 +
+            z * 0.11
+        )
 
-            1
+        + 1
 
         ) / 2;
 
@@ -563,12 +1086,9 @@ function addWaterToChunkData(
 
 
             /*
-               Fill the basin up to the water level.
+               Fill the entire basin with water data.
 
-               The rendering system only shows the
-               top surface, so the player will see a
-               normal flat lake instead of transparent
-               cube walls.
+               Only the top block will be rendered.
             */
 
             for (
@@ -583,9 +1103,13 @@ function addWaterToChunkData(
 
                 const key =
                     blockKey(
+
                         x,
+
                         y,
+
                         z
+
                     );
 
 
@@ -596,8 +1120,11 @@ function addWaterToChunkData(
                 ) {
 
                     data.set(
+
                         key,
+
                         BLOCKS.water
+
                     );
 
                 }
@@ -625,25 +1152,24 @@ generateChunkData =
         chunkZ
     ) {
 
-        /*
-           Generate normal terrain.
-        */
-
         const data =
             waterOriginalGenerateChunkData(
+
                 chunkX,
+
                 chunkZ
+
             );
 
 
-        /*
-           Add water.
-        */
-
         addWaterToChunkData(
+
             data,
+
             chunkX,
+
             chunkZ
+
         );
 
 
@@ -657,9 +1183,5 @@ generateChunkData =
 ====================================================== */
 
 console.log(
-    "Water system enabled!"
-);
-
-console.log(
-    "Water surface rendering enabled!"
+    "Professional water renderer enabled!"
 );
