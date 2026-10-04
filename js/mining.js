@@ -539,8 +539,19 @@ function updateMining(delta) {
        into milliseconds.
     */
 
-    miningProgress +=
-        delta * 1000;
+   miningProgress +=
+    delta * 1000;
+
+
+const progress =
+    Math.min(
+        miningProgress / breakTime,
+        1
+    );
+
+updateCrackOverlay(
+    progress
+);
 
 
     /*
