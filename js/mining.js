@@ -1,7 +1,7 @@
 /*
 =========================================================
 BLOCKWORLD
-Mining + Block Placement
+Mining + Block Placement + Inventory
 =========================================================
 */
 
@@ -74,6 +74,7 @@ function breakBlock() {
         return;
     }
 
+
     const key =
         block.userData.key;
 
@@ -81,11 +82,54 @@ function breakBlock() {
         return;
     }
 
+
+    /*
+       The block type is stored in
+       userData.type.
+    */
+
+    const blockType =
+        block.userData.type;
+
+
+    /*
+       Remove block from world.
+    */
+
     world.delete(key);
+
+
+    /*
+       Remove block visually.
+    */
 
     scene.remove(block);
 
+
+    /*
+       Remove it from mesh collection.
+    */
+
     meshes.delete(key);
+
+
+    /*
+       Give the player the block.
+    */
+
+    if (blockType) {
+
+        addItem(
+            blockType.name,
+            1
+        );
+
+    }
+
+
+    /*
+       Clean up memory.
+    */
 
     block.geometry.dispose();
 
@@ -109,8 +153,24 @@ function placeBlock() {
     }
 
 
+    const selectedItem =
+        getSelectedItem();
+
+
+    if (!selectedItem) {
+        return;
+    }
+
+
+    if (
+        selectedItem.amount <= 0
+    ) {
+        return;
+    }
+
+
     /*
-       Get the face that was clicked.
+       Find the clicked face.
     */
 
     const raycaster =
@@ -137,11 +197,6 @@ function placeBlock() {
         hits[0];
 
 
-    /*
-       The normal tells us which
-       side of the block we hit.
-    */
-
     const normal =
         hit.face.normal;
 
@@ -154,19 +209,13 @@ function placeBlock() {
 
 
     const x =
-        Math.floor(
-            position.x
-        );
+        Math.floor(position.x);
 
     const y =
-        Math.floor(
-            position.y
-        );
+        Math.floor(position.y);
 
     const z =
-        Math.floor(
-            position.z
-        );
+        Math.floor(position.z);
 
 
     const key =
@@ -178,8 +227,7 @@ function placeBlock() {
 
 
     /*
-       Don't place a block where
-       one already exists.
+       Don't place inside another block.
     */
 
     if (world.has(key)) {
@@ -189,7 +237,7 @@ function placeBlock() {
 
     /*
        Don't place a block inside
-       the player's body.
+       the player.
     */
 
     const playerX =
@@ -217,15 +265,104 @@ function placeBlock() {
 
 
     /*
-       Place a dirt block for now.
+       Convert the selected item's
+       name into the actual block.
+    */
+
+    let blockType = null;
+
+
+    if (
+        selectedItem.type === "grass"
+    ) {
+        blockType =
+            BLOCKS.grass;
+    }
+
+    else if (
+        selectedItem.type === "dirt"
+    ) {
+        blockType =
+            BLOCKS.dirt;
+    }
+
+    else if (
+        selectedItem.type === "stone"
+    ) {
+        blockType =
+            BLOCKS.stone;
+    }
+
+    else if (
+        selectedItem.type === "wood"
+    ) {
+        blockType =
+            BLOCKS.wood;
+    }
+
+    else if (
+        selectedItem.type === "leaves"
+    ) {
+        blockType =
+            BLOCKS.leaves;
+    }
+
+    else if (
+        selectedItem.type === "planks"
+    ) {
+        blockType =
+            BLOCKS.planks;
+    }
+
+    else if (
+        selectedItem.type === "crafting_table"
+    ) {
+        blockType =
+            BLOCKS.crafting_table;
+    }
+
+
+    /*
+       If the block doesn't exist,
+       don't place anything.
+    */
+
+    if (!blockType) {
+        return;
+    }
+
+
+    /*
+       Place the block.
     */
 
     addBlock(
         x,
         y,
         z,
-        BLOCKS.dirt
+        blockType
     );
+
+
+    /*
+       Remove one item.
+    */
+
+    selectedItem.amount--;
+
+
+    if (
+        selectedItem.amount <= 0
+    ) {
+
+        hotbar[
+            selectedHotbarSlot
+        ] = null;
+
+    }
+
+
+    updateHotbarUI();
 
 }
 
@@ -244,7 +381,7 @@ document.addEventListener(
 
 
         /*
-           Left click = break
+           Left click = break.
         */
 
         if (
@@ -257,7 +394,7 @@ document.addEventListener(
 
 
         /*
-           Right click = place
+           Right click = place.
         */
 
         if (
@@ -273,7 +410,7 @@ document.addEventListener(
 
 
 /* ======================================================
-   PREVENT RIGHT CLICK MENU
+   DISABLE RIGHT CLICK MENU
 ====================================================== */
 
 document.addEventListener(
