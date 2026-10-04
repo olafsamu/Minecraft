@@ -307,11 +307,13 @@ function startMining() {
        Start mining.
     */
 
-    mining = true;
+   mining = true;
 
-    miningBlock = block;
+miningBlock = block;
 
-    miningProgress = 0;
+miningProgress = 0;
+
+createCrackOverlay(block);
 
 }
 
