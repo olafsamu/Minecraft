@@ -4,6 +4,8 @@ BLOCKWORLD
 Block Visuals
 =========================================================
 
+PERFORMANCE-OPTIMIZED VERSION
+
 Visual upgrade for:
 
 Grass
@@ -12,6 +14,15 @@ Stone
 Wood
 Leaves
 Planks
+
+IMPORTANT:
+
+Textures are shared.
+Materials are shared.
+Shared resources are protected from disposal.
+
+This dramatically reduces the amount of work required
+when chunks are loaded.
 
 Ores and crafting tables are left alone.
 
@@ -27,7 +38,14 @@ const blockVisualTextures = {};
 
 
 /* ======================================================
-   TEXTURE SETTINGS
+   MATERIAL CACHE
+====================================================== */
+
+const blockVisualMaterials = {};
+
+
+/* ======================================================
+   PREPARE TEXTURE
 ====================================================== */
 
 function prepareTexture(
@@ -42,6 +60,29 @@ function prepareTexture(
 
     texture.colorSpace =
         THREE.SRGBColorSpace;
+
+
+    /*
+       Textures are shared for the entire game.
+
+       The existing mining/culling systems may attempt
+       to dispose textures when a block disappears.
+
+       We prevent that for shared textures.
+    */
+
+    texture.dispose =
+        function() {
+
+            /*
+               Intentionally empty.
+
+               This texture belongs to the shared
+               BlockWorld visual system.
+            */
+
+        };
+
 
     return texture;
 
@@ -59,8 +100,11 @@ function createTextureCanvas() {
             "canvas"
         );
 
+
     canvas.width = 32;
+
     canvas.height = 32;
+
 
     return canvas;
 
@@ -99,6 +143,7 @@ function createGrassTopTexture() {
     ctx.fillStyle =
         "#4f9f38";
 
+
     ctx.fillRect(
         0,
         0,
@@ -108,7 +153,7 @@ function createGrassTopTexture() {
 
 
     /*
-       Grass variation.
+       Light grass pixels.
     */
 
     ctx.fillStyle =
@@ -146,7 +191,7 @@ function createGrassTopTexture() {
 
 
     /*
-       Dark pixels.
+       Dark grass pixels.
     */
 
     ctx.fillStyle =
@@ -226,6 +271,7 @@ function createDirtTexture() {
     ctx.fillStyle =
         "#8b5a2b";
 
+
     ctx.fillRect(
         0,
         0,
@@ -235,7 +281,7 @@ function createDirtTexture() {
 
 
     /*
-       Dirt pixels.
+       Dark dirt.
     */
 
     ctx.fillStyle =
@@ -269,6 +315,10 @@ function createDirtTexture() {
         }
     );
 
+
+    /*
+       Light dirt.
+    */
 
     ctx.fillStyle =
         "#a97039";
@@ -350,6 +400,7 @@ function createGrassSideTexture() {
     ctx.fillStyle =
         "#8b5a2b";
 
+
     ctx.fillRect(
         0,
         0,
@@ -359,11 +410,12 @@ function createGrassSideTexture() {
 
 
     /*
-       Grass layer across the top.
+       Grass layer.
     */
 
     ctx.fillStyle =
         "#4f9f38";
+
 
     ctx.fillRect(
         0,
@@ -514,6 +566,7 @@ function createStoneTexture() {
     ctx.fillStyle =
         "#73777b";
 
+
     ctx.fillRect(
         0,
         0,
@@ -523,7 +576,7 @@ function createStoneTexture() {
 
 
     /*
-       Dark stone patches.
+       Dark stone.
     */
 
     ctx.fillStyle =
@@ -559,7 +612,7 @@ function createStoneTexture() {
 
 
     /*
-       Light stone patches.
+       Light stone.
     */
 
     ctx.fillStyle =
@@ -637,6 +690,7 @@ function createWoodSideTexture() {
     ctx.fillStyle =
         "#70441f";
 
+
     ctx.fillRect(
         0,
         0,
@@ -678,7 +732,7 @@ function createWoodSideTexture() {
 
 
     /*
-       Dark bark lines.
+       Dark bark.
     */
 
     ctx.fillStyle =
@@ -702,7 +756,7 @@ function createWoodSideTexture() {
 
 
     /*
-       Small bark marks.
+       Bark marks.
     */
 
     ctx.fillRect(
@@ -774,6 +828,7 @@ function createWoodTopTexture() {
     ctx.fillStyle =
         "#b07a43";
 
+
     ctx.fillRect(
         0,
         0,
@@ -788,6 +843,7 @@ function createWoodTopTexture() {
 
     ctx.strokeStyle =
         "#70441f";
+
 
     ctx.lineWidth = 2;
 
@@ -817,11 +873,12 @@ function createWoodTopTexture() {
 
 
     /*
-       Small highlight.
+       Highlight.
     */
 
     ctx.fillStyle =
         "#d29a5a";
+
 
     ctx.fillRect(
         5,
@@ -876,6 +933,7 @@ function createLeavesTexture() {
     ctx.fillStyle =
         "#3d8a35";
 
+
     ctx.fillRect(
         0,
         0,
@@ -885,7 +943,7 @@ function createLeavesTexture() {
 
 
     /*
-       Leaf clusters.
+       Light leaves.
     */
 
     ctx.fillStyle =
@@ -919,6 +977,10 @@ function createLeavesTexture() {
         }
     );
 
+
+    /*
+       Dark leaves.
+    */
 
     ctx.fillStyle =
         "#276b2a";
@@ -995,6 +1057,7 @@ function createPlanksTexture() {
     ctx.fillStyle =
         "#a66d35";
 
+
     ctx.fillRect(
         0,
         0,
@@ -1004,7 +1067,7 @@ function createPlanksTexture() {
 
 
     /*
-       Plank divisions.
+       Horizontal plank seams.
     */
 
     ctx.fillStyle =
@@ -1101,10 +1164,10 @@ function createPlanksTexture() {
 
 
 /* ======================================================
-   CREATE MATERIAL
+   CREATE SHARED MATERIAL
 ====================================================== */
 
-function createVisualMaterial(
+function createSharedMaterial(
     texture,
     options = {}
 ) {
@@ -1120,15 +1183,32 @@ function createVisualMaterial(
 
 
     /*
-       Tell culling that this material uses
-       a shared texture.
-
-       The texture must NOT be disposed when
-       one block disappears.
+       Mark as shared.
     */
+
+    material.userData.sharedBlockMaterial =
+        true;
+
 
     material.userData.sharedBlockTexture =
         true;
+
+
+    /*
+       Existing mining/culling/world cleanup can
+       safely call material.dispose() because this
+       shared material is intended to live for the
+       lifetime of the game.
+    */
+
+    material.dispose =
+        function() {
+
+            /*
+               Intentionally empty.
+            */
+
+        };
 
 
     return material;
@@ -1137,27 +1217,32 @@ function createVisualMaterial(
 
 
 /* ======================================================
-   CREATE BLOCK MATERIALS
+   GET SHARED MATERIAL SET
 ====================================================== */
 
-function createVisualMaterials(
-    type
+function getSharedMaterials(
+    name
 ) {
 
-    const name =
-        String(
-            type.name || ""
-        )
-        .toLowerCase()
-        .replaceAll(
-            " ",
-            "_"
-        );
+    /*
+       Already created?
+    */
+
+    if (
+        blockVisualMaterials[name]
+    ) {
+
+        return blockVisualMaterials[name];
+
+    }
 
 
-    /* ==================================================
-       GRASS
-    ================================================== */
+    let materials;
+
+
+/* ======================================================
+   GRASS
+====================================================== */
 
     if (
         name === "grass"
@@ -1175,30 +1260,48 @@ function createVisualMaterials(
             createDirtTexture();
 
 
-        return [
+        const sideMaterial =
+            createSharedMaterial(
+                side
+            );
 
-            createVisualMaterial(side),
 
-            createVisualMaterial(side),
+        const topMaterial =
+            createSharedMaterial(
+                top
+            );
 
-            createVisualMaterial(top),
 
-            createVisualMaterial(bottom),
+        const bottomMaterial =
+            createSharedMaterial(
+                bottom
+            );
 
-            createVisualMaterial(side),
 
-            createVisualMaterial(side)
+        materials = [
+
+            sideMaterial,
+
+            sideMaterial,
+
+            topMaterial,
+
+            bottomMaterial,
+
+            sideMaterial,
+
+            sideMaterial
 
         ];
 
     }
 
 
-    /* ==================================================
-       DIRT
-    ================================================== */
+/* ======================================================
+   DIRT
+====================================================== */
 
-    if (
+    else if (
         name === "dirt"
     ) {
 
@@ -1206,30 +1309,31 @@ function createVisualMaterials(
             createDirtTexture();
 
 
-        return [
+        const material =
+            createSharedMaterial(
+                texture
+            );
 
-            createVisualMaterial(texture),
 
-            createVisualMaterial(texture),
+        materials = [
 
-            createVisualMaterial(texture),
-
-            createVisualMaterial(texture),
-
-            createVisualMaterial(texture),
-
-            createVisualMaterial(texture)
+            material,
+            material,
+            material,
+            material,
+            material,
+            material
 
         ];
 
     }
 
 
-    /* ==================================================
-       STONE
-    ================================================== */
+/* ======================================================
+   STONE
+====================================================== */
 
-    if (
+    else if (
         name === "stone"
     ) {
 
@@ -1237,30 +1341,31 @@ function createVisualMaterials(
             createStoneTexture();
 
 
-        return [
+        const material =
+            createSharedMaterial(
+                texture
+            );
 
-            createVisualMaterial(texture),
 
-            createVisualMaterial(texture),
+        materials = [
 
-            createVisualMaterial(texture),
-
-            createVisualMaterial(texture),
-
-            createVisualMaterial(texture),
-
-            createVisualMaterial(texture)
+            material,
+            material,
+            material,
+            material,
+            material,
+            material
 
         ];
 
     }
 
 
-    /* ==================================================
-       WOOD
-    ================================================== */
+/* ======================================================
+   WOOD
+====================================================== */
 
-    if (
+    else if (
         name === "wood"
     ) {
 
@@ -1272,30 +1377,42 @@ function createVisualMaterials(
             createWoodTopTexture();
 
 
-        return [
+        const sideMaterial =
+            createSharedMaterial(
+                side
+            );
 
-            createVisualMaterial(side),
 
-            createVisualMaterial(side),
+        const topMaterial =
+            createSharedMaterial(
+                top
+            );
 
-            createVisualMaterial(top),
 
-            createVisualMaterial(top),
+        materials = [
 
-            createVisualMaterial(side),
+            sideMaterial,
 
-            createVisualMaterial(side)
+            sideMaterial,
+
+            topMaterial,
+
+            topMaterial,
+
+            sideMaterial,
+
+            sideMaterial
 
         ];
 
     }
 
 
-    /* ==================================================
-       LEAVES
-    ================================================== */
+/* ======================================================
+   LEAVES
+====================================================== */
 
-    if (
+    else if (
         name === "leaves"
     ) {
 
@@ -1303,72 +1420,46 @@ function createVisualMaterials(
             createLeavesTexture();
 
 
-        return [
+        const material =
+            createSharedMaterial(
 
-            createVisualMaterial(
                 texture,
-                {
-                    transparent: true,
-                    opacity: 0.92,
-                    alphaTest: 0.05
-                }
-            ),
 
-            createVisualMaterial(
-                texture,
                 {
-                    transparent: true,
-                    opacity: 0.92,
-                    alphaTest: 0.05
-                }
-            ),
 
-            createVisualMaterial(
-                texture,
-                {
-                    transparent: true,
-                    opacity: 0.92,
-                    alphaTest: 0.05
-                }
-            ),
+                    transparent:
+                        true,
 
-            createVisualMaterial(
-                texture,
-                {
-                    transparent: true,
-                    opacity: 0.92,
-                    alphaTest: 0.05
-                }
-            ),
+                    opacity:
+                        0.92,
 
-            createVisualMaterial(
-                texture,
-                {
-                    transparent: true,
-                    opacity: 0.92,
-                    alphaTest: 0.05
-                }
-            ),
+                    alphaTest:
+                        0.05
 
-            createVisualMaterial(
-                texture,
-                {
-                    transparent: true,
-                    opacity: 0.92,
-                    alphaTest: 0.05
                 }
-            )
+
+            );
+
+
+        materials = [
+
+            material,
+            material,
+            material,
+            material,
+            material,
+            material
 
         ];
 
     }
 
 
-    /* ==================================================
-       PLANKS
-    ================================================== */
+/* ======================================================
+   PLANKS
+====================================================== */
 
-    if (
+    else if (
         name === "planks"
     ) {
 
@@ -1376,26 +1467,71 @@ function createVisualMaterials(
             createPlanksTexture();
 
 
-        return [
+        const material =
+            createSharedMaterial(
+                texture
+            );
 
-            createVisualMaterial(texture),
 
-            createVisualMaterial(texture),
+        materials = [
 
-            createVisualMaterial(texture),
-
-            createVisualMaterial(texture),
-
-            createVisualMaterial(texture),
-
-            createVisualMaterial(texture)
+            material,
+            material,
+            material,
+            material,
+            material,
+            material
 
         ];
 
     }
 
 
-    return null;
+    else {
+
+        return null;
+
+    }
+
+
+    /*
+       Save the material array.
+
+       Every block of this type will reuse it.
+    */
+
+    blockVisualMaterials[name] =
+        materials;
+
+
+    return materials;
+
+}
+
+
+/* ======================================================
+   NORMALIZE BLOCK NAME
+====================================================== */
+
+function normalizeVisualBlockName(
+    type
+) {
+
+    return String(
+        type &&
+        type.name
+            ? type.name
+            : ""
+    )
+    .toLowerCase()
+    .replaceAll(
+        " ",
+        "_"
+    )
+    .replaceAll(
+        "-",
+        "_"
+    );
 
 }
 
@@ -1409,32 +1545,34 @@ function applyBlockVisuals(
     type
 ) {
 
-    if (!cube || !type) {
+    if (
+        !cube ||
+        !type
+    ) {
 
         return;
 
     }
 
 
-    /*
-       Leave ores alone.
-    */
-
     const name =
-        String(
-            type.name || ""
-        )
-        .toLowerCase()
-        .replaceAll(
-            " ",
-            "_"
+        normalizeVisualBlockName(
+            type
         );
 
 
+    /*
+       Ores keep their special ore visuals.
+    */
+
     if (
+
         name === "coal_ore" ||
+
         name === "iron_ore" ||
+
         name === "diamond_ore"
+
     ) {
 
         return;
@@ -1443,7 +1581,7 @@ function applyBlockVisuals(
 
 
     /*
-       Leave crafting table alone.
+       Crafting table keeps its custom visuals.
     */
 
     if (
@@ -1456,8 +1594,8 @@ function applyBlockVisuals(
 
 
     const materials =
-        createVisualMaterials(
-            type
+        getSharedMaterials(
+            name
         );
 
 
@@ -1469,10 +1607,14 @@ function applyBlockVisuals(
 
 
     /*
-       Dispose the old material.
+       The original world material is only
+       the temporary plain-color material.
 
-       Do NOT dispose the old texture here.
-       The old basic material normally has none.
+       Dispose it normally.
+
+       IMPORTANT:
+       Shared visual materials are never replaced
+       by this code once assigned.
     */
 
     if (
@@ -1484,7 +1626,13 @@ function applyBlockVisuals(
         cube.material.forEach(
             material => {
 
-                if (material) {
+                if (
+                    material &&
+                    !(
+                        material.userData &&
+                        material.userData.sharedBlockMaterial
+                    )
+                ) {
 
                     material.dispose();
 
@@ -1499,10 +1647,23 @@ function applyBlockVisuals(
         cube.material
     ) {
 
-        cube.material.dispose();
+        if (
+            !(
+                cube.material.userData &&
+                cube.material.userData.sharedBlockMaterial
+            )
+        ) {
+
+            cube.material.dispose();
+
+        }
 
     }
 
+
+    /*
+       Assign the cached shared material array.
+    */
 
     cube.material =
         materials;
@@ -1527,7 +1688,7 @@ addBlock =
     ) {
 
         /*
-           Create the block using the existing system.
+           Use the existing block system.
         */
 
         visualOriginalAddBlock(
@@ -1539,7 +1700,7 @@ addBlock =
 
 
         /*
-           Retrieve the newly created mesh.
+           Find the new mesh.
         */
 
         const key =
@@ -1563,6 +1724,10 @@ addBlock =
         }
 
 
+        /*
+           Apply the cached visual materials.
+        */
+
         applyBlockVisuals(
             cube,
             type
@@ -1576,5 +1741,15 @@ addBlock =
 ====================================================== */
 
 console.log(
-    "Block visuals enabled!"
+    "Optimized block visuals enabled!"
+);
+
+console.log(
+    "Shared textures:",
+    blockVisualTextures
+);
+
+console.log(
+    "Shared material sets:",
+    blockVisualMaterials
 );
