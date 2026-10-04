@@ -775,11 +775,8 @@ function generateWorld() {
                 );
 
 
-            for (
-    let y = -WORLD_DEPTH;
-    y <= height;
-    y++
-) {
+   
+ {
 
     let type;
 
