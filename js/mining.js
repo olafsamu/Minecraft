@@ -20,112 +20,6 @@ let miningProgress = 0;
 
 
 /* ======================================================
-   CRACK OVERLAY
-====================================================== */
-
-let crackOverlay = null;
-
-
-/* ======================================================
-   CREATE CRACK OVERLAY
-====================================================== */
-
-function createCrackOverlay(block) {
-
-    removeCrackOverlay();
-
-
-    const geometry =
-        new THREE.BoxGeometry(
-            1.01,
-            1.01,
-            1.01
-        );
-
-
-    const material =
-        new THREE.MeshBasicMaterial({
-            color: 0x111111,
-            transparent: true,
-            opacity: 0,
-            depthWrite: false
-        });
-
-
-    crackOverlay =
-        new THREE.Mesh(
-            geometry,
-            material
-        );
-
-
-    crackOverlay.position.copy(
-        block.position
-    );
-
-
-    crackOverlay.userData.isCrackOverlay =
-        true;
-
-
-    scene.add(
-        crackOverlay
-    );
-
-}
-
-
-/* ======================================================
-   UPDATE CRACK OVERLAY
-====================================================== */
-
-function updateCrackOverlay(progress) {
-
-    if (!crackOverlay) {
-        return;
-    }
-
-
-    const opacity =
-        Math.min(
-            0.65,
-            progress * 0.65
-        );
-
-
-    crackOverlay.material.opacity =
-        opacity;
-
-}
-
-
-/* ======================================================
-   REMOVE CRACK OVERLAY
-====================================================== */
-
-function removeCrackOverlay() {
-
-    if (!crackOverlay) {
-        return;
-    }
-
-
-    scene.remove(
-        crackOverlay
-    );
-
-
-    crackOverlay.geometry.dispose();
-
-    crackOverlay.material.dispose();
-
-
-    crackOverlay = null;
-
-}
-
-
-/* ======================================================
    GET BLOCK THE PLAYER IS LOOKING AT
 ====================================================== */
 
@@ -204,6 +98,10 @@ function canBreakBlock(blockType) {
     }
 
 
+    /*
+       Normal blocks can be broken by hand.
+    */
+
     if (
         !blockType.requiresTool
     ) {
@@ -223,6 +121,10 @@ function canBreakBlock(blockType) {
 
     }
 
+
+    /*
+       Stone requires a pickaxe.
+    */
 
     if (
         blockType.requiredTool ===
@@ -266,6 +168,10 @@ function startMining() {
     }
 
 
+    /*
+       Check tool requirement.
+    */
+
     if (
         !canBreakBlock(blockType)
     ) {
@@ -293,6 +199,10 @@ function startMining() {
     miningProgress = 0;
 
 
+    /*
+       Start the crack effect.
+    */
+
     createCrackOverlay(
         block
     );
@@ -311,6 +221,11 @@ function stopMining() {
     miningBlock = null;
 
     miningProgress = 0;
+
+
+    /*
+       Remove crack effect.
+    */
 
     removeCrackOverlay();
 
@@ -341,14 +256,30 @@ function breakBlock(block) {
         block.userData.type;
 
 
+    /*
+       Remove from world.
+    */
+
     world.delete(key);
 
+
+    /*
+       Remove visually.
+    */
 
     scene.remove(block);
 
 
+    /*
+       Remove from mesh collection.
+    */
+
     meshes.delete(key);
 
+
+    /*
+       Give block to player.
+    */
 
     if (blockType) {
 
@@ -360,8 +291,16 @@ function breakBlock(block) {
     }
 
 
+    /*
+       Clean up geometry.
+    */
+
     block.geometry.dispose();
 
+
+    /*
+       Clean up materials.
+    */
 
     if (
         Array.isArray(
@@ -404,6 +343,11 @@ function breakBlock(block) {
 
     targetedBlock = null;
 
+
+    /*
+       Stop mining and remove cracks.
+    */
+
     stopMining();
 
 }
@@ -425,6 +369,10 @@ function updateMining(delta) {
     }
 
 
+    /*
+       Make sure the block still exists.
+    */
+
     if (
         !meshes.has(
             miningBlock.userData.key
@@ -437,6 +385,11 @@ function updateMining(delta) {
 
     }
 
+
+    /*
+       Make sure the player is
+       still looking at the same block.
+    */
 
     const currentTarget =
         getTargetBlock();
@@ -467,14 +420,27 @@ function updateMining(delta) {
     }
 
 
+    /*
+       Get break time.
+    */
+
     const breakTime =
         blockType.breakTime ||
         500;
 
 
+    /*
+       Increase mining progress.
+    */
+
     miningProgress +=
         delta * 1000;
 
+
+    /*
+       Convert progress to
+       a value between 0 and 1.
+    */
 
     const progress =
         Math.min(
@@ -483,10 +449,18 @@ function updateMining(delta) {
         );
 
 
+    /*
+       Update crack effect.
+    */
+
     updateCrackOverlay(
         progress
     );
 
+
+    /*
+       Break block when finished.
+    */
 
     if (
         miningProgress >=
@@ -611,8 +585,13 @@ function placeBlock() {
     }
 
 
+    /*
+       Tools cannot be placed.
+    */
+
     if (
-        selectedItem.type === "pickaxe"
+        selectedItem.type ===
+        "pickaxe"
     ) {
 
         return;
@@ -620,18 +599,26 @@ function placeBlock() {
     }
 
 
+    /*
+       Sticks cannot be placed.
+    */
+
     if (
-        selectedItem.type === "sticks"
+        selectedItem.type ===
+        "sticks"
     ) {
 
         return;
 
     }
 
+
+    /*
+       Find clicked face.
+    */
 
     const raycaster =
         new THREE.Raycaster();
-
 
     raycaster.setFromCamera(
         new THREE.Vector2(0, 0),
@@ -687,6 +674,10 @@ function placeBlock() {
         );
 
 
+    /*
+       Don't place inside another block.
+    */
+
     if (
         world.has(key)
     ) {
@@ -695,6 +686,10 @@ function placeBlock() {
 
     }
 
+
+    /*
+       Player position.
+    */
 
     const playerX =
         camera.position.x;
@@ -708,6 +703,10 @@ function placeBlock() {
     const playerZ =
         camera.position.z;
 
+
+    /*
+       Don't place inside player.
+    */
 
     if (
 
@@ -736,6 +735,10 @@ function placeBlock() {
     }
 
 
+    /*
+       Convert item into block.
+    */
+
     const blockType =
         getBlockTypeFromItem(
             selectedItem.type
@@ -749,6 +752,10 @@ function placeBlock() {
     }
 
 
+    /*
+       Place block.
+    */
+
     addBlock(
         x,
         y,
@@ -756,6 +763,10 @@ function placeBlock() {
         blockType
     );
 
+
+    /*
+       Remove one item.
+    */
 
     selectedItem.amount--;
 
@@ -791,6 +802,10 @@ document.addEventListener(
         }
 
 
+        /*
+           Left click = start mining.
+        */
+
         if (
             event.button === 0
         ) {
@@ -800,6 +815,10 @@ document.addEventListener(
         }
 
 
+        /*
+           Right click.
+        */
+
         if (
             event.button === 2
         ) {
@@ -807,6 +826,11 @@ document.addEventListener(
             const block =
                 getTargetBlock();
 
+
+            /*
+               Right-clicking a crafting
+               table opens the 3x3 menu.
+            */
 
             if (
                 block &&
@@ -820,6 +844,10 @@ document.addEventListener(
 
             }
 
+
+            /*
+               Otherwise place a block.
+            */
 
             placeBlock();
 
