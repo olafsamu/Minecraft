@@ -13,7 +13,7 @@ const meshes = new Map();
 
 const WORLD_SIZE = 24;
 
-
+const WORLD_DEPTH = 32;
 /* ======================================================
    BLOCK KEY
 ====================================================== */
@@ -776,10 +776,63 @@ function generateWorld() {
 
 
             for (
-                let y = 0;
-                y <= height;
-                y++
-            ) {
+    let y = -WORLD_DEPTH;
+    y <= height;
+    y++
+) {
+
+    let type;
+
+
+    /*
+       Grass stays on the surface.
+    */
+
+    if (
+        y === height
+    ) {
+
+        type =
+            BLOCKS.grass;
+
+    }
+
+
+    /*
+       Dirt stays directly underneath
+       the grass.
+    */
+
+    else if (
+        y >= height - 2
+    ) {
+
+        type =
+            BLOCKS.dirt;
+
+    }
+
+
+    /*
+       Everything deeper is stone.
+    */
+
+    else {
+
+        type =
+            BLOCKS.stone;
+
+    }
+
+
+    addBlock(
+        x,
+        y,
+        z,
+        type
+    );
+
+}
 
                 let type;
 
