@@ -24,25 +24,34 @@ function getTargetBlock() {
         camera
     );
 
+
     const blockMeshes = [];
 
     meshes.forEach(mesh => {
+
         blockMeshes.push(mesh);
+
     });
+
 
     const hits =
         raycaster.intersectObjects(
             blockMeshes
         );
 
+
     if (hits.length === 0) {
 
         targetedBlock = null;
 
         return null;
+
     }
 
-    const hit = hits[0];
+
+    const hit =
+        hits[0];
+
 
     if (
         hit.distance >
@@ -52,12 +61,16 @@ function getTargetBlock() {
         targetedBlock = null;
 
         return null;
+
     }
+
 
     targetedBlock =
         hit.object;
 
+
     return hit.object;
+
 }
 
 
@@ -70,6 +83,7 @@ function breakBlock() {
     const block =
         getTargetBlock();
 
+
     if (!block) {
         return;
     }
@@ -78,15 +92,11 @@ function breakBlock() {
     const key =
         block.userData.key;
 
+
     if (!key) {
         return;
     }
 
-
-    /*
-       The block type is stored in
-       userData.type.
-    */
 
     const blockType =
         block.userData.type;
@@ -107,14 +117,14 @@ function breakBlock() {
 
 
     /*
-       Remove it from mesh collection.
+       Remove from mesh collection.
     */
 
     meshes.delete(key);
 
 
     /*
-       Give the player the block.
+       Give block to player.
     */
 
     if (blockType) {
@@ -128,7 +138,7 @@ function breakBlock() {
 
 
     /*
-       Clean up memory.
+       Clean up.
     */
 
     block.geometry.dispose();
@@ -136,6 +146,81 @@ function breakBlock() {
     block.material.dispose();
 
     targetedBlock = null;
+
+}
+
+
+/* ======================================================
+   GET BLOCK TYPE FROM ITEM
+====================================================== */
+
+function getBlockTypeFromItem(itemType) {
+
+    if (
+        itemType === "grass"
+    ) {
+
+        return BLOCKS.grass;
+
+    }
+
+
+    if (
+        itemType === "dirt"
+    ) {
+
+        return BLOCKS.dirt;
+
+    }
+
+
+    if (
+        itemType === "stone"
+    ) {
+
+        return BLOCKS.stone;
+
+    }
+
+
+    if (
+        itemType === "wood"
+    ) {
+
+        return BLOCKS.wood;
+
+    }
+
+
+    if (
+        itemType === "leaves"
+    ) {
+
+        return BLOCKS.leaves;
+
+    }
+
+
+    if (
+        itemType === "planks"
+    ) {
+
+        return BLOCKS.planks;
+
+    }
+
+
+    if (
+        itemType === "crafting_table"
+    ) {
+
+        return BLOCKS.crafting_table;
+
+    }
+
+
+    return null;
+
 }
 
 
@@ -147,6 +232,7 @@ function placeBlock() {
 
     const block =
         getTargetBlock();
+
 
     if (!block) {
         return;
@@ -170,11 +256,12 @@ function placeBlock() {
 
 
     /*
-       Find the clicked face.
+       Find the exact face being clicked.
     */
 
     const raycaster =
         new THREE.Raycaster();
+
 
     raycaster.setFromCamera(
         new THREE.Vector2(0, 0),
@@ -197,13 +284,26 @@ function placeBlock() {
         hits[0];
 
 
+    /*
+       Get the face normal.
+    */
+
     const normal =
         hit.face.normal;
 
 
+    /*
+       Start at the block position.
+    */
+
     const position =
         block.position.clone();
 
+
+    /*
+       Move one block in the
+       direction of the clicked face.
+    */
 
     position.add(normal);
 
@@ -230,111 +330,82 @@ function placeBlock() {
        Don't place inside another block.
     */
 
-    if (world.has(key)) {
+    if (
+        world.has(key)
+    ) {
+
         return;
+
     }
 
 
-    /*
-       Don't place a block inside
-       the player.
-    */
+    /* ==================================================
+       PLAYER COLLISION
+    ================================================== */
 
     const playerX =
         camera.position.x;
+
 
     const playerY =
         camera.position.y -
         EYE_HEIGHT;
 
+
     const playerZ =
         camera.position.z;
 
 
+    /*
+       Don't place the block inside
+       the player's body.
+    */
+
     if (
-        x + 1 > playerX - PLAYER_RADIUS &&
-        x < playerX + PLAYER_RADIUS &&
-        y + 1 > playerY &&
-        y < playerY + PLAYER_HEIGHT &&
-        z + 1 > playerZ - PLAYER_RADIUS &&
-        z < playerZ + PLAYER_RADIUS
+
+        x + 1 >
+        playerX - PLAYER_RADIUS &&
+
+        x <
+        playerX + PLAYER_RADIUS &&
+
+        y + 1 >
+        playerY &&
+
+        y <
+        playerY + PLAYER_HEIGHT &&
+
+        z + 1 >
+        playerZ - PLAYER_RADIUS &&
+
+        z <
+        playerZ + PLAYER_RADIUS
+
     ) {
 
         return;
+
     }
 
 
-    /*
-       Convert the selected item's
-       name into the actual block.
-    */
+    /* ==================================================
+       GET BLOCK TYPE
+    ================================================== */
 
-    let blockType = null;
+    const blockType =
+        getBlockTypeFromItem(
+            selectedItem.type
+        );
 
-
-    if (
-        selectedItem.type === "grass"
-    ) {
-        blockType =
-            BLOCKS.grass;
-    }
-
-    else if (
-        selectedItem.type === "dirt"
-    ) {
-        blockType =
-            BLOCKS.dirt;
-    }
-
-    else if (
-        selectedItem.type === "stone"
-    ) {
-        blockType =
-            BLOCKS.stone;
-    }
-
-    else if (
-        selectedItem.type === "wood"
-    ) {
-        blockType =
-            BLOCKS.wood;
-    }
-
-    else if (
-        selectedItem.type === "leaves"
-    ) {
-        blockType =
-            BLOCKS.leaves;
-    }
-
-    else if (
-        selectedItem.type === "planks"
-    ) {
-        blockType =
-            BLOCKS.planks;
-    }
-
-    else if (
-        selectedItem.type === "crafting_table"
-    ) {
-        blockType =
-            BLOCKS.crafting_table;
-    }
-
-
-    /*
-       If the block doesn't exist,
-       don't place anything.
-    */
 
     if (!blockType) {
         return;
     }
 
 
-    /*
-       Place the block.
-    */
+    /* ==================================================
+       PLACE BLOCK
+    ================================================== */
 
     addBlock(
         x,
@@ -344,9 +415,9 @@ function placeBlock() {
     );
 
 
-    /*
-       Remove one item.
-    */
+    /* ==================================================
+       REMOVE ONE ITEM
+    ================================================== */
 
     selectedItem.amount--;
 
@@ -374,6 +445,11 @@ function placeBlock() {
 document.addEventListener(
     "mousedown",
     event => {
+
+        /*
+           Don't interact with blocks
+           when the mouse isn't locked.
+        */
 
         if (!mouseLocked) {
             return;
