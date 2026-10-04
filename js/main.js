@@ -1,3 +1,15 @@
+/*
+=========================================================
+BLOCKWORLD
+Main Game
+=========================================================
+*/
+
+
+/* ======================================================
+   CANVAS
+====================================================== */
+
 const canvas =
     document.getElementById("game");
 
@@ -9,8 +21,12 @@ const canvas =
 const scene =
     new THREE.Scene();
 
+
 scene.background =
-    new THREE.Color(0x87ceeb);
+    new THREE.Color(
+        0x87ceeb
+    );
+
 
 scene.fog =
     new THREE.Fog(
@@ -44,10 +60,12 @@ const renderer =
         antialias: false
     });
 
+
 renderer.setSize(
     window.innerWidth,
     window.innerHeight
 );
+
 
 renderer.setPixelRatio(
     Math.min(
@@ -68,7 +86,10 @@ const skyLight =
         1.8
     );
 
-scene.add(skyLight);
+
+scene.add(
+    skyLight
+);
 
 
 const sun =
@@ -77,13 +98,17 @@ const sun =
         1.5
     );
 
+
 sun.position.set(
     30,
     50,
     20
 );
 
-scene.add(sun);
+
+scene.add(
+    sun
+);
 
 
 /* ======================================================
@@ -98,7 +123,9 @@ window.addEventListener(
             window.innerWidth /
             window.innerHeight;
 
+
         camera.updateProjectionMatrix();
+
 
         renderer.setSize(
             window.innerWidth,
@@ -110,14 +137,14 @@ window.addEventListener(
 
 
 /* ======================================================
-   WORLD
+   CREATE WORLD
 ====================================================== */
 
 generateWorld();
 
 
 /* ======================================================
-   PLAYER SPAWN
+   PLAYER START POSITION
 ====================================================== */
 
 camera.position.set(
@@ -131,12 +158,16 @@ camera.position.set(
 
 
 /* ======================================================
-   GAME LOOP
+   GAME CLOCK
 ====================================================== */
 
 const clock =
     new THREE.Clock();
 
+
+/* ======================================================
+   GAME LOOP
+====================================================== */
 
 function gameLoop() {
 
@@ -152,9 +183,36 @@ function gameLoop() {
         );
 
 
-    updatePlayer(delta);
-updateMining(delta);
+    /*
+       Player movement.
+    */
 
+    updatePlayer(
+        delta
+    );
+
+
+    /*
+       Mining.
+    */
+
+    updateMining(
+        delta
+    );
+
+
+    /*
+       Day / night cycle.
+    */
+
+    updateDayNight(
+        delta
+    );
+
+
+    /*
+       Render everything.
+    */
 
     renderer.render(
         scene,
