@@ -1109,3 +1109,80 @@ body {
 
     transform: rotate(-20deg);
 }
+/* ======================================================
+   ORE HOTBAR ICONS
+====================================================== */
+
+.coal-ore-icon {
+    background:
+        radial-gradient(
+            circle at 30% 30%,
+            #555 0 8%,
+            transparent 9%
+        ),
+        radial-gradient(
+            circle at 70% 65%,
+            #111 0 12%,
+            transparent 13%
+        ),
+        radial-gradient(
+            circle at 45% 75%,
+            #333 0 9%,
+            transparent 10%
+        ),
+        #777;
+    border-radius: 3px;
+    box-shadow:
+        inset 2px 2px 0 #999,
+        inset -2px -2px 0 #555;
+}
+
+
+.iron-ore-icon {
+    background:
+        radial-gradient(
+            circle at 30% 30%,
+            #e0a47c 0 9%,
+            transparent 10%
+        ),
+        radial-gradient(
+            circle at 70% 60%,
+            #a85f3d 0 12%,
+            transparent 13%
+        ),
+        radial-gradient(
+            circle at 45% 78%,
+            #c9825d 0 8%,
+            transparent 9%
+        ),
+        #777;
+    border-radius: 3px;
+    box-shadow:
+        inset 2px 2px 0 #999,
+        inset -2px -2px 0 #555;
+}
+
+
+.diamond-ore-icon {
+    background:
+        radial-gradient(
+            circle at 30% 30%,
+            #a4fbff 0 8%,
+            transparent 9%
+        ),
+        radial-gradient(
+            circle at 70% 60%,
+            #22d5e5 0 12%,
+            transparent 13%
+        ),
+        radial-gradient(
+            circle at 45% 78%,
+            #087d8c 0 9%,
+            transparent 10%
+        ),
+        #777;
+    border-radius: 3px;
+    box-shadow:
+        inset 2px 2px 0 #999,
+        inset -2px -2px 0 #555;
+}

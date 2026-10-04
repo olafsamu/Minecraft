@@ -262,29 +262,56 @@ function getIconClass(type) {
         case "grass":
             return "grass-icon";
 
+
         case "dirt":
             return "dirt-icon";
+
 
         case "stone":
             return "stone-icon";
 
+
         case "wood":
             return "wood-icon";
+
 
         case "leaves":
             return "leaves-icon";
 
+
         case "planks":
             return "planks-icon";
+
 
         case "crafting_table":
             return "crafting-table-icon";
 
+
         case "sticks":
             return "sticks-icon";
 
+
         case "pickaxe":
             return "pickaxe-icon";
+
+
+        /*
+        ==================================================
+        NEW ORE ICONS
+        ==================================================
+        */
+
+        case "coal_ore":
+            return "coal-ore-icon";
+
+
+        case "iron_ore":
+            return "iron-ore-icon";
+
+
+        case "diamond_ore":
+            return "diamond-ore-icon";
+
 
         default:
             return "";
@@ -524,6 +551,7 @@ document.addEventListener(
 
             selectedHotbarSlot++;
 
+
             if (
                 selectedHotbarSlot >= HOTBAR_SIZE
             ) {
@@ -539,6 +567,7 @@ document.addEventListener(
         ) {
 
             selectedHotbarSlot--;
+
 
             if (
                 selectedHotbarSlot < 0
