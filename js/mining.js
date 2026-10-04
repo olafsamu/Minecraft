@@ -64,8 +64,45 @@ function getTargetBlock() {
     direction.normalize();
 
 
+    const origin =
+        camera.position.clone();
     const start =
         camera.position.clone();
+
+
+    /*
+       Walk through the world in tiny steps.
+
+       This is deliberately simple and reliable.
+       Six blocks of reach at 0.05-block steps
+       is only 120 checks.
+    */
+
+    const step =
+        0.05;
+
+
+    for (
+        let distance = 0;
+        distance <= REACH_DISTANCE;
+        distance += step
+    ) {
+
+        const point =
+            origin.clone().addScaledVector(
+                direction,
+                distance
+            );
+
+
+        const x =
+            Math.floor(point.x);
+
+        const y =
+            Math.floor(point.y);
+
+        const z =
+            Math.floor(point.z);
 
 
     /*
@@ -130,6 +167,13 @@ function getTargetBlock() {
             );
 
 
+<<<<<<< HEAD
+        /*
+           Did we hit a block?
+        */
+
+=======
+>>>>>>> 47a8facad26dd03af3d1122f7c045cee8a4b3173
         if (
             world.has(key)
         ) {
@@ -138,9 +182,32 @@ function getTargetBlock() {
                 world.get(key);
 
 
+<<<<<<< HEAD
+            if (!type) {
+                return null;
+            }
+
+
+            /*
+               Store everything mining needs.
+            */
+
+            targetProxy.position.set(
+
+                x + 0.5,
+
+                y + 0.5,
+
+                z + 0.5
+
+            );
+
+
+=======
             /*
             Store target information.
             */
+>>>>>>> 47a8facad26dd03af3d1122f7c045cee8a4b3173
             targetProxy.userData.key =
                 key;
 
@@ -157,10 +224,76 @@ function getTargetBlock() {
                 z;
 
 
+<<<<<<< HEAD
+            /*
+               Calculate the face we entered.
+
+               This is mainly needed for block placement.
+            */
+
+            const previousPoint =
+                origin.clone().addScaledVector(
+                    direction,
+                    Math.max(
+                        0,
+                        distance - step
+                    )
+                );
+=======
             targetedBlock =
                 targetProxy;
+>>>>>>> 47a8facad26dd03af3d1122f7c045cee8a4b3173
 
 
+<<<<<<< HEAD
+            const previousX =
+                Math.floor(
+                    previousPoint.x
+                );
+
+            const previousY =
+                Math.floor(
+                    previousPoint.y
+                );
+
+            const previousZ =
+                Math.floor(
+                    previousPoint.z
+                );
+
+
+            const faceNormal =
+                new THREE.Vector3(
+
+                    previousX - x,
+
+                    previousY - y,
+
+                    previousZ - z
+
+                );
+
+
+            /*
+               If we entered through exactly the same
+               voxel because of the first step, determine
+               the dominant direction instead.
+            */
+
+            if (
+                faceNormal.lengthSq() === 0
+            ) {
+
+                const ax =
+                    Math.abs(
+                        direction.x
+                    );
+
+                const ay =
+                    Math.abs(
+                        direction.y
+                    );
+=======
             /*
             Keep the proxy positioned correctly
             for the crack overlay.
@@ -170,10 +303,88 @@ function getTargetBlock() {
                 y + 0.5,
                 z + 0.5
             );
+>>>>>>> 47a8facad26dd03af3d1122f7c045cee8a4b3173
+
+<<<<<<< HEAD
+                const az =
+                    Math.abs(
+                        direction.z
+                    );
+=======
+>>>>>>> 47a8facad26dd03af3d1122f7c045cee8a4b3173
+
+<<<<<<< HEAD
+
+                if (
+                    ax >= ay &&
+                    ax >= az
+                ) {
+
+                    faceNormal.set(
+
+                        direction.x > 0
+                            ? -1
+                            : 1,
+
+                        0,
+
+                        0
+
+                    );
+
+                }
+
+                else if (
+                    ay >= az
+                ) {
+
+                    faceNormal.set(
+
+                        0,
+
+                        direction.y > 0
+                            ? -1
+                            : 1,
+
+                        0
+
+                    );
+
+                }
+
+                else {
+
+                    faceNormal.set(
+
+                        0,
+
+                        0,
+
+                        direction.z > 0
+                            ? -1
+                            : 1
+
+                    );
+
+                }
+
+            }
+
+
+            targetProxy.userData.faceNormal =
+                faceNormal;
+
+
+            targetedBlock =
+                targetProxy;
 
 
             return targetProxy;
         }
+=======
+            return targetProxy;
+        }
+>>>>>>> 47a8facad26dd03af3d1122f7c045cee8a4b3173
     }
 
 
