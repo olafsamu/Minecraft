@@ -27,11 +27,11 @@ function getTargetBlock() {
 
     const blockMeshes = [];
 
-    meshes.forEach(mesh => {
-
-        blockMeshes.push(mesh);
-
-    });
+    meshes.forEach(
+        mesh => {
+            blockMeshes.push(mesh);
+        }
+    );
 
 
     const hits =
@@ -40,7 +40,9 @@ function getTargetBlock() {
         );
 
 
-    if (hits.length === 0) {
+    if (
+        hits.length === 0
+    ) {
 
         targetedBlock = null;
 
@@ -75,6 +77,66 @@ function getTargetBlock() {
 
 
 /* ======================================================
+   CHECK IF PLAYER CAN BREAK BLOCK
+====================================================== */
+
+function canBreakBlock(blockType) {
+
+    if (!blockType) {
+        return false;
+    }
+
+
+    /*
+       Blocks that do not require
+       a tool can always be broken.
+    */
+
+    if (
+        !blockType.requiresTool
+    ) {
+
+        return true;
+
+    }
+
+
+    /*
+       Get currently selected item.
+    */
+
+    const selectedItem =
+        getSelectedItem();
+
+
+    if (!selectedItem) {
+
+        return false;
+
+    }
+
+
+    /*
+       Stone requires a pickaxe.
+    */
+
+    if (
+        blockType.requiredTool === "pickaxe"
+    ) {
+
+        return (
+            selectedItem.type === "pickaxe"
+        );
+
+    }
+
+
+    return false;
+
+}
+
+
+/* ======================================================
    BREAK BLOCK
 ====================================================== */
 
@@ -98,8 +160,41 @@ function breakBlock() {
     }
 
 
+    /*
+       Get block type.
+    */
+
     const blockType =
         block.userData.type;
+
+
+    /*
+       Check whether the currently
+       selected item can break it.
+    */
+
+    if (
+        !canBreakBlock(blockType)
+    ) {
+
+        /*
+           Stone needs a pickaxe.
+        */
+
+        if (
+            blockType &&
+            blockType.requiredTool === "pickaxe"
+        ) {
+
+            console.log(
+                "You need a pickaxe to break stone!"
+            );
+
+        }
+
+        return;
+
+    }
 
 
     /*
@@ -117,14 +212,14 @@ function breakBlock() {
 
 
     /*
-       Remove from mesh collection.
+       Remove it from mesh collection.
     */
 
     meshes.delete(key);
 
 
     /*
-       Give block to player.
+       Give player the block.
     */
 
     if (blockType) {
@@ -138,7 +233,7 @@ function breakBlock() {
 
 
     /*
-       Clean up.
+       Clean up memory.
     */
 
     block.geometry.dispose();
@@ -146,80 +241,6 @@ function breakBlock() {
     block.material.dispose();
 
     targetedBlock = null;
-
-}
-
-
-/* ======================================================
-   GET BLOCK TYPE FROM ITEM
-====================================================== */
-
-function getBlockTypeFromItem(itemType) {
-
-    if (
-        itemType === "grass"
-    ) {
-
-        return BLOCKS.grass;
-
-    }
-
-
-    if (
-        itemType === "dirt"
-    ) {
-
-        return BLOCKS.dirt;
-
-    }
-
-
-    if (
-        itemType === "stone"
-    ) {
-
-        return BLOCKS.stone;
-
-    }
-
-
-    if (
-        itemType === "wood"
-    ) {
-
-        return BLOCKS.wood;
-
-    }
-
-
-    if (
-        itemType === "leaves"
-    ) {
-
-        return BLOCKS.leaves;
-
-    }
-
-
-    if (
-        itemType === "planks"
-    ) {
-
-        return BLOCKS.planks;
-
-    }
-
-
-    if (
-        itemType === "crafting_table"
-    ) {
-
-        return BLOCKS.crafting_table;
-
-    }
-
-
-    return null;
 
 }
 
@@ -251,12 +272,27 @@ function placeBlock() {
     if (
         selectedItem.amount <= 0
     ) {
+
         return;
+
     }
 
 
     /*
-       Find the exact face being clicked.
+       Pickaxes cannot be placed.
+    */
+
+    if (
+        selectedItem.type === "pickaxe"
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+       Find clicked face.
     */
 
     const raycaster =
@@ -275,8 +311,12 @@ function placeBlock() {
         );
 
 
-    if (hits.length === 0) {
+    if (
+        hits.length === 0
+    ) {
+
         return;
+
     }
 
 
@@ -284,26 +324,13 @@ function placeBlock() {
         hits[0];
 
 
-    /*
-       Get the face normal.
-    */
-
     const normal =
         hit.face.normal;
 
 
-    /*
-       Start at the block position.
-    */
-
     const position =
         block.position.clone();
 
-
-    /*
-       Move one block in the
-       direction of the clicked face.
-    */
 
     position.add(normal);
 
@@ -339,30 +366,26 @@ function placeBlock() {
     }
 
 
-    /* ==================================================
-       PLAYER COLLISION
-    ================================================== */
+    /*
+       Player position.
+    */
 
     const playerX =
         camera.position.x;
 
-
     const playerY =
         camera.position.y -
         EYE_HEIGHT;
-
 
     const playerZ =
         camera.position.z;
 
 
     /*
-       Don't place the block inside
-       the player's body.
+       Don't place inside player.
     */
 
     if (
-
         x + 1 >
         playerX - PLAYER_RADIUS &&
 
@@ -380,7 +403,6 @@ function placeBlock() {
 
         z <
         playerZ + PLAYER_RADIUS
-
     ) {
 
         return;
@@ -388,24 +410,92 @@ function placeBlock() {
     }
 
 
-    /* ==================================================
-       GET BLOCK TYPE
-    ================================================== */
+    /*
+       Convert selected item
+       into a block type.
+    */
 
-    const blockType =
-        getBlockTypeFromItem(
-            selectedItem.type
-        );
+    let blockType = null;
 
 
-    if (!blockType) {
-        return;
+    if (
+        selectedItem.type === "grass"
+    ) {
+
+        blockType =
+            BLOCKS.grass;
+
+    }
+
+    else if (
+        selectedItem.type === "dirt"
+    ) {
+
+        blockType =
+            BLOCKS.dirt;
+
+    }
+
+    else if (
+        selectedItem.type === "stone"
+    ) {
+
+        blockType =
+            BLOCKS.stone;
+
+    }
+
+    else if (
+        selectedItem.type === "wood"
+    ) {
+
+        blockType =
+            BLOCKS.wood;
+
+    }
+
+    else if (
+        selectedItem.type === "leaves"
+    ) {
+
+        blockType =
+            BLOCKS.leaves;
+
+    }
+
+    else if (
+        selectedItem.type === "planks"
+    ) {
+
+        blockType =
+            BLOCKS.planks;
+
+    }
+
+    else if (
+        selectedItem.type === "crafting_table"
+    ) {
+
+        blockType =
+            BLOCKS.crafting_table;
+
     }
 
 
-    /* ==================================================
-       PLACE BLOCK
-    ================================================== */
+    /*
+       Pickaxe is not a block.
+    */
+
+    if (!blockType) {
+
+        return;
+
+    }
+
+
+    /*
+       Place block.
+    */
 
     addBlock(
         x,
@@ -415,9 +505,9 @@ function placeBlock() {
     );
 
 
-    /* ==================================================
-       REMOVE ONE ITEM
-    ================================================== */
+    /*
+       Remove one item.
+    */
 
     selectedItem.amount--;
 
@@ -446,13 +536,10 @@ document.addEventListener(
     "mousedown",
     event => {
 
-        /*
-           Don't interact with blocks
-           when the mouse isn't locked.
-        */
-
         if (!mouseLocked) {
+
             return;
+
         }
 
 
@@ -474,29 +561,12 @@ document.addEventListener(
         */
 
         if (
-    event.button === 2
-) {
+            event.button === 2
+        ) {
 
-    const block =
-        getTargetBlock();
+            placeBlock();
 
-
-    if (
-        block &&
-        block.userData.type ===
-        BLOCKS.crafting_table
-    ) {
-
-        openCraftingTable();
-
-        return;
-
-    }
-
-
-    placeBlock();
-
-}
+        }
 
     }
 );
