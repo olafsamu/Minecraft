@@ -142,6 +142,7 @@ window.addEventListener(
 
 generateWorld();
 
+generateOres();
 
 /* ======================================================
    PLAYER START POSITION
