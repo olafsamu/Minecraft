@@ -45,11 +45,6 @@ let tableCraftingOpen = false;
 
 function toggleCrafting() {
 
-    /*
-       If the crafting table menu is open,
-       don't open the normal menu.
-    */
-
     if (tableCraftingOpen) {
         return;
     }
@@ -106,7 +101,8 @@ function toggleCrafting() {
 
             if (
                 game &&
-                !craftingOpen
+                !craftingOpen &&
+                !tableCraftingOpen
             ) {
 
                 game.requestPointerLock();
@@ -129,12 +125,29 @@ function toggleCrafting() {
 
 function openCraftingTable() {
 
-    /*
-       Don't open twice.
-    */
-
     if (tableCraftingOpen) {
         return;
+    }
+
+
+    /*
+       Close normal crafting if necessary.
+    */
+
+    craftingOpen = false;
+
+
+    const normalMenu =
+        document.getElementById(
+            "craftingMenu"
+        );
+
+
+    if (normalMenu) {
+
+        normalMenu.style.display =
+            "none";
+
     }
 
 
@@ -298,27 +311,25 @@ function getCraftingResult() {
        2 PLANKS
        =
        4 STICKS
-
-       The two planks can be placed
-       next to each other horizontally
-       or vertically.
     */
+
 
     if (
         planks === 2 &&
         wood === 0
     ) {
 
+
         /*
            Horizontal:
 
-           [P][P]
-           [ ][ ]
+           P P
+           _ _
 
            OR
 
-           [ ][ ]
-           [P][P]
+           _ _
+           P P
         */
 
         if (
@@ -344,13 +355,13 @@ function getCraftingResult() {
         /*
            Vertical:
 
-           [P][ ]
-           [P][ ]
+           P _
+           P _
 
            OR
 
-           [ ][P]
-           [ ][P]
+           _ P
+           _ P
         */
 
         if (
@@ -441,6 +452,11 @@ function putCraftingItem(slot) {
 
     }
 
+
+    /*
+       Only these items can currently
+       go into the 2x2 crafting grid.
+    */
 
     if (
         selected.type !== "wood" &&
@@ -684,6 +700,246 @@ function updateCraftingUI() {
 
 
 /* ======================================================
+   GET 3x3 CRAFTING TABLE RESULT
+====================================================== */
+
+function getTableCraftingResult() {
+
+    /*
+       Wooden pickaxe recipe:
+
+       P P P
+       _ S _
+       _ S _
+
+       P = planks
+       S = sticks
+
+       Result = 1 wooden pickaxe
+    */
+
+
+    if (
+        tableCraftingGrid[0] === "planks" &&
+        tableCraftingGrid[1] === "planks" &&
+        tableCraftingGrid[2] === "planks" &&
+
+        tableCraftingGrid[3] === null &&
+        tableCraftingGrid[4] === "sticks" &&
+        tableCraftingGrid[5] === null &&
+
+        tableCraftingGrid[6] === null &&
+        tableCraftingGrid[7] === "sticks" &&
+        tableCraftingGrid[8] === null
+    ) {
+
+        return {
+            type: "pickaxe",
+            amount: 1
+        };
+
+    }
+
+
+    return null;
+
+}
+
+
+/* ======================================================
+   PUT ITEM INTO 3x3
+====================================================== */
+
+function putTableCraftingItem(slot) {
+
+    if (
+        slot < 0 ||
+        slot >= 9
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+       Don't overwrite an occupied slot.
+    */
+
+    if (
+        tableCraftingGrid[slot] !== null
+    ) {
+
+        return;
+
+    }
+
+
+    const selected =
+        getSelectedItem();
+
+
+    if (!selected) {
+        return;
+    }
+
+
+    if (
+        selected.amount <= 0
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+       The pickaxe recipe uses
+       planks and sticks.
+    */
+
+    if (
+        selected.type !== "planks" &&
+        selected.type !== "sticks"
+    ) {
+
+        return;
+
+    }
+
+
+    tableCraftingGrid[slot] =
+        selected.type;
+
+
+    selected.amount--;
+
+
+    if (
+        selected.amount <= 0
+    ) {
+
+        hotbar[
+            selectedHotbarSlot
+        ] = null;
+
+    }
+
+
+    updateHotbarUI();
+
+    updateTableCraftingUI();
+
+}
+
+
+/* ======================================================
+   REMOVE ITEM FROM 3x3
+====================================================== */
+
+function removeTableCraftingItem(slot) {
+
+    if (
+        slot < 0 ||
+        slot >= 9
+    ) {
+
+        return;
+
+    }
+
+
+    const item =
+        tableCraftingGrid[slot];
+
+
+    if (!item) {
+        return;
+    }
+
+
+    /*
+       Return item to hotbar.
+    */
+
+    const added =
+        addItem(
+            item,
+            1
+        );
+
+
+    if (!added) {
+
+        return;
+
+    }
+
+
+    tableCraftingGrid[slot] =
+        null;
+
+
+    updateTableCraftingUI();
+
+}
+
+
+/* ======================================================
+   TAKE 3x3 RESULT
+====================================================== */
+
+function takeTableCraftingResult() {
+
+    const result =
+        getTableCraftingResult();
+
+
+    if (!result) {
+        return;
+    }
+
+
+    /*
+       Add the pickaxe to inventory.
+    */
+
+    const added =
+        addItem(
+            result.type,
+            result.amount
+        );
+
+
+    if (!added) {
+
+        return;
+
+    }
+
+
+    /*
+       Consume recipe ingredients.
+    */
+
+    for (
+        let i = 0;
+        i < 9;
+        i++
+    ) {
+
+        tableCraftingGrid[i] =
+            null;
+
+    }
+
+
+    updateTableCraftingUI();
+
+}
+
+
+/* ======================================================
    UPDATE 3x3 UI
 ====================================================== */
 
@@ -724,12 +980,63 @@ function updateTableCraftingUI() {
 
         }
 
+        else if (
+            tableCraftingGrid[i] === "sticks"
+        ) {
+
+            slot.textContent =
+                "🪵";
+
+        }
+
         else {
 
             slot.textContent =
                 "";
 
         }
+
+    }
+
+
+    /*
+       Update result.
+    */
+
+    const resultSlot =
+        document.getElementById(
+            "table-crafting-result"
+        );
+
+
+    if (!resultSlot) {
+        return;
+    }
+
+
+    const result =
+        getTableCraftingResult();
+
+
+    if (result) {
+
+        resultSlot.textContent =
+            "⛏️ × 1";
+
+        resultSlot.classList.add(
+            "crafting-result-ready"
+        );
+
+    }
+
+    else {
+
+        resultSlot.textContent =
+            "";
+
+        resultSlot.classList.remove(
+            "crafting-result-ready"
+        );
 
     }
 
@@ -810,10 +1117,42 @@ document.addEventListener(
             )
         ) {
 
-            /*
-               3x3 crafting will be added
-               in the next step.
-            */
+            const slot =
+                parseInt(
+                    target.dataset.slot
+                );
+
+
+            if (
+                tableCraftingGrid[slot] !== null
+            ) {
+
+                removeTableCraftingItem(
+                    slot
+                );
+
+            }
+
+            else {
+
+                putTableCraftingItem(
+                    slot
+                );
+
+            }
+
+
+            return;
+
+        }
+
+
+        if (
+            target.id ===
+            "table-crafting-result"
+        ) {
+
+            takeTableCraftingResult();
 
             return;
 
@@ -841,7 +1180,8 @@ document.addEventListener(
 
 
         /*
-           C opens/closes normal crafting.
+           C opens/closes normal crafting
+           and closes the crafting table.
         */
 
         if (
