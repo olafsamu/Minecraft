@@ -46,24 +46,18 @@ function toggleCrafting() {
 
         }
 
-
         menu.style.display = "flex";
 
     }
 
     else {
 
-        /*
-           Close crafting menu.
-        */
-
         menu.style.display = "none";
 
 
         /*
-           Put the mouse back into the game.
-           We wait a tiny moment so the C key
-           does not interfere with pointer lock.
+           Give the browser a moment before
+           requesting pointer lock again.
         */
 
         setTimeout(() => {
@@ -96,23 +90,50 @@ function toggleCrafting() {
 
 function getCraftingResult() {
 
+    /*
+       Recipe:
+
+       WOOD
+
+       =
+       
+       4 PLANKS
+    */
+
+    let woodCount = 0;
+
+
     for (let i = 0; i < 4; i++) {
 
         if (
-            craftingGrid[i] !== "wood"
+            craftingGrid[i] === "wood"
         ) {
 
-            return null;
+            woodCount++;
 
         }
 
     }
 
 
-    return {
-        type: "planks",
-        amount: 4
-    };
+    /*
+       Exactly one wood makes
+       four planks.
+    */
+
+    if (
+        woodCount === 1
+    ) {
+
+        return {
+            type: "planks",
+            amount: 4
+        };
+
+    }
+
+
+    return null;
 
 }
 
@@ -146,6 +167,11 @@ function putCraftingItem(slot) {
         return;
     }
 
+
+    /*
+       Only wood can currently
+       be placed in the grid.
+    */
 
     if (
         selected.type !== "wood"
@@ -201,11 +227,20 @@ function takeCraftingResult() {
     }
 
 
+    /*
+       Give the player 4 planks.
+    */
+
     addItem(
         result.type,
         result.amount
     );
 
+
+    /*
+       Remove the wood from
+       the crafting grid.
+    */
 
     for (let i = 0; i < 4; i++) {
 
@@ -273,7 +308,7 @@ function updateCraftingUI() {
     if (result) {
 
         resultSlot.textContent =
-            "🪵 × " + result.amount;
+            "🪵 × 4";
 
         resultSlot.classList.add(
             "crafting-result-ready"
@@ -306,6 +341,10 @@ document.addEventListener(
             event.target;
 
 
+        /*
+           Click a crafting slot.
+        */
+
         if (
             target.classList.contains(
                 "crafting-slot"
@@ -324,6 +363,10 @@ document.addEventListener(
 
         }
 
+
+        /*
+           Click crafting result.
+        */
 
         if (
             target.id ===
