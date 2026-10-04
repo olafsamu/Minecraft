@@ -87,16 +87,18 @@ function initClouds() {
     We change the color ourselves depending on
     the time of day, which keeps the system simple.
     */
-    cloudMaterial =
-        new THREE.MeshBasicMaterial({
-            color: 0xffffff,
+  cloudMaterial =
+    new THREE.MeshBasicMaterial({
+        color: 0xffffff,
 
-            fog: true,
+        fog: true,
 
-            depthTest: true,
+        side: THREE.DoubleSide,
 
-            depthWrite: true
-        });
+        depthTest: true,
+
+        depthWrite: true
+    });
 
 
     cloudMesh =
