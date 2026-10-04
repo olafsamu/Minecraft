@@ -34,8 +34,8 @@ function toggleCrafting() {
     if (craftingOpen) {
 
         /*
-           Release the mouse from the game
-           so we can click the crafting menu.
+           Release mouse so the crafting menu
+           can be used.
         */
 
         if (
@@ -47,32 +47,46 @@ function toggleCrafting() {
         }
 
 
-        /*
-           Tell the rest of the game
-           that the mouse is no longer locked.
-        */
-
-        if (
-            typeof mouseLocked !== "undefined"
-        ) {
-
-            mouseLocked = false;
-
-        }
-
-
         menu.style.display = "flex";
 
     }
 
     else {
 
+        /*
+           Close crafting menu.
+        */
+
         menu.style.display = "none";
+
+
+        /*
+           Put the mouse back into the game.
+           We wait a tiny moment so the C key
+           does not interfere with pointer lock.
+        */
+
+        setTimeout(() => {
+
+            const game =
+                document.getElementById("game");
+
+            if (
+                game &&
+                !craftingOpen
+            ) {
+
+                game.requestPointerLock();
+
+            }
+
+        }, 100);
 
     }
 
 
     updateCraftingUI();
+
 }
 
 
@@ -81,16 +95,6 @@ function toggleCrafting() {
 ====================================================== */
 
 function getCraftingResult() {
-
-    /*
-       Recipe:
-
-       WOOD | WOOD
-       WOOD | WOOD
-
-       =
-       4 PLANKS
-    */
 
     for (let i = 0; i < 4; i++) {
 
@@ -142,11 +146,6 @@ function putCraftingItem(slot) {
         return;
     }
 
-
-    /*
-       Only wood is allowed for
-       our first recipe.
-    */
 
     if (
         selected.type !== "wood"
@@ -202,19 +201,11 @@ function takeCraftingResult() {
     }
 
 
-    /*
-       Add the planks to the inventory.
-    */
-
     addItem(
         result.type,
         result.amount
     );
 
-
-    /*
-       Clear the crafting grid.
-    */
 
     for (let i = 0; i < 4; i++) {
 
@@ -304,7 +295,7 @@ function updateCraftingUI() {
 
 
 /* ======================================================
-   CRAFTING MENU CLICKING
+   CRAFTING CLICK EVENTS
 ====================================================== */
 
 document.addEventListener(
@@ -314,10 +305,6 @@ document.addEventListener(
         const target =
             event.target;
 
-
-        /*
-           Click a crafting slot.
-        */
 
         if (
             target.classList.contains(
@@ -337,10 +324,6 @@ document.addEventListener(
 
         }
 
-
-        /*
-           Click the result.
-        */
 
         if (
             target.id ===
