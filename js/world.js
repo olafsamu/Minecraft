@@ -13,7 +13,7 @@ const meshes = new Map();
 
 const WORLD_SIZE = 24;
 
-const WORLD_DEPTH = 32;
+const WORLD_DEPTH = 24;
 /* ======================================================
    BLOCK KEY
 ====================================================== */
