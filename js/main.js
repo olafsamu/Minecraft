@@ -153,6 +153,7 @@ function gameLoop() {
 
 
     updatePlayer(delta);
+updateMining(delta);
 
 
     renderer.render(
