@@ -74,7 +74,7 @@ body {
     text-shadow:
         1px 1px 3px black;
 
-    pointer-events: none;
+    pointer-events: auto;
 
 }
 

@@ -39,22 +39,20 @@ const hotbar = [
         amount: 0
     },
 
-  {
-    type: "crafting_table",
-    amount: 0
-},
+    {
+        type: "crafting_table",
+        amount: 0
+    },
 
-{
-    type: "sticks",
-    amount: 0
-},
+    {
+        type: "sticks",
+        amount: 0
+    },
 
-{
-    type: "pickaxe",
-    amount: 0
-}
-
-null
+    {
+        type: "pickaxe",
+        amount: 0
+    }
 
 ];
 
@@ -126,7 +124,9 @@ function addItem(
         normalizeItemName(type);
 
 
-    /* Add to existing stack */
+    /*
+       First add to an existing stack.
+    */
 
     for (
         let i = 0;
@@ -156,7 +156,9 @@ function addItem(
     }
 
 
-    /* Find empty slot */
+    /*
+       Otherwise find an empty slot.
+    */
 
     for (
         let i = 0;
@@ -279,7 +281,10 @@ function getIconClass(type) {
             return "crafting-table-icon";
 
         case "sticks":
-    return "sticks-icon";
+            return "sticks-icon";
+
+        case "pickaxe":
+            return "pickaxe-icon";
 
         default:
             return "";
@@ -290,7 +295,7 @@ function getIconClass(type) {
 
 
 /* ======================================================
-   UPDATE HOTBAR
+   UPDATE HOTBAR UI
 ====================================================== */
 
 function updateHotbarUI() {
@@ -307,7 +312,9 @@ function updateHotbarUI() {
             index
         ) => {
 
-            /* Selected border */
+            /*
+               Highlight selected slot.
+            */
 
             slot.classList.toggle(
                 "selected",
@@ -331,7 +338,9 @@ function updateHotbarUI() {
                 );
 
 
-            /* Empty slot */
+            /*
+               Empty slot.
+            */
 
             if (!item) {
 
@@ -350,12 +359,15 @@ function updateHotbarUI() {
 
                 }
 
+
                 return;
 
             }
 
 
-            /* Icon */
+            /*
+               Set icon.
+            */
 
             if (icon) {
 
@@ -368,7 +380,9 @@ function updateHotbarUI() {
             }
 
 
-            /* Amount */
+            /*
+               Set item amount.
+            */
 
             if (amount) {
 
@@ -406,12 +420,6 @@ document.addEventListener(
 
         let slot = -1;
 
-
-        /*
-           Use event.code instead of only
-           event.key so this works reliably
-           with different keyboard layouts.
-        */
 
         switch (event.code) {
 
@@ -463,7 +471,9 @@ document.addEventListener(
         }
 
 
-        if (slot !== -1) {
+        if (
+            slot !== -1
+        ) {
 
             event.preventDefault();
 
@@ -484,13 +494,23 @@ document.addEventListener(
     event => {
 
         /*
-           Do not change hotbar selection
-           while a crafting menu is open.
+           Don't change selection while
+           a crafting menu is open.
         */
 
         if (
             typeof craftingOpen !== "undefined" &&
             craftingOpen
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            typeof tableCraftingOpen !== "undefined" &&
+            tableCraftingOpen
         ) {
 
             return;
@@ -539,7 +559,7 @@ document.addEventListener(
 
 
 /* ======================================================
-   CLICK HOTBAR SLOT
+   HOTBAR CLICK SELECTION
 ====================================================== */
 
 document.querySelectorAll(
@@ -554,10 +574,6 @@ document.querySelectorAll(
             "mousedown",
             event => {
 
-                /*
-                   Only left click selects.
-                */
-
                 if (
                     event.button !== 0
                 ) {
@@ -567,9 +583,17 @@ document.querySelectorAll(
                 }
 
 
+                /*
+                   Prevent the click from
+                   being treated as a game click.
+                */
+
                 event.stopPropagation();
 
-                selectHotbarSlot(index);
+
+                selectHotbarSlot(
+                    index
+                );
 
             }
         );
@@ -579,7 +603,7 @@ document.querySelectorAll(
 
 
 /* ======================================================
-   INITIAL UPDATE
+   INITIAL UI UPDATE
 ====================================================== */
 
 updateHotbarUI();

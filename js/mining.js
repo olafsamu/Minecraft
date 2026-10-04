@@ -29,7 +29,9 @@ function getTargetBlock() {
 
     meshes.forEach(
         mesh => {
+
             blockMeshes.push(mesh);
+
         }
     );
 
@@ -88,8 +90,7 @@ function canBreakBlock(blockType) {
 
 
     /*
-       Blocks that do not require
-       a tool can always be broken.
+       Normal blocks can be broken by hand.
     */
 
     if (
@@ -100,10 +101,6 @@ function canBreakBlock(blockType) {
 
     }
 
-
-    /*
-       Get currently selected item.
-    */
 
     const selectedItem =
         getSelectedItem();
@@ -125,7 +122,8 @@ function canBreakBlock(blockType) {
     ) {
 
         return (
-            selectedItem.type === "pickaxe"
+            selectedItem.type ===
+            "pickaxe"
         );
 
     }
@@ -160,30 +158,22 @@ function breakBlock() {
     }
 
 
-    /*
-       Get block type.
-    */
-
     const blockType =
         block.userData.type;
 
 
     /*
-       Check whether the currently
-       selected item can break it.
+       Check tool requirement.
     */
 
     if (
         !canBreakBlock(blockType)
     ) {
 
-        /*
-           Stone needs a pickaxe.
-        */
-
         if (
             blockType &&
-            blockType.requiredTool === "pickaxe"
+            blockType.requiredTool ===
+            "pickaxe"
         ) {
 
             console.log(
@@ -198,28 +188,28 @@ function breakBlock() {
 
 
     /*
-       Remove block from world.
+       Remove from world.
     */
 
     world.delete(key);
 
 
     /*
-       Remove block visually.
+       Remove visually.
     */
 
     scene.remove(block);
 
 
     /*
-       Remove it from mesh collection.
+       Remove from mesh collection.
     */
 
     meshes.delete(key);
 
 
     /*
-       Give player the block.
+       Give block to player.
     */
 
     if (blockType) {
@@ -233,14 +223,128 @@ function breakBlock() {
 
 
     /*
-       Clean up memory.
+       Clean up.
     */
 
     block.geometry.dispose();
 
-    block.material.dispose();
+
+    if (
+        Array.isArray(
+            block.material
+        )
+    ) {
+
+        block.material.forEach(
+            material => {
+
+                if (
+                    material.map
+                ) {
+
+                    material.map.dispose();
+
+                }
+
+                material.dispose();
+
+            }
+        );
+
+    }
+
+    else {
+
+        if (
+            block.material.map
+        ) {
+
+            block.material.map.dispose();
+
+        }
+
+        block.material.dispose();
+
+    }
+
 
     targetedBlock = null;
+
+}
+
+
+/* ======================================================
+   GET BLOCK TYPE FROM ITEM
+====================================================== */
+
+function getBlockTypeFromItem(
+    itemType
+) {
+
+    if (
+        itemType === "grass"
+    ) {
+
+        return BLOCKS.grass;
+
+    }
+
+
+    if (
+        itemType === "dirt"
+    ) {
+
+        return BLOCKS.dirt;
+
+    }
+
+
+    if (
+        itemType === "stone"
+    ) {
+
+        return BLOCKS.stone;
+
+    }
+
+
+    if (
+        itemType === "wood"
+    ) {
+
+        return BLOCKS.wood;
+
+    }
+
+
+    if (
+        itemType === "leaves"
+    ) {
+
+        return BLOCKS.leaves;
+
+    }
+
+
+    if (
+        itemType === "planks"
+    ) {
+
+        return BLOCKS.planks;
+
+    }
+
+
+    if (
+        itemType === "crafting_table"
+    ) {
+
+        return BLOCKS.crafting_table;
+
+    }
+
+
+    return null;
 
 }
 
@@ -279,11 +383,20 @@ function placeBlock() {
 
 
     /*
-       Pickaxes cannot be placed.
+       Tools cannot be placed.
     */
 
     if (
         selectedItem.type === "pickaxe"
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        selectedItem.type === "sticks"
     ) {
 
         return;
@@ -373,9 +486,11 @@ function placeBlock() {
     const playerX =
         camera.position.x;
 
+
     const playerY =
         camera.position.y -
         EYE_HEIGHT;
+
 
     const playerZ =
         camera.position.z;
@@ -386,6 +501,7 @@ function placeBlock() {
     */
 
     if (
+
         x + 1 >
         playerX - PLAYER_RADIUS &&
 
@@ -403,6 +519,7 @@ function placeBlock() {
 
         z <
         playerZ + PLAYER_RADIUS
+
     ) {
 
         return;
@@ -411,80 +528,14 @@ function placeBlock() {
 
 
     /*
-       Convert selected item
-       into a block type.
+       Convert item to block.
     */
 
-    let blockType = null;
+    const blockType =
+        getBlockTypeFromItem(
+            selectedItem.type
+        );
 
-
-    if (
-        selectedItem.type === "grass"
-    ) {
-
-        blockType =
-            BLOCKS.grass;
-
-    }
-
-    else if (
-        selectedItem.type === "dirt"
-    ) {
-
-        blockType =
-            BLOCKS.dirt;
-
-    }
-
-    else if (
-        selectedItem.type === "stone"
-    ) {
-
-        blockType =
-            BLOCKS.stone;
-
-    }
-
-    else if (
-        selectedItem.type === "wood"
-    ) {
-
-        blockType =
-            BLOCKS.wood;
-
-    }
-
-    else if (
-        selectedItem.type === "leaves"
-    ) {
-
-        blockType =
-            BLOCKS.leaves;
-
-    }
-
-    else if (
-        selectedItem.type === "planks"
-    ) {
-
-        blockType =
-            BLOCKS.planks;
-
-    }
-
-    else if (
-        selectedItem.type === "crafting_table"
-    ) {
-
-        blockType =
-            BLOCKS.crafting_table;
-
-    }
-
-
-    /*
-       Pickaxe is not a block.
-    */
 
     if (!blockType) {
 
@@ -557,12 +608,38 @@ document.addEventListener(
 
 
         /*
-           Right click = place.
+           Right click.
         */
 
         if (
             event.button === 2
         ) {
+
+            const block =
+                getTargetBlock();
+
+
+            /*
+               Right-clicking a crafting
+               table opens the 3x3 menu.
+            */
+
+            if (
+                block &&
+                block.userData.type ===
+                BLOCKS.crafting_table
+            ) {
+
+                openCraftingTable();
+
+                return;
+
+            }
+
+
+            /*
+               Otherwise place a block.
+            */
 
             placeBlock();
 
