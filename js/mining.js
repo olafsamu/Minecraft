@@ -11,6 +11,15 @@ let targetedBlock = null;
 
 
 /* ======================================================
+   MINING VARIABLES
+====================================================== */
+
+let mining = false;
+let miningBlock = null;
+let miningProgress = 0;
+
+
+/* ======================================================
    GET BLOCK THE PLAYER IS LOOKING AT
 ====================================================== */
 
@@ -135,14 +144,87 @@ function canBreakBlock(blockType) {
 
 
 /* ======================================================
-   BREAK BLOCK
+   START MINING
 ====================================================== */
 
-function breakBlock() {
+function startMining() {
 
     const block =
         getTargetBlock();
 
+
+    if (!block) {
+        return;
+    }
+
+
+    const blockType =
+        block.userData.type;
+
+
+    if (!blockType) {
+        return;
+    }
+
+
+    /*
+       Check if the player has
+       the correct tool.
+    */
+
+    if (
+        !canBreakBlock(blockType)
+    ) {
+
+        if (
+            blockType.requiredTool ===
+            "pickaxe"
+        ) {
+
+            console.log(
+                "You need a pickaxe to break stone!"
+            );
+
+        }
+
+        return;
+
+    }
+
+
+    /*
+       Start mining.
+    */
+
+    mining = true;
+
+    miningBlock = block;
+
+    miningProgress = 0;
+
+}
+
+
+/* ======================================================
+   STOP MINING
+====================================================== */
+
+function stopMining() {
+
+    mining = false;
+
+    miningBlock = null;
+
+    miningProgress = 0;
+
+}
+
+
+/* ======================================================
+   BREAK BLOCK
+====================================================== */
+
+function breakBlock(block) {
 
     if (!block) {
         return;
@@ -160,31 +242,6 @@ function breakBlock() {
 
     const blockType =
         block.userData.type;
-
-
-    /*
-       Check tool requirement.
-    */
-
-    if (
-        !canBreakBlock(blockType)
-    ) {
-
-        if (
-            blockType &&
-            blockType.requiredTool ===
-            "pickaxe"
-        ) {
-
-            console.log(
-                "You need a pickaxe to break stone!"
-            );
-
-        }
-
-        return;
-
-    }
 
 
     /*
@@ -223,11 +280,15 @@ function breakBlock() {
 
 
     /*
-       Clean up.
+       Clean up geometry.
     */
 
     block.geometry.dispose();
 
+
+    /*
+       Clean up material.
+    */
 
     if (
         Array.isArray(
@@ -269,6 +330,121 @@ function breakBlock() {
 
 
     targetedBlock = null;
+
+    stopMining();
+
+}
+
+
+/* ======================================================
+   UPDATE MINING
+====================================================== */
+
+function updateMining(delta) {
+
+    /*
+       Nothing to mine.
+    */
+
+    if (
+        !mining ||
+        !miningBlock
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+       Make sure the block still exists.
+    */
+
+    if (
+        !meshes.has(
+            miningBlock.userData.key
+        )
+    ) {
+
+        stopMining();
+
+        return;
+
+    }
+
+
+    /*
+       Make sure the player is
+       still looking at the block.
+    */
+
+    const currentTarget =
+        getTargetBlock();
+
+
+    if (
+        currentTarget !==
+        miningBlock
+    ) {
+
+        stopMining();
+
+        return;
+
+    }
+
+
+    const blockType =
+        miningBlock.userData.type;
+
+
+    if (!blockType) {
+
+        stopMining();
+
+        return;
+
+    }
+
+
+    /*
+       Get mining time.
+
+       Example:
+
+       500 ms = 0.5 seconds
+       800 ms = 0.8 seconds
+    */
+
+    const breakTime =
+        blockType.breakTime ||
+        500;
+
+
+    /*
+       Convert delta from seconds
+       into milliseconds.
+    */
+
+    miningProgress +=
+        delta * 1000;
+
+
+    /*
+       Break the block once the
+       required time has passed.
+    */
+
+    if (
+        miningProgress >=
+        breakTime
+    ) {
+
+        breakBlock(
+            miningBlock
+        );
+
+    }
 
 }
 
@@ -595,14 +771,14 @@ document.addEventListener(
 
 
         /*
-           Left click = break.
+           Left click = start mining.
         */
 
         if (
             event.button === 0
         ) {
 
-            breakBlock();
+            startMining();
 
         }
 
@@ -642,6 +818,26 @@ document.addEventListener(
             */
 
             placeBlock();
+
+        }
+
+    }
+);
+
+
+/* ======================================================
+   LEFT CLICK RELEASE
+====================================================== */
+
+document.addEventListener(
+    "mouseup",
+    event => {
+
+        if (
+            event.button === 0
+        ) {
+
+            stopMining();
 
         }
 
