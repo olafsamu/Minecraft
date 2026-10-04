@@ -2,6 +2,7 @@
 =========================================================
 BLOCKWORLD
 World Generation + Block Rendering
+Optimized Block Geometry
 =========================================================
 */
 
@@ -14,6 +15,27 @@ const meshes = new Map();
 const WORLD_SIZE = 24;
 
 const WORLD_DEPTH = 24;
+
+
+/*
+=========================================================
+SHARED BLOCK GEOMETRY
+=========================================================
+
+Instead of creating a new cube geometry for every block,
+we create ONE geometry and reuse it.
+
+This dramatically reduces memory usage and setup time.
+*/
+
+const BLOCK_GEOMETRY =
+    new THREE.BoxGeometry(
+        1,
+        1,
+        1
+    );
+
+
 /* ======================================================
    BLOCK KEY
 ====================================================== */
@@ -69,7 +91,7 @@ function terrainHeight(x, z) {
 
 
 /* ======================================================
-   CREATE CRAFTING TABLE TEXTURES
+   CRAFTING TABLE TEXTURES
 ====================================================== */
 
 function createCraftingTableMaterials() {
@@ -85,12 +107,11 @@ function createCraftingTableMaterials() {
        5 = back
     */
 
-
     const materials = [];
 
 
     /* ==================================================
-       CREATE SIDE TEXTURE
+       SIDE TEXTURE
     ================================================== */
 
     function createSideTexture() {
@@ -106,10 +127,6 @@ function createCraftingTableMaterials() {
             canvas.getContext("2d");
 
 
-        /*
-           Base wood.
-        */
-
         ctx.fillStyle =
             "#7a4b25";
 
@@ -120,10 +137,6 @@ function createCraftingTableMaterials() {
             64
         );
 
-
-        /*
-           Wooden vertical boards.
-        */
 
         ctx.fillStyle =
             "#8f5b2d";
@@ -153,10 +166,6 @@ function createCraftingTableMaterials() {
         );
 
 
-        /*
-           Dark seams between boards.
-        */
-
         ctx.fillStyle =
             "#543218";
 
@@ -177,10 +186,6 @@ function createCraftingTableMaterials() {
         );
 
 
-        /*
-           Horizontal wooden details.
-        */
-
         ctx.fillStyle =
             "#68401f";
 
@@ -200,10 +205,6 @@ function createCraftingTableMaterials() {
             3
         );
 
-
-        /*
-           Small tool-like markings.
-        */
 
         ctx.fillStyle =
             "#3f2715";
@@ -261,7 +262,7 @@ function createCraftingTableMaterials() {
 
 
     /* ==================================================
-       CREATE TOP TEXTURE
+       TOP TEXTURE
     ================================================== */
 
     function createTopTexture() {
@@ -277,10 +278,6 @@ function createCraftingTableMaterials() {
             canvas.getContext("2d");
 
 
-        /*
-           Wooden base.
-        */
-
         ctx.fillStyle =
             "#9b6938";
 
@@ -291,10 +288,6 @@ function createCraftingTableMaterials() {
             64
         );
 
-
-        /*
-           Outer dark border.
-        */
 
         ctx.fillStyle =
             "#4b2d18";
@@ -307,10 +300,6 @@ function createCraftingTableMaterials() {
         );
 
 
-        /*
-           Inner wooden area.
-        */
-
         ctx.fillStyle =
             "#b07a43";
 
@@ -322,18 +311,10 @@ function createCraftingTableMaterials() {
         );
 
 
-        /*
-           Crafting grid background.
-        */
-
         ctx.fillStyle =
             "#6e431f";
 
 
-        /*
-           Vertical grid lines.
-        */
-
         ctx.fillRect(
             19,
             10,
@@ -350,10 +331,6 @@ function createCraftingTableMaterials() {
         );
 
 
-        /*
-           Horizontal grid lines.
-        */
-
         ctx.fillRect(
             10,
             19,
@@ -369,10 +346,6 @@ function createCraftingTableMaterials() {
             4
         );
 
-
-        /*
-           Lighter squares.
-        */
 
         ctx.fillStyle =
             "#c28b50";
@@ -450,10 +423,6 @@ function createCraftingTableMaterials() {
         );
 
 
-        /*
-           Tiny dark corners.
-        */
-
         ctx.fillStyle =
             "#432817";
 
@@ -510,7 +479,7 @@ function createCraftingTableMaterials() {
 
 
     /* ==================================================
-       CREATE MATERIALS
+       MATERIALS
     ================================================== */
 
     const sideTexture =
@@ -533,10 +502,6 @@ function createCraftingTableMaterials() {
         });
 
 
-    /*
-       Slightly darker bottom.
-    */
-
     const bottomMaterial =
         new THREE.MeshLambertMaterial({
             color: 0x4b2d18
@@ -547,21 +512,26 @@ function createCraftingTableMaterials() {
         sideMaterial
     );
 
+
     materials.push(
         sideMaterial.clone()
     );
+
 
     materials.push(
         topMaterial
     );
 
+
     materials.push(
         bottomMaterial
     );
 
+
     materials.push(
         sideMaterial.clone()
     );
+
 
     materials.push(
         sideMaterial.clone()
@@ -601,21 +571,12 @@ function addBlock(
     }
 
 
-    const geometry =
-        new THREE.BoxGeometry(
-            1,
-            1,
-            1
-        );
-
-
     let material;
 
 
-    /*
-       Crafting table gets
-       its special appearance.
-    */
+    /* ==================================================
+       CRAFTING TABLE
+    ================================================== */
 
     if (
         type === BLOCKS.crafting_table
@@ -626,34 +587,54 @@ function addBlock(
 
     }
 
+
+    /* ==================================================
+       NORMAL BLOCK
+    ================================================== */
+
     else {
 
         material =
             new THREE.MeshLambertMaterial({
+
                 color: type.color
+
             });
 
     }
 
 
+    /*
+       IMPORTANT:
+
+       Reuse the shared geometry instead
+       of creating a new BoxGeometry.
+    */
+
     const cube =
         new THREE.Mesh(
-            geometry,
+
+            BLOCK_GEOMETRY,
+
             material
+
         );
 
 
     cube.position.set(
+
         x + 0.5,
+
         y + 0.5,
+
         z + 0.5
+
     );
 
 
-    /*
-       Store important information
-       on the mesh.
-    */
+    /* ==================================================
+       STORE BLOCK DATA
+    ================================================== */
 
     cube.userData.key =
         key;
@@ -663,7 +644,9 @@ function addBlock(
         type;
 
 
-    scene.add(cube);
+    scene.add(
+        cube
+    );
 
 
     world.set(
@@ -693,14 +676,17 @@ function generateWorld() {
     meshes.forEach(
         cube => {
 
-            scene.remove(cube);
-
-            cube.geometry.dispose();
+            scene.remove(
+                cube
+            );
 
 
             /*
-               Dispose materials.
+               DO NOT dispose BLOCK_GEOMETRY here.
+
+               It is shared by every normal block.
             */
+
 
             if (
                 Array.isArray(
@@ -773,10 +759,9 @@ function generateWorld() {
 
 
             /*
-               Generate the underground.
+               World depth.
 
-               The surface stays the same,
-               but the world now goes 32 blocks down.
+               24 blocks underground.
             */
 
             for (
@@ -789,7 +774,7 @@ function generateWorld() {
 
 
                 /*
-                   Grass on the surface.
+                   Grass.
                 */
 
                 if (
@@ -803,7 +788,7 @@ function generateWorld() {
 
 
                 /*
-                   Two layers of dirt.
+                   Dirt.
                 */
 
                 else if (
@@ -817,7 +802,7 @@ function generateWorld() {
 
 
                 /*
-                   Everything deeper is stone.
+                   Stone.
                 */
 
                 else {
@@ -872,7 +857,7 @@ function generateWorld() {
 
 
             /*
-               Tree trunk.
+               Trunk.
             */
 
             for (
