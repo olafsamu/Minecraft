@@ -21,16 +21,27 @@ const DAY_LENGTH = 600;
 ====================================================== */
 
 const DAY_SKY =
-    new THREE.Color(0x87ceeb);
+    new THREE.Color(
+        0x87ceeb
+    );
+
 
 const NIGHT_SKY =
-    new THREE.Color(0x020611);
+    new THREE.Color(
+        0x020611
+    );
+
 
 const DAY_FOG =
-    new THREE.Color(0x87ceeb);
+    new THREE.Color(
+        0x87ceeb
+    );
+
 
 const NIGHT_FOG =
-    new THREE.Color(0x020611);
+    new THREE.Color(
+        0x020611
+    );
 
 
 /* ======================================================
@@ -57,24 +68,33 @@ let stars = null;
 function createSunTexture() {
 
     const canvas =
-        document.createElement("canvas");
+        document.createElement(
+            "canvas"
+        );
+
 
     canvas.width = 128;
+
     canvas.height = 128;
 
 
     const ctx =
-        canvas.getContext("2d");
+        canvas.getContext(
+            "2d"
+        );
 
 
     const gradient =
         ctx.createRadialGradient(
+
             64,
             64,
             8,
+
             64,
             64,
             64
+
         );
 
 
@@ -83,20 +103,24 @@ function createSunTexture() {
         "#ffffff"
     );
 
+
     gradient.addColorStop(
         0.25,
         "#fffbd0"
     );
+
 
     gradient.addColorStop(
         0.55,
         "#fff36a"
     );
 
+
     gradient.addColorStop(
         0.8,
         "rgba(255,220,50,0.35)"
     );
+
 
     gradient.addColorStop(
         1,
@@ -109,10 +133,12 @@ function createSunTexture() {
 
 
     ctx.fillRect(
+
         0,
         0,
         128,
         128
+
     );
 
 
@@ -138,24 +164,40 @@ function createSunTexture() {
 function createMoonTexture() {
 
     const canvas =
-        document.createElement("canvas");
+        document.createElement(
+            "canvas"
+        );
+
 
     canvas.width = 128;
+
     canvas.height = 128;
 
 
     const ctx =
-        canvas.getContext("2d");
+        canvas.getContext(
+            "2d"
+        );
 
+
+    /*
+       MUCH stronger moon disc.
+
+       The previous gradient faded too aggressively
+       near the edges, making the moon difficult to see.
+    */
 
     const gradient =
         ctx.createRadialGradient(
+
             64,
             64,
-            10,
+            5,
+
             64,
             64,
-            64
+            58
+
         );
 
 
@@ -164,19 +206,28 @@ function createMoonTexture() {
         "#ffffff"
     );
 
-    gradient.addColorStop(
-        0.35,
-        "#f5f7ff"
-    );
 
     gradient.addColorStop(
-        0.65,
-        "rgba(210,225,255,0.6)"
+        0.55,
+        "#ffffff"
     );
+
+
+    gradient.addColorStop(
+        0.78,
+        "#edf3ff"
+    );
+
+
+    gradient.addColorStop(
+        0.92,
+        "rgba(220,230,255,0.8)"
+    );
+
 
     gradient.addColorStop(
         1,
-        "rgba(150,190,255,0)"
+        "rgba(180,205,255,0)"
     );
 
 
@@ -185,27 +236,31 @@ function createMoonTexture() {
 
 
     ctx.fillRect(
+
         0,
         0,
         128,
         128
+
     );
 
 
     /*
        Moon craters.
+
+       Much more visible than before.
     */
 
     ctx.fillStyle =
-        "rgba(170,180,200,0.3)";
+        "rgba(155,165,185,0.38)";
 
 
     ctx.beginPath();
 
     ctx.arc(
-        45,
-        48,
-        8,
+        43,
+        47,
+        9,
         0,
         Math.PI * 2
     );
@@ -217,8 +272,8 @@ function createMoonTexture() {
 
     ctx.arc(
         78,
-        72,
-        6,
+        71,
+        7,
         0,
         Math.PI * 2
     );
@@ -229,9 +284,35 @@ function createMoonTexture() {
     ctx.beginPath();
 
     ctx.arc(
-        62,
+        60,
         35,
+        5,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        82,
+        42,
         4,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        39,
+        78,
+        5,
         0,
         Math.PI * 2
     );
@@ -262,30 +343,41 @@ function createSkyDome() {
 
     const geometry =
         new THREE.SphereGeometry(
+
             150,
+
             32,
+
             24
+
         );
 
 
     const material =
         new THREE.MeshBasicMaterial({
 
-            color: DAY_SKY,
+            color:
+                DAY_SKY,
 
-            side: THREE.BackSide,
+            side:
+                THREE.BackSide,
 
-            depthWrite: false,
+            depthWrite:
+                false,
 
-            depthTest: false
+            depthTest:
+                false
 
         });
 
 
     skyDome =
         new THREE.Mesh(
+
             geometry,
+
             material
+
         );
 
 
@@ -313,22 +405,27 @@ function createSun() {
     const material =
         new THREE.SpriteMaterial({
 
-            map: texture,
+            map:
+                texture,
 
-            transparent: true,
+            transparent:
+                true,
 
-            opacity: 1,
+            opacity:
+                1,
 
             /*
-               IMPORTANT:
+               Keep the sun visible as a sky object.
 
-               The sun now checks the depth buffer.
-               Blocks can therefore hide it.
+               This prevents terrain depth from making
+               the sprite mysteriously disappear.
             */
 
-            depthTest: true,
+            depthTest:
+                false,
 
-            depthWrite: false,
+            depthWrite:
+                false,
 
             blending:
                 THREE.AdditiveBlending
@@ -342,24 +439,19 @@ function createSun() {
         );
 
 
-    /*
-       Large bright sun.
-    */
-
     sunMesh.scale.set(
+
         18,
+
         18,
+
         1
+
     );
 
 
-    /*
-       Render after the terrain,
-       but still respect depth.
-    */
-
     sunMesh.renderOrder =
-        1;
+        50;
 
 
     scene.add(
@@ -379,18 +471,39 @@ function createMoon() {
         createMoonTexture();
 
 
+    /*
+       Main moon.
+    */
+
     const material =
         new THREE.SpriteMaterial({
 
-            map: texture,
+            map:
+                texture,
 
-            transparent: true,
+            transparent:
+                true,
 
-            opacity: 1,
+            opacity:
+                1,
 
-            depthTest: true,
+            /*
+               IMPORTANT FIX:
 
-            depthWrite: false
+               Do not allow terrain depth testing to
+               hide the moon.
+
+               It is a sky object, not a physical mesh.
+            */
+
+            depthTest:
+                false,
+
+            depthWrite:
+                false,
+
+            blending:
+                THREE.NormalBlending
 
         });
 
@@ -401,15 +514,23 @@ function createMoon() {
         );
 
 
+    /*
+       Larger than before.
+    */
+
     moonMesh.scale.set(
-        14,
-        14,
+
+        18,
+
+        18,
+
         1
+
     );
 
 
     moonMesh.renderOrder =
-        1;
+        51;
 
 
     scene.add(
@@ -417,22 +538,27 @@ function createMoon() {
     );
 
 
-    /*
-       Moon glow.
-    */
+    /* ==================================================
+       MOON GLOW
+    ================================================== */
 
     const glowMaterial =
         new THREE.SpriteMaterial({
 
-            map: texture,
+            map:
+                texture,
 
-            transparent: true,
+            transparent:
+                true,
 
-            opacity: 0.15,
+            opacity:
+                0.22,
 
-            depthTest: true,
+            depthTest:
+                false,
 
-            depthWrite: false,
+            depthWrite:
+                false,
 
             blending:
                 THREE.AdditiveBlending
@@ -447,14 +573,18 @@ function createMoon() {
 
 
     moonGlow.scale.set(
-        24,
-        24,
+
+        30,
+
+        30,
+
         1
+
     );
 
 
     moonGlow.renderOrder =
-        1;
+        50;
 
 
     scene.add(
@@ -462,14 +592,17 @@ function createMoon() {
     );
 
 
-    /*
-       Moonlight.
-    */
+    /* ==================================================
+       MOON LIGHT
+    ================================================== */
 
     moonLight =
         new THREE.DirectionalLight(
+
             0x9bbcff,
+
             0
+
         );
 
 
@@ -511,9 +644,11 @@ function createStars() {
 
         const phi =
             Math.acos(
+
                 2 *
                 Math.random() -
                 1
+
             );
 
 
@@ -535,9 +670,13 @@ function createStars() {
 
 
         positions.push(
+
             x,
+
             y,
+
             z
+
         );
 
     }
@@ -548,49 +687,62 @@ function createStars() {
 
 
     geometry.setAttribute(
+
         "position",
+
         new THREE.Float32BufferAttribute(
+
             positions,
+
             3
+
         )
+
     );
 
 
     const material =
         new THREE.PointsMaterial({
 
-            color: 0xffffff,
+            color:
+                0xffffff,
 
-            size: 1.4,
+            size:
+                1.4,
 
-            sizeAttenuation: false,
+            sizeAttenuation:
+                false,
 
-            transparent: true,
+            transparent:
+                true,
 
-            opacity: 0,
+            opacity:
+                0,
 
-            /*
-               Stars also respect terrain.
-            */
+            depthTest:
+                false,
 
-            depthTest: true,
+            depthWrite:
+                false,
 
-            depthWrite: false,
-
-            fog: false
+            fog:
+                false
 
         });
 
 
     stars =
         new THREE.Points(
+
             geometry,
+
             material
+
         );
 
 
     stars.renderOrder =
-        0;
+        40;
 
 
     scene.add(
@@ -621,7 +773,9 @@ function initializeDayNight() {
    UPDATE
 ====================================================== */
 
-function updateDayNight(delta) {
+function updateDayNight(
+    delta
+) {
 
     if (!skyDome) {
 
@@ -635,7 +789,8 @@ function updateDayNight(delta) {
     ================================================== */
 
     dayTime +=
-        delta / DAY_LENGTH;
+        delta /
+        DAY_LENGTH;
 
 
     if (
@@ -658,10 +813,19 @@ function updateDayNight(delta) {
     ================================================== */
 
     const sunX =
-        Math.cos(angle) * 110;
+        Math.cos(angle) *
+        110;
+
 
     const sunY =
-        Math.sin(angle) * 110;
+        Math.sin(angle) *
+        110;
+
+
+    /*
+       Keep the celestial objects far enough away
+       that their perspective is effectively constant.
+    */
 
     const sunZ =
         -120;
@@ -702,8 +866,10 @@ function updateDayNight(delta) {
     const moonX =
         -sunX;
 
+
     const moonY =
         -sunY;
+
 
     const moonZ =
         -120;
@@ -747,18 +913,29 @@ function updateDayNight(delta) {
     ================================================== */
 
     let dayAmount =
-        (sunY + 15) / 125;
+        (sunY + 15) /
+        125;
 
 
     dayAmount =
         Math.max(
+
             0,
+
             Math.min(
+
                 1,
+
                 dayAmount
+
             )
+
         );
 
+
+    /*
+       Smooth day/night transition.
+    */
 
     dayAmount =
         dayAmount *
@@ -767,7 +944,8 @@ function updateDayNight(delta) {
 
 
     const nightAmount =
-        1 - dayAmount;
+        1 -
+        dayAmount;
 
 
     /* ==================================================
@@ -775,18 +953,32 @@ function updateDayNight(delta) {
     ================================================== */
 
     skyDome.material.color
-        .copy(NIGHT_SKY)
+
+        .copy(
+            NIGHT_SKY
+        )
+
         .lerp(
+
             DAY_SKY,
+
             dayAmount
+
         );
 
 
     scene.background
-        .copy(NIGHT_SKY)
+
+        .copy(
+            NIGHT_SKY
+        )
+
         .lerp(
+
             DAY_SKY,
+
             dayAmount
+
         );
 
 
@@ -795,10 +987,17 @@ function updateDayNight(delta) {
     ================================================== */
 
     scene.fog.color
-        .copy(NIGHT_FOG)
+
+        .copy(
+            NIGHT_FOG
+        )
+
         .lerp(
+
             DAY_FOG,
+
             dayAmount
+
         );
 
 
@@ -808,7 +1007,8 @@ function updateDayNight(delta) {
 
     sun.intensity =
         0.15 +
-        dayAmount * 1.55;
+        dayAmount *
+        1.55;
 
 
     /* ==================================================
@@ -817,7 +1017,8 @@ function updateDayNight(delta) {
 
     skyLight.intensity =
         0.35 +
-        dayAmount * 1.45;
+        dayAmount *
+        1.45;
 
 
     /* ==================================================
@@ -825,7 +1026,8 @@ function updateDayNight(delta) {
     ================================================== */
 
     moonLight.intensity =
-        nightAmount * 0.45;
+        nightAmount *
+        0.55;
 
 
     /* ==================================================
@@ -834,11 +1036,18 @@ function updateDayNight(delta) {
 
     const sunVisibility =
         Math.max(
+
             0,
+
             Math.min(
+
                 1,
-                sunY / 25
+
+                sunY /
+                25
+
             )
+
         );
 
 
@@ -852,20 +1061,47 @@ function updateDayNight(delta) {
 
     const moonVisibility =
         Math.max(
+
             0,
+
             Math.min(
+
                 1,
-                -sunY / 25
+
+                moonY /
+                25
+
             )
+
         );
 
 
+    /*
+       Give the moon a minimum brightness while
+       it is above the horizon.
+    */
+
     moonMesh.material.opacity =
-        moonVisibility;
+
+        moonVisibility > 0
+
+            ? Math.max(
+                0.72,
+                moonVisibility
+            )
+
+            : 0;
 
 
     moonGlow.material.opacity =
-        moonVisibility * 0.2;
+
+        moonVisibility > 0
+
+            ? 0.18 +
+              moonVisibility *
+              0.15
+
+            : 0;
 
 
     /* ==================================================
