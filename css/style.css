@@ -4,6 +4,30 @@ BLOCKWORLD
 Main Styles
 =========================================================
 */
+/* ======================================================
+   CRAFTING TABLE HOTBAR ICON
+====================================================== */
+
+.crafting-table-icon {
+    width: 30px;
+    height: 30px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #6b3f1f 0%,
+            #9b6b30 20%,
+            #c08a4a 50%,
+            #9b6b30 80%,
+            #6b3f1f 100%
+        );
+
+    border: 2px solid #4a2b16;
+
+    box-shadow:
+        inset 0 3px rgba(255, 255, 255, 0.2),
+        inset 0 -3px rgba(0, 0, 0, 0.25);
+}
 
 
 /* ======================================================
