@@ -87,7 +87,7 @@ function isBlockExposed(
 
 
 /* ======================================================
-   DISPOSE MATERIAL
+   DISPOSE MATERIAL SAFELY
 ====================================================== */
 
 function disposeCullingMaterial(
@@ -101,6 +101,27 @@ function disposeCullingMaterial(
     }
 
 
+    /*
+       Materials that use one of the reusable
+       block textures must keep their texture alive.
+    */
+
+    if (
+        material.userData &&
+        material.userData.sharedBlockTexture
+    ) {
+
+        material.dispose();
+
+        return;
+
+    }
+
+
+    /*
+       Material arrays.
+    */
+
     if (
         Array.isArray(
             material
@@ -111,6 +132,22 @@ function disposeCullingMaterial(
             item => {
 
                 if (!item) {
+
+                    return;
+
+                }
+
+
+                /*
+                   Preserve reusable block textures.
+                */
+
+                if (
+                    item.userData &&
+                    item.userData.sharedBlockTexture
+                ) {
+
+                    item.dispose();
 
                     return;
 
@@ -135,6 +172,10 @@ function disposeCullingMaterial(
 
     }
 
+
+    /*
+       Normal material.
+    */
 
     if (
         material.map
@@ -179,10 +220,10 @@ function removeCulledMesh(
     /*
        IMPORTANT:
 
-       DO NOT dispose cube.geometry.
+       Do not dispose cube.geometry.
 
        All normal blocks use the shared
-       BLOCK_GEOMETRY from world.js.
+       BLOCK_GEOMETRY.
     */
 
 
@@ -252,10 +293,8 @@ function revealCulledBlock(
 
 
     /*
-       addBlock refuses to create a block if
-       world already contains it.
-
-       Temporarily remove the world entry.
+       Temporarily remove the world entry
+       so addBlock can create its visual.
     */
 
     world.delete(
@@ -292,7 +331,7 @@ function updateCulledBlock(
 
 
     /*
-       No world block.
+       Block does not exist.
     */
 
     if (
@@ -319,7 +358,7 @@ function updateCulledBlock(
 
 
     /*
-       Exposed block.
+       Exposed.
     */
 
     if (
@@ -340,7 +379,7 @@ function updateCulledBlock(
 
 
     /*
-       Completely hidden block.
+       Completely hidden.
     */
 
     else {
