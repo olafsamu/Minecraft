@@ -109,15 +109,16 @@ function getSelectedItem() {
    ADD ITEM
 ====================================================== */
 
-function addItem(type, amount = 1) {
+function addItem(
+    type,
+    amount = 1
+) {
 
     const normalizedType =
         normalizeItemName(type);
 
 
-    /*
-       Add to an existing stack.
-    */
+    /* Add to existing stack */
 
     for (
         let i = 0;
@@ -147,9 +148,7 @@ function addItem(type, amount = 1) {
     }
 
 
-    /*
-       Otherwise find an empty slot.
-    */
+    /* Find empty slot */
 
     for (
         let i = 0;
@@ -187,7 +186,10 @@ function addItem(type, amount = 1) {
    REMOVE ITEM
 ====================================================== */
 
-function removeItem(type, amount = 1) {
+function removeItem(
+    type,
+    amount = 1
+) {
 
     const normalizedType =
         normalizeItemName(type);
@@ -211,9 +213,7 @@ function removeItem(type, amount = 1) {
     if (
         item.amount < amount
     ) {
-
         return false;
-
     }
 
 
@@ -240,7 +240,46 @@ function removeItem(type, amount = 1) {
 
 
 /* ======================================================
-   HOTBAR UI
+   GET ICON CLASS
+====================================================== */
+
+function getIconClass(type) {
+
+    switch (
+        normalizeItemName(type)
+    ) {
+
+        case "grass":
+            return "grass-icon";
+
+        case "dirt":
+            return "dirt-icon";
+
+        case "stone":
+            return "stone-icon";
+
+        case "wood":
+            return "wood-icon";
+
+        case "leaves":
+            return "leaves-icon";
+
+        case "planks":
+            return "planks-icon";
+
+        case "crafting_table":
+            return "crafting-table-icon";
+
+        default:
+            return "";
+
+    }
+
+}
+
+
+/* ======================================================
+   UPDATE HOTBAR
 ====================================================== */
 
 function updateHotbarUI() {
@@ -257,9 +296,7 @@ function updateHotbarUI() {
             index
         ) => {
 
-            /*
-               Selected slot.
-            */
+            /* Selected border */
 
             slot.classList.toggle(
                 "selected",
@@ -271,7 +308,7 @@ function updateHotbarUI() {
                 hotbar[index];
 
 
-            const itemIcon =
+            const icon =
                 slot.querySelector(
                     ".item-icon"
                 );
@@ -283,15 +320,13 @@ function updateHotbarUI() {
                 );
 
 
-            /*
-               Empty slot.
-            */
+            /* Empty slot */
 
             if (!item) {
 
-                if (itemIcon) {
+                if (icon) {
 
-                    itemIcon.className =
+                    icon.className =
                         "item-icon";
 
                 }
@@ -304,88 +339,25 @@ function updateHotbarUI() {
 
                 }
 
-
                 return;
 
             }
 
 
-            /*
-               Keep the icon that belongs
-               to this slot.
-            */
+            /* Icon */
 
-            if (itemIcon) {
+            if (icon) {
 
-                if (
-                    item.type === "grass"
-                ) {
-
-                    itemIcon.className =
-                        "item-icon grass-icon";
-
-                }
-
-                else if (
-                    item.type === "dirt"
-                ) {
-
-                    itemIcon.className =
-                        "item-icon dirt-icon";
-
-                }
-
-                else if (
-                    item.type === "stone"
-                ) {
-
-                    itemIcon.className =
-                        "item-icon stone-icon";
-
-                }
-
-                else if (
-                    item.type === "wood"
-                ) {
-
-                    itemIcon.className =
-                        "item-icon wood-icon";
-
-                }
-
-                else if (
-                    item.type === "leaves"
-                ) {
-
-                    itemIcon.className =
-                        "item-icon leaves-icon";
-
-                }
-
-                else if (
-                    item.type === "planks"
-                ) {
-
-                    itemIcon.className =
-                        "item-icon planks-icon";
-
-                }
-
-                else if (
-                    item.type === "crafting_table"
-                ) {
-
-                    itemIcon.className =
-                        "item-icon crafting-table-icon";
-
-                }
+                icon.className =
+                    "item-icon " +
+                    getIconClass(
+                        item.type
+                    );
 
             }
 
 
-            /*
-               Amount.
-            */
+            /* Amount */
 
             if (amount) {
 
@@ -414,27 +386,77 @@ function updateHotbarUI() {
 
 
 /* ======================================================
-   NUMBER KEYS
+   NUMBER KEY SELECTION
 ====================================================== */
 
 document.addEventListener(
     "keydown",
     event => {
 
-        const number =
-            parseInt(
-                event.key
-            );
+        let slot = -1;
 
 
-        if (
-            number >= 1 &&
-            number <= 9
-        ) {
+        /*
+           Use event.code instead of only
+           event.key so this works reliably
+           with different keyboard layouts.
+        */
 
-            selectHotbarSlot(
-                number - 1
-            );
+        switch (event.code) {
+
+            case "Digit1":
+            case "Numpad1":
+                slot = 0;
+                break;
+
+            case "Digit2":
+            case "Numpad2":
+                slot = 1;
+                break;
+
+            case "Digit3":
+            case "Numpad3":
+                slot = 2;
+                break;
+
+            case "Digit4":
+            case "Numpad4":
+                slot = 3;
+                break;
+
+            case "Digit5":
+            case "Numpad5":
+                slot = 4;
+                break;
+
+            case "Digit6":
+            case "Numpad6":
+                slot = 5;
+                break;
+
+            case "Digit7":
+            case "Numpad7":
+                slot = 6;
+                break;
+
+            case "Digit8":
+            case "Numpad8":
+                slot = 7;
+                break;
+
+            case "Digit9":
+            case "Numpad9":
+                slot = 8;
+                break;
+
+        }
+
+
+        if (slot !== -1) {
+
+            event.preventDefault();
+
+            selectHotbarSlot(slot);
 
         }
 
@@ -443,7 +465,110 @@ document.addEventListener(
 
 
 /* ======================================================
-   INITIAL UI UPDATE
+   MOUSE WHEEL SELECTION
+====================================================== */
+
+document.addEventListener(
+    "wheel",
+    event => {
+
+        /*
+           Do not change hotbar selection
+           while a crafting menu is open.
+        */
+
+        if (
+            typeof craftingOpen !== "undefined" &&
+            craftingOpen
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            event.deltaY > 0
+        ) {
+
+            selectedHotbarSlot++;
+
+            if (
+                selectedHotbarSlot >= HOTBAR_SIZE
+            ) {
+
+                selectedHotbarSlot = 0;
+
+            }
+
+        }
+
+        else if (
+            event.deltaY < 0
+        ) {
+
+            selectedHotbarSlot--;
+
+            if (
+                selectedHotbarSlot < 0
+            ) {
+
+                selectedHotbarSlot =
+                    HOTBAR_SIZE - 1;
+
+            }
+
+        }
+
+
+        updateHotbarUI();
+
+    }
+);
+
+
+/* ======================================================
+   CLICK HOTBAR SLOT
+====================================================== */
+
+document.querySelectorAll(
+    ".hotbar-slot"
+).forEach(
+    (
+        slot,
+        index
+    ) => {
+
+        slot.addEventListener(
+            "mousedown",
+            event => {
+
+                /*
+                   Only left click selects.
+                */
+
+                if (
+                    event.button !== 0
+                ) {
+
+                    return;
+
+                }
+
+
+                event.stopPropagation();
+
+                selectHotbarSlot(index);
+
+            }
+        );
+
+    }
+);
+
+
+/* ======================================================
+   INITIAL UPDATE
 ====================================================== */
 
 updateHotbarUI();
