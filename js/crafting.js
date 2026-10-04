@@ -30,8 +30,47 @@ function toggleCrafting() {
         return;
     }
 
-    menu.style.display =
-        craftingOpen ? "flex" : "none";
+
+    if (craftingOpen) {
+
+        /*
+           Release the mouse from the game
+           so we can click the crafting menu.
+        */
+
+        if (
+            document.pointerLockElement
+        ) {
+
+            document.exitPointerLock();
+
+        }
+
+
+        /*
+           Tell the rest of the game
+           that the mouse is no longer locked.
+        */
+
+        if (
+            typeof mouseLocked !== "undefined"
+        ) {
+
+            mouseLocked = false;
+
+        }
+
+
+        menu.style.display = "flex";
+
+    }
+
+    else {
+
+        menu.style.display = "none";
+
+    }
+
 
     updateCraftingUI();
 }
@@ -50,7 +89,6 @@ function getCraftingResult() {
        WOOD | WOOD
 
        =
-       
        4 PLANKS
     */
 
@@ -65,6 +103,7 @@ function getCraftingResult() {
         }
 
     }
+
 
     return {
         type: "planks",
@@ -105,7 +144,8 @@ function putCraftingItem(slot) {
 
 
     /*
-       Only allow wood for now.
+       Only wood is allowed for
+       our first recipe.
     */
 
     if (
@@ -163,7 +203,7 @@ function takeCraftingResult() {
 
 
     /*
-       Give the player the planks.
+       Add the planks to the inventory.
     */
 
     addItem(
@@ -173,7 +213,7 @@ function takeCraftingResult() {
 
 
     /*
-       Remove the four wood.
+       Clear the crafting grid.
     */
 
     for (let i = 0; i < 4; i++) {
@@ -213,7 +253,9 @@ function updateCraftingUI() {
 
             slot.textContent = "🪵";
 
-        } else {
+        }
+
+        else {
 
             slot.textContent = "";
 
@@ -246,7 +288,9 @@ function updateCraftingUI() {
             "crafting-result-ready"
         );
 
-    } else {
+    }
+
+    else {
 
         resultSlot.textContent = "";
 
@@ -260,7 +304,7 @@ function updateCraftingUI() {
 
 
 /* ======================================================
-   CLICK CRAFTING SLOTS
+   CRAFTING MENU CLICKING
 ====================================================== */
 
 document.addEventListener(
@@ -270,6 +314,10 @@ document.addEventListener(
         const target =
             event.target;
 
+
+        /*
+           Click a crafting slot.
+        */
 
         if (
             target.classList.contains(
@@ -285,8 +333,14 @@ document.addEventListener(
 
             putCraftingItem(slot);
 
+            return;
+
         }
 
+
+        /*
+           Click the result.
+        */
 
         if (
             target.id ===
@@ -302,7 +356,7 @@ document.addEventListener(
 
 
 /* ======================================================
-   C KEY OPENS CRAFTING
+   C KEY
 ====================================================== */
 
 document.addEventListener(
@@ -310,23 +364,24 @@ document.addEventListener(
     event => {
 
         if (
-            event.key.toLowerCase() === "c"
+            event.key.toLowerCase() !== "c"
         ) {
 
-            /*
-               Don't toggle repeatedly
-               while the key is held.
-            */
-
-            if (
-                event.repeat
-            ) {
-                return;
-            }
-
-            toggleCrafting();
+            return;
 
         }
+
+
+        if (
+            event.repeat
+        ) {
+
+            return;
+
+        }
+
+
+        toggleCrafting();
 
     }
 );
