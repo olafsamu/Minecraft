@@ -82,6 +82,7 @@ function countCraftingItem(type) {
 
     let count = 0;
 
+
     for (let i = 0; i < 4; i++) {
 
         if (
@@ -93,6 +94,7 @@ function countCraftingItem(type) {
         }
 
     }
+
 
     return count;
 
@@ -169,6 +171,20 @@ function putCraftingItem(slot) {
     }
 
 
+    /*
+       Don't put anything into an
+       already occupied slot.
+    */
+
+    if (
+        craftingGrid[slot] !== null
+    ) {
+
+        return;
+
+    }
+
+
     const selected =
         getSelectedItem();
 
@@ -181,7 +197,9 @@ function putCraftingItem(slot) {
     if (
         selected.amount <= 0
     ) {
+
         return;
+
     }
 
 
@@ -193,15 +211,6 @@ function putCraftingItem(slot) {
     if (
         selected.type !== "wood" &&
         selected.type !== "planks"
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        craftingGrid[slot] !== null
     ) {
 
         return;
@@ -235,6 +244,67 @@ function putCraftingItem(slot) {
 
 
 /* ======================================================
+   TAKE ITEM OUT OF CRAFTING SLOT
+====================================================== */
+
+function removeCraftingItem(slot) {
+
+    if (
+        slot < 0 ||
+        slot >= 4
+    ) {
+
+        return;
+
+    }
+
+
+    const item =
+        craftingGrid[slot];
+
+
+    /*
+       Nothing in this slot.
+    */
+
+    if (!item) {
+        return;
+    }
+
+
+    /*
+       Return the item to the hotbar.
+    */
+
+    const added =
+        addItem(
+            item,
+            1
+        );
+
+
+    /*
+       Only remove it from the
+       crafting grid if the inventory
+       actually accepted it.
+    */
+
+    if (!added) {
+
+        return;
+
+    }
+
+
+    craftingGrid[slot] = null;
+
+
+    updateCraftingUI();
+
+}
+
+
+/* ======================================================
    TAKE CRAFTING RESULT
 ====================================================== */
 
@@ -250,7 +320,8 @@ function takeCraftingResult() {
 
 
     /*
-       Add result to inventory.
+       Make sure the result can
+       actually fit in the inventory.
     */
 
     const added =
@@ -260,21 +331,15 @@ function takeCraftingResult() {
         );
 
 
-    /*
-       If inventory is full,
-       don't consume the ingredients.
-    */
-
     if (!added) {
+
         return;
+
     }
 
 
     /*
-       Remove ingredients.
-
-       For now, the whole recipe
-       is consumed.
+       Clear the ingredients.
     */
 
     for (let i = 0; i < 4; i++) {
@@ -389,7 +454,7 @@ function updateCraftingUI() {
 
 
 /* ======================================================
-   CLICK CRAFTING SLOTS
+   CRAFTING CLICK EVENTS
 ====================================================== */
 
 document.addEventListener(
@@ -399,6 +464,11 @@ document.addEventListener(
         const target =
             event.target;
 
+
+        /*
+           Clicking an occupied crafting
+           slot takes the item back.
+        */
 
         if (
             target.classList.contains(
@@ -412,12 +482,29 @@ document.addEventListener(
                 );
 
 
-            putCraftingItem(slot);
+            if (
+                craftingGrid[slot] !== null
+            ) {
+
+                removeCraftingItem(slot);
+
+            }
+
+            else {
+
+                putCraftingItem(slot);
+
+            }
+
 
             return;
 
         }
 
+
+        /*
+           Click crafting result.
+        */
 
         if (
             target.id ===
