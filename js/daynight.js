@@ -2,22 +2,28 @@
 =========================================================
 BLOCKWORLD
 Day / Night Cycle
-Sun + Moon + Stars
+Sun + Moon + Sky Dome + Stars
 =========================================================
 */
 
-let dayTime = 0.25;
-
 
 /* ======================================================
-   SETTINGS
+   TIME
 ====================================================== */
+
+/*
+   One complete day + night cycle.
+
+   600 seconds = 10 minutes.
+*/
+
+let dayTime = 0.25;
 
 const DAY_LENGTH = 600;
 
 
 /* ======================================================
-   COLORS
+   SKY COLORS
 ====================================================== */
 
 const DAY_SKY =
@@ -38,10 +44,77 @@ const NIGHT_FOG =
 ====================================================== */
 
 let sunMesh = null;
+
 let moonMesh = null;
+
 let moonGlow = null;
-let stars = null;
+
 let moonLight = null;
+
+
+/* ======================================================
+   SKY OBJECTS
+====================================================== */
+
+let skyDome = null;
+
+let stars = null;
+
+
+/* ======================================================
+   CREATE SKY DOME
+====================================================== */
+
+function createSkyDome() {
+
+    /*
+       Large sphere surrounding the player.
+
+       The camera stays inside the sphere,
+       so BackSide makes the inside visible.
+    */
+
+    const geometry =
+        new THREE.SphereGeometry(
+            150,
+            48,
+            32
+        );
+
+
+    const material =
+        new THREE.MeshBasicMaterial({
+
+            color: DAY_SKY,
+
+            side: THREE.BackSide,
+
+            depthWrite: false,
+
+            depthTest: false
+
+        });
+
+
+    skyDome =
+        new THREE.Mesh(
+            geometry,
+            material
+        );
+
+
+    /*
+       Draw the sky before the world.
+    */
+
+    skyDome.renderOrder = -100;
+
+
+    scene.add(
+        skyDome
+    );
+
+}
 
 
 /* ======================================================
@@ -67,6 +140,11 @@ function createSun() {
 
             opacity: 1,
 
+            /*
+               The sun should never disappear
+               behind terrain.
+            */
+
             depthTest: false,
 
             depthWrite: false
@@ -80,11 +158,6 @@ function createSun() {
             material
         );
 
-
-    /*
-       Make sure nothing renders
-       in front of the sun.
-    */
 
     sunMesh.renderOrder = 1000;
 
@@ -101,6 +174,10 @@ function createSun() {
 ====================================================== */
 
 function createMoon() {
+
+    /*
+       Main moon.
+    */
 
     const geometry =
         new THREE.SphereGeometry(
@@ -142,12 +219,12 @@ function createMoon() {
 
 
     /*
-       Moon glow.
+       Soft glow surrounding the moon.
     */
 
     const glowGeometry =
         new THREE.SphereGeometry(
-            7,
+            7.5,
             32,
             32
         );
@@ -160,7 +237,7 @@ function createMoon() {
 
             transparent: true,
 
-            opacity: 0.22,
+            opacity: 0.25,
 
             depthTest: false,
 
@@ -210,7 +287,13 @@ function createMoon() {
 
 function createStars() {
 
-    const starCount = 500;
+    /*
+       Keep the number of stars reasonable
+       for performance.
+    */
+
+    const starCount = 350;
+
 
     const positions = [];
 
@@ -221,29 +304,43 @@ function createStars() {
         i++
     ) {
 
+        /*
+           Random point on a sphere.
+
+           The star field is much larger than
+           the playable world.
+        */
+
+        const radius = 145;
+
+
+        const theta =
+            Math.random() *
+            Math.PI *
+            2;
+
+
+        const phi =
+            Math.acos(
+                2 * Math.random() - 1
+            );
+
+
         const x =
-            (Math.random() - 0.5) * 240;
+            radius *
+            Math.sin(phi) *
+            Math.cos(theta);
+
 
         const y =
-            (Math.random() - 0.5) * 160;
+            radius *
+            Math.cos(phi);
+
 
         const z =
-            (Math.random() - 0.5) * 240;
-
-
-        if (
-            Math.sqrt(
-                x * x +
-                y * y +
-                z * z
-            ) < 70
-        ) {
-
-            i--;
-
-            continue;
-
-        }
+            radius *
+            Math.sin(phi) *
+            Math.sin(theta);
 
 
         positions.push(
@@ -281,7 +378,14 @@ function createStars() {
 
             opacity: 0,
 
-            depthTest: false,
+            /*
+               THIS IS IMPORTANT.
+
+               Stars now respect the depth buffer,
+               so terrain and blocks can hide them.
+            */
+
+            depthTest: true,
 
             depthWrite: false,
 
@@ -297,7 +401,11 @@ function createStars() {
         );
 
 
-    stars.renderOrder = 998;
+    /*
+       Keep stars behind the sun and moon.
+    */
+
+    stars.renderOrder = 0;
 
 
     scene.add(
@@ -313,6 +421,8 @@ function createStars() {
 
 function initializeDayNight() {
 
+    createSkyDome();
+
     createSun();
 
     createMoon();
@@ -323,12 +433,17 @@ function initializeDayNight() {
 
 
 /* ======================================================
-   UPDATE
+   UPDATE DAY / NIGHT
 ====================================================== */
 
 function updateDayNight(delta) {
 
-    if (!sunMesh) {
+    /*
+       Create everything the first time
+       the system updates.
+    */
+
+    if (!skyDome) {
 
         initializeDayNight();
 
@@ -336,12 +451,16 @@ function updateDayNight(delta) {
 
 
     /* ==================================================
-       TIME
+       ADVANCE TIME
        ================================================== */
 
     dayTime +=
         delta / DAY_LENGTH;
 
+
+    /*
+       Loop back to sunrise.
+    */
 
     if (
         dayTime >= 1
@@ -352,6 +471,15 @@ function updateDayNight(delta) {
     }
 
 
+    /*
+       Convert time to an angle.
+
+       0.00 = sunrise
+       0.25 = noon
+       0.50 = sunset
+       0.75 = midnight
+    */
+
     const angle =
         dayTime *
         Math.PI *
@@ -359,7 +487,7 @@ function updateDayNight(delta) {
 
 
     /* ==================================================
-       SUN
+       SUN POSITION
        ================================================== */
 
     const sunX =
@@ -374,28 +502,38 @@ function updateDayNight(delta) {
 
     sunMesh.position.set(
 
-        camera.position.x + sunX,
+        camera.position.x +
+        sunX,
 
-        camera.position.y + sunY,
+        camera.position.y +
+        sunY,
 
-        camera.position.z + sunZ
+        camera.position.z +
+        sunZ
 
     );
 
 
+    /*
+       Directional light follows the sun.
+    */
+
     sun.position.set(
 
-        camera.position.x + sunX,
+        camera.position.x +
+        sunX,
 
-        camera.position.y + sunY,
+        camera.position.y +
+        sunY,
 
-        camera.position.z + sunZ
+        camera.position.z +
+        sunZ
 
     );
 
 
     /* ==================================================
-       MOON
+       MOON POSITION
        ================================================== */
 
     const moonX =
@@ -410,11 +548,14 @@ function updateDayNight(delta) {
 
     moonMesh.position.set(
 
-        camera.position.x + moonX,
+        camera.position.x +
+        moonX,
 
-        camera.position.y + moonY,
+        camera.position.y +
+        moonY,
 
-        camera.position.z + moonZ
+        camera.position.z +
+        moonZ
 
     );
 
@@ -424,19 +565,26 @@ function updateDayNight(delta) {
     );
 
 
+    /*
+       Moonlight follows the moon.
+    */
+
     moonLight.position.set(
 
-        camera.position.x + moonX,
+        camera.position.x +
+        moonX,
 
-        camera.position.y + moonY,
+        camera.position.y +
+        moonY,
 
-        camera.position.z + moonZ
+        camera.position.z +
+        moonZ
 
     );
 
 
     /* ==================================================
-       DAYLIGHT
+       SKY LIGHT LEVEL
        ================================================== */
 
     let dayAmount =
@@ -453,14 +601,34 @@ function updateDayNight(delta) {
         );
 
 
+    /*
+       Smooth transition between day and night.
+    */
+
     dayAmount =
         dayAmount *
         dayAmount *
         (3 - 2 * dayAmount);
 
 
+    const nightAmount =
+        1 - dayAmount;
+
+
     /* ==================================================
-       SKY
+       SKY DOME COLOR
+       ================================================== */
+
+    skyDome.material.color
+        .copy(NIGHT_SKY)
+        .lerp(
+            DAY_SKY,
+            dayAmount
+        );
+
+
+    /* ==================================================
+       SCENE BACKGROUND
        ================================================== */
 
     scene.background
@@ -505,28 +673,36 @@ function updateDayNight(delta) {
        MOONLIGHT
        ================================================== */
 
-    const nightAmount =
-        1 - dayAmount;
-
-
     moonLight.intensity =
         nightAmount * 0.5;
 
 
     /* ==================================================
-       SUN VISIBILITY
+       SUN
        ================================================== */
 
-    sunMesh.material.opacity = 1;
+    /*
+       Always completely visible when above
+       the horizon.
+    */
+
+    sunMesh.material.opacity =
+        Math.max(
+            0,
+            Math.min(
+                1,
+                dayAmount * 2
+            )
+        );
 
 
     /* ==================================================
-       MOON VISIBILITY
+       MOON
        ================================================== */
 
     moonMesh.material.opacity =
         Math.max(
-            0.15,
+            0,
             Math.min(
                 1,
                 nightAmount * 2
@@ -548,6 +724,17 @@ function updateDayNight(delta) {
 
     stars.material.opacity =
         nightAmount;
+
+
+    /*
+       Move the sky dome and stars with the player.
+
+       This makes the sky feel infinitely far away.
+    */
+
+    skyDome.position.copy(
+        camera.position
+    );
 
 
     stars.position.copy(
