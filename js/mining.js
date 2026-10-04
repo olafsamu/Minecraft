@@ -1355,22 +1355,22 @@ function placeBlock() {
 
 
 /* ======================================================
-   MOUSE DOWN
+   MOUSE INPUT
 ====================================================== */
 
 document.addEventListener(
     "mousedown",
     function(event) {
 
-        /*
-           Crafting table currently open.
-        */
+        console.log(
+            "MOUSE DOWN:",
+            event.button,
+            "locked:",
+            mouseLocked
+        );
 
-        if (
-            typeof craftingOpen !==
-            "undefined" &&
-            craftingOpen
-        ) {
+
+        if (craftingOpen) {
 
             return;
 
@@ -1378,17 +1378,16 @@ document.addEventListener(
 
 
         /*
-           Left mouse = mining.
+           LEFT CLICK = MINING
         */
 
-        if (
-            event.button === 0 &&
-            mouseLocked
-        ) {
+        if (event.button === 0) {
 
-            leftMouseDown =
-                true;
+            leftMouseDown = true;
 
+            console.log(
+                "STARTING MINING"
+            );
 
             startMining();
 
@@ -1396,7 +1395,7 @@ document.addEventListener(
 
 
         /*
-           Right mouse = placement.
+           RIGHT CLICK = BLOCK PLACEMENT
         */
 
         if (
@@ -1413,20 +1412,16 @@ document.addEventListener(
 
 
 /* ======================================================
-   MOUSE UP
+   MOUSE RELEASE
 ====================================================== */
 
 document.addEventListener(
     "mouseup",
     function(event) {
 
-        if (
-            event.button === 0
-        ) {
+        if (event.button === 0) {
 
-            leftMouseDown =
-                false;
-
+            leftMouseDown = false;
 
             stopMining();
 
@@ -1437,7 +1432,7 @@ document.addEventListener(
 
 
 /* ======================================================
-   DISABLE RIGHT CLICK MENU
+   PREVENT RIGHT CLICK MENU
 ====================================================== */
 
 document.addEventListener(
