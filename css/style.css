@@ -546,3 +546,185 @@ body {
         2px 2px 2px black;
 
 }
+/* ======================================================
+   CRAFTING MENU
+====================================================== */
+
+#craftingMenu {
+
+    position: fixed;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+
+    z-index: 900;
+
+    display: none;
+
+    justify-content: center;
+    align-items: center;
+
+    background:
+        rgba(0, 0, 0, 0.55);
+
+}
+
+
+/* ======================================================
+   CRAFTING WINDOW
+====================================================== */
+
+.crafting-window {
+
+    padding: 25px;
+
+    background:
+        #3b3b3b;
+
+    border:
+        4px solid #222;
+
+    box-shadow:
+        0 10px 40px
+        rgba(0, 0, 0, 0.6);
+
+    text-align: center;
+
+}
+
+
+.crafting-window h2 {
+
+    margin-bottom: 20px;
+
+    color: white;
+
+    font-size: 24px;
+
+}
+
+
+.crafting-window p {
+
+    margin-top: 20px;
+
+    color: #ccc;
+
+    font-size: 14px;
+
+}
+
+
+/* ======================================================
+   CRAFTING CONTENT
+====================================================== */
+
+.crafting-content {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 25px;
+
+}
+
+
+/* ======================================================
+   2x2 GRID
+====================================================== */
+
+.crafting-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 60px);
+
+    grid-template-rows:
+        repeat(2, 60px);
+
+    gap: 4px;
+
+}
+
+
+/* ======================================================
+   CRAFTING SLOTS
+====================================================== */
+
+.crafting-slot,
+#crafting-result {
+
+    width: 60px;
+    height: 60px;
+
+    border:
+        3px solid #222;
+
+    background:
+        linear-gradient(
+            135deg,
+            #777,
+            #444
+        );
+
+    color: white;
+
+    font-size: 25px;
+
+    cursor: pointer;
+
+}
+
+
+/* ======================================================
+   CRAFTING SLOT HOVER
+====================================================== */
+
+.crafting-slot:hover,
+#crafting-result:hover {
+
+    background:
+        linear-gradient(
+            135deg,
+            #999,
+            #555
+        );
+
+}
+
+
+/* ======================================================
+   ARROW
+====================================================== */
+
+.crafting-arrow {
+
+    color: white;
+
+    font-size: 40px;
+
+}
+
+
+/* ======================================================
+   READY RESULT
+====================================================== */
+
+.crafting-result-ready {
+
+    border:
+        3px solid white !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            #888,
+            #555
+        ) !important;
+
+}
