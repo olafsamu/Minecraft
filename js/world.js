@@ -693,10 +693,7 @@ function generateWorld() {
     meshes.forEach(
         cube => {
 
-            scene.remove(
-                cube
-            );
-
+            scene.remove(cube);
 
             cube.geometry.dispose();
 
@@ -775,64 +772,25 @@ function generateWorld() {
                 );
 
 
-   
- {
+            /*
+               Generate the underground.
 
-    let type;
+               The surface stays the same,
+               but the world now goes 32 blocks down.
+            */
 
-
-    /*
-       Grass stays on the surface.
-    */
-
-    if (
-        y === height
-    ) {
-
-        type =
-            BLOCKS.grass;
-
-    }
-
-
-    /*
-       Dirt stays directly underneath
-       the grass.
-    */
-
-    else if (
-        y >= height - 2
-    ) {
-
-        type =
-            BLOCKS.dirt;
-
-    }
-
-
-    /*
-       Everything deeper is stone.
-    */
-
-    else {
-
-        type =
-            BLOCKS.stone;
-
-    }
-
-
-    addBlock(
-        x,
-        y,
-        z,
-        type
-    );
-
-}
+            for (
+                let y = -WORLD_DEPTH;
+                y <= height;
+                y++
+            ) {
 
                 let type;
 
+
+                /*
+                   Grass on the surface.
+                */
 
                 if (
                     y === height
@@ -843,6 +801,11 @@ function generateWorld() {
 
                 }
 
+
+                /*
+                   Two layers of dirt.
+                */
+
                 else if (
                     y >= height - 2
                 ) {
@@ -851,6 +814,11 @@ function generateWorld() {
                         BLOCKS.dirt;
 
                 }
+
+
+                /*
+                   Everything deeper is stone.
+                */
 
                 else {
 
