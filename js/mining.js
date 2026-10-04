@@ -8,7 +8,118 @@ Mining + Block Placement + Inventory
 const REACH_DISTANCE = 6;
 
 let targetedBlock = null;
+/* ======================================================
+   BREAKING CRACK OVERLAY
+====================================================== */
 
+let crackOverlay = null;
+
+
+/* ======================================================
+   CREATE CRACK OVERLAY
+====================================================== */
+
+function createCrackOverlay(block) {
+
+    removeCrackOverlay();
+
+
+    const geometry =
+        new THREE.BoxGeometry(
+            1.01,
+            1.01,
+            1.01
+        );
+
+
+    const material =
+        new THREE.MeshBasicMaterial({
+            color: 0x111111,
+            transparent: true,
+            opacity: 0,
+            depthWrite: false
+        });
+
+
+    crackOverlay =
+        new THREE.Mesh(
+            geometry,
+            material
+        );
+
+
+    crackOverlay.position.copy(
+        block.position
+    );
+
+
+    crackOverlay.userData.isCrackOverlay =
+        true;
+
+
+    scene.add(
+        crackOverlay
+    );
+
+}
+
+
+/* ======================================================
+   UPDATE CRACK OVERLAY
+====================================================== */
+
+function updateCrackOverlay(progress) {
+
+    if (!crackOverlay) {
+        return;
+    }
+
+
+    /*
+       Progress goes from:
+
+       0 = just started
+       1 = almost broken
+    */
+
+
+    const opacity =
+        Math.min(
+            0.65,
+            progress * 0.65
+        );
+
+
+    crackOverlay.material.opacity =
+        opacity;
+
+}
+
+
+/* ======================================================
+   REMOVE CRACK OVERLAY
+====================================================== */
+
+function removeCrackOverlay() {
+
+    if (!crackOverlay) {
+        return;
+    }
+
+
+    scene.remove(
+        crackOverlay
+    );
+
+
+    crackOverlay.geometry.dispose();
+
+    crackOverlay.material.dispose();
+
+
+    crackOverlay = null;
+
+}
 
 /* ======================================================
    MINING VARIABLES
