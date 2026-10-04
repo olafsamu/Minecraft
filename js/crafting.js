@@ -5,6 +5,11 @@ Crafting System
 =========================================================
 */
 
+
+/* ======================================================
+   2x2 PLAYER CRAFTING
+====================================================== */
+
 const craftingGrid = [
     null,
     null,
@@ -16,15 +21,49 @@ let craftingOpen = false;
 
 
 /* ======================================================
-   OPEN / CLOSE CRAFTING
+   3x3 CRAFTING TABLE
+====================================================== */
+
+const tableCraftingGrid = [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+];
+
+let tableCraftingOpen = false;
+
+
+/* ======================================================
+   OPEN 2x2 CRAFTING
 ====================================================== */
 
 function toggleCrafting() {
 
-    craftingOpen = !craftingOpen;
+    /*
+       If the crafting table menu is open,
+       don't open the normal menu.
+    */
+
+    if (tableCraftingOpen) {
+        return;
+    }
+
+
+    craftingOpen =
+        !craftingOpen;
+
 
     const menu =
-        document.getElementById("craftingMenu");
+        document.getElementById(
+            "craftingMenu"
+        );
+
 
     if (!menu) {
         return;
@@ -32,6 +71,10 @@ function toggleCrafting() {
 
 
     if (craftingOpen) {
+
+        /*
+           Release mouse.
+        */
 
         if (
             document.pointerLockElement
@@ -41,19 +84,25 @@ function toggleCrafting() {
 
         }
 
-        menu.style.display = "flex";
+
+        menu.style.display =
+            "flex";
 
     }
 
     else {
 
-        menu.style.display = "none";
+        menu.style.display =
+            "none";
 
 
         setTimeout(() => {
 
             const game =
-                document.getElementById("game");
+                document.getElementById(
+                    "game"
+                );
+
 
             if (
                 game &&
@@ -75,7 +124,110 @@ function toggleCrafting() {
 
 
 /* ======================================================
-   COUNT ITEMS
+   OPEN 3x3 CRAFTING TABLE
+====================================================== */
+
+function openCraftingTable() {
+
+    /*
+       Don't open twice.
+    */
+
+    if (tableCraftingOpen) {
+        return;
+    }
+
+
+    tableCraftingOpen =
+        true;
+
+
+    /*
+       Release mouse.
+    */
+
+    if (
+        document.pointerLockElement
+    ) {
+
+        document.exitPointerLock();
+
+    }
+
+
+    const menu =
+        document.getElementById(
+            "tableCraftingMenu"
+        );
+
+
+    if (!menu) {
+        return;
+    }
+
+
+    menu.style.display =
+        "flex";
+
+
+    updateTableCraftingUI();
+
+}
+
+
+/* ======================================================
+   CLOSE 3x3 CRAFTING TABLE
+====================================================== */
+
+function closeCraftingTable() {
+
+    tableCraftingOpen =
+        false;
+
+
+    const menu =
+        document.getElementById(
+            "tableCraftingMenu"
+        );
+
+
+    if (menu) {
+
+        menu.style.display =
+            "none";
+
+    }
+
+
+    /*
+       Return mouse to game.
+    */
+
+    setTimeout(() => {
+
+        const game =
+            document.getElementById(
+                "game"
+            );
+
+
+        if (
+            game &&
+            !tableCraftingOpen &&
+            !craftingOpen
+        ) {
+
+            game.requestPointerLock();
+
+        }
+
+    }, 100);
+
+}
+
+
+/* ======================================================
+   COUNT 2x2 ITEMS
 ====================================================== */
 
 function countCraftingItem(type) {
@@ -83,7 +235,11 @@ function countCraftingItem(type) {
     let count = 0;
 
 
-    for (let i = 0; i < 4; i++) {
+    for (
+        let i = 0;
+        i < 4;
+        i++
+    ) {
 
         if (
             craftingGrid[i] === type
@@ -102,16 +258,21 @@ function countCraftingItem(type) {
 
 
 /* ======================================================
-   CHECK CRAFTING RECIPE
+   2x2 CRAFTING RECIPE
 ====================================================== */
 
 function getCraftingResult() {
 
     const wood =
-        countCraftingItem("wood");
+        countCraftingItem(
+            "wood"
+        );
+
 
     const planks =
-        countCraftingItem("planks");
+        countCraftingItem(
+            "planks"
+        );
 
 
     /*
@@ -158,7 +319,7 @@ function getCraftingResult() {
 
 
 /* ======================================================
-   PUT ITEM INTO CRAFTING SLOT
+   PUT ITEM INTO 2x2
 ====================================================== */
 
 function putCraftingItem(slot) {
@@ -167,14 +328,11 @@ function putCraftingItem(slot) {
         slot < 0 ||
         slot >= 4
     ) {
+
         return;
+
     }
 
-
-    /*
-       Don't put anything into an
-       already occupied slot.
-    */
 
     if (
         craftingGrid[slot] !== null
@@ -202,11 +360,6 @@ function putCraftingItem(slot) {
 
     }
 
-
-    /*
-       Only wood and planks can
-       currently be crafted.
-    */
 
     if (
         selected.type !== "wood" &&
@@ -244,7 +397,7 @@ function putCraftingItem(slot) {
 
 
 /* ======================================================
-   TAKE ITEM OUT OF CRAFTING SLOT
+   REMOVE ITEM FROM 2x2
 ====================================================== */
 
 function removeCraftingItem(slot) {
@@ -263,18 +416,10 @@ function removeCraftingItem(slot) {
         craftingGrid[slot];
 
 
-    /*
-       Nothing in this slot.
-    */
-
     if (!item) {
         return;
     }
 
-
-    /*
-       Return the item to the hotbar.
-    */
 
     const added =
         addItem(
@@ -283,20 +428,13 @@ function removeCraftingItem(slot) {
         );
 
 
-    /*
-       Only remove it from the
-       crafting grid if the inventory
-       actually accepted it.
-    */
-
     if (!added) {
-
         return;
-
     }
 
 
-    craftingGrid[slot] = null;
+    craftingGrid[slot] =
+        null;
 
 
     updateCraftingUI();
@@ -305,7 +443,7 @@ function removeCraftingItem(slot) {
 
 
 /* ======================================================
-   TAKE CRAFTING RESULT
+   TAKE 2x2 RESULT
 ====================================================== */
 
 function takeCraftingResult() {
@@ -319,11 +457,6 @@ function takeCraftingResult() {
     }
 
 
-    /*
-       Make sure the result can
-       actually fit in the inventory.
-    */
-
     const added =
         addItem(
             result.type,
@@ -332,19 +465,18 @@ function takeCraftingResult() {
 
 
     if (!added) {
-
         return;
-
     }
 
 
-    /*
-       Clear the ingredients.
-    */
+    for (
+        let i = 0;
+        i < 4;
+        i++
+    ) {
 
-    for (let i = 0; i < 4; i++) {
-
-        craftingGrid[i] = null;
+        craftingGrid[i] =
+            null;
 
     }
 
@@ -355,12 +487,16 @@ function takeCraftingResult() {
 
 
 /* ======================================================
-   UPDATE CRAFTING UI
+   UPDATE 2x2 UI
 ====================================================== */
 
 function updateCraftingUI() {
 
-    for (let i = 0; i < 4; i++) {
+    for (
+        let i = 0;
+        i < 4;
+        i++
+    ) {
 
         const slot =
             document.getElementById(
@@ -377,7 +513,8 @@ function updateCraftingUI() {
             craftingGrid[i] === "wood"
         ) {
 
-            slot.textContent = "🪵";
+            slot.textContent =
+                "🪵";
 
         }
 
@@ -385,13 +522,15 @@ function updateCraftingUI() {
             craftingGrid[i] === "planks"
         ) {
 
-            slot.textContent = "🟫";
+            slot.textContent =
+                "🟫";
 
         }
 
         else {
 
-            slot.textContent = "";
+            slot.textContent =
+                "";
 
         }
 
@@ -442,7 +581,8 @@ function updateCraftingUI() {
 
     else {
 
-        resultSlot.textContent = "";
+        resultSlot.textContent =
+            "";
 
         resultSlot.classList.remove(
             "crafting-result-ready"
@@ -454,7 +594,60 @@ function updateCraftingUI() {
 
 
 /* ======================================================
-   CRAFTING CLICK EVENTS
+   UPDATE 3x3 UI
+====================================================== */
+
+function updateTableCraftingUI() {
+
+    for (
+        let i = 0;
+        i < 9;
+        i++
+    ) {
+
+        const slot =
+            document.getElementById(
+                "table-crafting-slot-" + i
+            );
+
+
+        if (!slot) {
+            continue;
+        }
+
+
+        if (
+            tableCraftingGrid[i] === "wood"
+        ) {
+
+            slot.textContent =
+                "🪵";
+
+        }
+
+        else if (
+            tableCraftingGrid[i] === "planks"
+        ) {
+
+            slot.textContent =
+                "🟫";
+
+        }
+
+        else {
+
+            slot.textContent =
+                "";
+
+        }
+
+    }
+
+}
+
+
+/* ======================================================
+   CLICK EVENTS
 ====================================================== */
 
 document.addEventListener(
@@ -465,10 +658,9 @@ document.addEventListener(
             event.target;
 
 
-        /*
-           Clicking an occupied crafting
-           slot takes the item back.
-        */
+        /* ==============================================
+           2x2 CRAFTING
+        ============================================== */
 
         if (
             target.classList.contains(
@@ -486,13 +678,17 @@ document.addEventListener(
                 craftingGrid[slot] !== null
             ) {
 
-                removeCraftingItem(slot);
+                removeCraftingItem(
+                    slot
+                );
 
             }
 
             else {
 
-                putCraftingItem(slot);
+                putCraftingItem(
+                    slot
+                );
 
             }
 
@@ -501,10 +697,6 @@ document.addEventListener(
 
         }
 
-
-        /*
-           Click crafting result.
-        */
 
         if (
             target.id ===
@@ -513,6 +705,28 @@ document.addEventListener(
 
             takeCraftingResult();
 
+            return;
+
+        }
+
+
+        /* ==============================================
+           3x3 CRAFTING TABLE
+        ============================================== */
+
+        if (
+            target.classList.contains(
+                "table-crafting-slot"
+            )
+        ) {
+
+            /*
+               3x3 crafting will be added
+               in the next step.
+            */
+
+            return;
+
         }
 
     }
@@ -520,21 +734,12 @@ document.addEventListener(
 
 
 /* ======================================================
-   C KEY
+   KEYBOARD
 ====================================================== */
 
 document.addEventListener(
     "keydown",
     event => {
-
-        if (
-            event.key.toLowerCase() !== "c"
-        ) {
-
-            return;
-
-        }
-
 
         if (
             event.repeat
@@ -545,7 +750,28 @@ document.addEventListener(
         }
 
 
-        toggleCrafting();
+        /*
+           C opens/closes normal crafting.
+        */
+
+        if (
+            event.key.toLowerCase() === "c"
+        ) {
+
+            if (
+                tableCraftingOpen
+            ) {
+
+                closeCraftingTable();
+
+                return;
+
+            }
+
+
+            toggleCrafting();
+
+        }
 
     }
 );

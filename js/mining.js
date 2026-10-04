@@ -474,12 +474,29 @@ document.addEventListener(
         */
 
         if (
-            event.button === 2
-        ) {
+    event.button === 2
+) {
 
-            placeBlock();
+    const block =
+        getTargetBlock();
 
-        }
+
+    if (
+        block &&
+        block.userData.type ===
+        BLOCKS.crafting_table
+    ) {
+
+        openCraftingTable();
+
+        return;
+
+    }
+
+
+    placeBlock();
+
+}
 
     }
 );

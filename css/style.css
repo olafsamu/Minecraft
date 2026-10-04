@@ -728,3 +728,108 @@ body {
         ) !important;
 
 }
+/* ======================================================
+   3x3 CRAFTING TABLE
+====================================================== */
+
+#tableCraftingMenu {
+
+    position: fixed;
+
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    z-index: 2000;
+
+    display: none;
+
+    justify-content: center;
+    align-items: center;
+
+    background: rgba(0, 0, 0, 0.65);
+
+}
+
+
+.table-window {
+
+    min-width: 520px;
+
+}
+
+
+.table-crafting-content {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 30px;
+
+    margin-top: 25px;
+
+}
+
+
+.table-crafting-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 60px);
+
+    grid-template-rows:
+        repeat(3, 60px);
+
+    gap: 5px;
+
+}
+
+
+.table-crafting-slot {
+
+    width: 60px;
+    height: 60px;
+
+    background: #777;
+
+    border: 3px solid #444;
+
+    box-shadow:
+        inset 2px 2px #aaa,
+        inset -2px -2px #333;
+
+    font-size: 28px;
+
+    cursor: pointer;
+
+}
+
+
+.table-crafting-slot:hover {
+
+    background: #999;
+
+}
+
+
+#table-crafting-result {
+
+    width: 70px;
+    height: 70px;
+
+    background: #777;
+
+    border: 3px solid #444;
+
+    box-shadow:
+        inset 2px 2px #aaa,
+        inset -2px -2px #333;
+
+    font-size: 25px;
+
+}
