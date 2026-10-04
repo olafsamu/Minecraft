@@ -13,12 +13,6 @@ let dayTime = 0.25;
    SETTINGS
 ====================================================== */
 
-/*
-   One complete day + night cycle.
-
-   600 seconds = 10 minutes
-*/
-
 const DAY_LENGTH = 600;
 
 
@@ -30,14 +24,13 @@ const DAY_SKY =
     new THREE.Color(0x87ceeb);
 
 const NIGHT_SKY =
-    new THREE.Color(0x07111f);
-
+    new THREE.Color(0x020611);
 
 const DAY_FOG =
     new THREE.Color(0x87ceeb);
 
 const NIGHT_FOG =
-    new THREE.Color(0x07111f);
+    new THREE.Color(0x020611);
 
 
 /* ======================================================
@@ -48,7 +41,6 @@ let sunMesh = null;
 let moonMesh = null;
 let moonGlow = null;
 let stars = null;
-
 let moonLight = null;
 
 
@@ -60,7 +52,7 @@ function createSun() {
 
     const geometry =
         new THREE.SphereGeometry(
-            5,
+            7,
             32,
             32
         );
@@ -68,7 +60,17 @@ function createSun() {
 
     const material =
         new THREE.MeshBasicMaterial({
-            color: 0xffffcc
+
+            color: 0xffffaa,
+
+            transparent: true,
+
+            opacity: 1,
+
+            depthTest: false,
+
+            depthWrite: false
+
         });
 
 
@@ -77,6 +79,14 @@ function createSun() {
             geometry,
             material
         );
+
+
+    /*
+       Make sure nothing renders
+       in front of the sun.
+    */
+
+    sunMesh.renderOrder = 1000;
 
 
     scene.add(
@@ -94,7 +104,7 @@ function createMoon() {
 
     const geometry =
         new THREE.SphereGeometry(
-            3.5,
+            5,
             32,
             32
         );
@@ -102,7 +112,17 @@ function createMoon() {
 
     const material =
         new THREE.MeshBasicMaterial({
-            color: 0xdde7ff
+
+            color: 0xffffff,
+
+            transparent: true,
+
+            opacity: 1,
+
+            depthTest: false,
+
+            depthWrite: false
+
         });
 
 
@@ -113,18 +133,21 @@ function createMoon() {
         );
 
 
+    moonMesh.renderOrder = 1000;
+
+
     scene.add(
         moonMesh
     );
 
 
     /*
-       Soft glow around the moon.
+       Moon glow.
     */
 
     const glowGeometry =
         new THREE.SphereGeometry(
-            5,
+            7,
             32,
             32
         );
@@ -132,10 +155,19 @@ function createMoon() {
 
     const glowMaterial =
         new THREE.MeshBasicMaterial({
-            color: 0xaec8ff,
+
+            color: 0xcfe2ff,
+
             transparent: true,
-            opacity: 0.12,
-            depthWrite: false
+
+            opacity: 0.22,
+
+            depthTest: false,
+
+            depthWrite: false,
+
+            side: THREE.DoubleSide
+
         });
 
 
@@ -144,6 +176,9 @@ function createMoon() {
             glowGeometry,
             glowMaterial
         );
+
+
+    moonGlow.renderOrder = 999;
 
 
     scene.add(
@@ -175,7 +210,7 @@ function createMoon() {
 
 function createStars() {
 
-    const starCount = 350;
+    const starCount = 500;
 
     const positions = [];
 
@@ -185,10 +220,6 @@ function createStars() {
         i < starCount;
         i++
     ) {
-
-        /*
-           Put stars far around the player.
-        */
 
         const x =
             (Math.random() - 0.5) * 240;
@@ -200,11 +231,6 @@ function createStars() {
             (Math.random() - 0.5) * 240;
 
 
-        /*
-           Avoid putting stars
-           extremely close to the camera.
-        */
-
         if (
             Math.sqrt(
                 x * x +
@@ -214,6 +240,7 @@ function createStars() {
         ) {
 
             i--;
+
             continue;
 
         }
@@ -243,13 +270,23 @@ function createStars() {
 
     const material =
         new THREE.PointsMaterial({
+
             color: 0xffffff,
-            size: 1.2,
+
+            size: 1.5,
+
             sizeAttenuation: false,
+
             transparent: true,
+
             opacity: 0,
+
+            depthTest: false,
+
             depthWrite: false,
+
             fog: false
+
         });
 
 
@@ -260,6 +297,9 @@ function createStars() {
         );
 
 
+    stars.renderOrder = 998;
+
+
     scene.add(
         stars
     );
@@ -268,7 +308,7 @@ function createStars() {
 
 
 /* ======================================================
-   INITIALIZE SKY
+   INITIALIZE
 ====================================================== */
 
 function initializeDayNight() {
@@ -283,14 +323,10 @@ function initializeDayNight() {
 
 
 /* ======================================================
-   UPDATE DAY / NIGHT
+   UPDATE
 ====================================================== */
 
 function updateDayNight(delta) {
-
-    /*
-       Create everything once.
-    */
 
     if (!sunMesh) {
 
@@ -299,17 +335,13 @@ function updateDayNight(delta) {
     }
 
 
-    /*
-       Move time forward.
-    */
+    /* ==================================================
+       TIME
+       ================================================== */
 
     dayTime +=
         delta / DAY_LENGTH;
 
-
-    /*
-       Loop back to sunrise.
-    */
 
     if (
         dayTime >= 1
@@ -320,15 +352,6 @@ function updateDayNight(delta) {
     }
 
 
-    /*
-       Convert time into an angle.
-
-       0.00 = sunrise
-       0.25 = noon
-       0.50 = sunset
-       0.75 = midnight
-    */
-
     const angle =
         dayTime *
         Math.PI *
@@ -336,40 +359,43 @@ function updateDayNight(delta) {
 
 
     /* ==================================================
-       SUN POSITION
+       SUN
        ================================================== */
 
     const sunX =
-        Math.cos(angle) * 70;
+        Math.cos(angle) * 100;
 
     const sunY =
-        Math.sin(angle) * 70;
+        Math.sin(angle) * 100;
 
     const sunZ =
-        -50;
+        -80;
 
 
     sunMesh.position.set(
+
         camera.position.x + sunX,
+
         camera.position.y + sunY,
+
         camera.position.z + sunZ
+
     );
 
 
-    /*
-       Directional sunlight follows
-       the visible sun.
-    */
-
     sun.position.set(
+
         camera.position.x + sunX,
+
         camera.position.y + sunY,
+
         camera.position.z + sunZ
+
     );
 
 
     /* ==================================================
-       MOON POSITION
+       MOON
        ================================================== */
 
     const moonX =
@@ -379,13 +405,17 @@ function updateDayNight(delta) {
         -sunY;
 
     const moonZ =
-        -50;
+        -80;
 
 
     moonMesh.position.set(
+
         camera.position.x + moonX,
+
         camera.position.y + moonY,
+
         camera.position.z + moonZ
+
     );
 
 
@@ -394,24 +424,23 @@ function updateDayNight(delta) {
     );
 
 
-    /*
-       Moonlight points from
-       the moon's position.
-    */
-
     moonLight.position.set(
+
         camera.position.x + moonX,
+
         camera.position.y + moonY,
+
         camera.position.z + moonZ
+
     );
 
 
     /* ==================================================
-       DAYLIGHT AMOUNT
+       DAYLIGHT
        ================================================== */
 
     let dayAmount =
-        (sunY + 10) / 70;
+        (sunY + 15) / 115;
 
 
     dayAmount =
@@ -423,10 +452,6 @@ function updateDayNight(delta) {
             )
         );
 
-
-    /*
-       Smooth transition.
-    */
 
     dayAmount =
         dayAmount *
@@ -464,7 +489,7 @@ function updateDayNight(delta) {
 
     sun.intensity =
         0.2 +
-        dayAmount * 1.3;
+        dayAmount * 1.5;
 
 
     /* ==================================================
@@ -472,8 +497,8 @@ function updateDayNight(delta) {
        ================================================== */
 
     skyLight.intensity =
-        0.4 +
-        dayAmount * 1.4;
+        0.35 +
+        dayAmount * 1.5;
 
 
     /* ==================================================
@@ -485,25 +510,14 @@ function updateDayNight(delta) {
 
 
     moonLight.intensity =
-        nightAmount * 0.35;
+        nightAmount * 0.5;
 
 
     /* ==================================================
        SUN VISIBILITY
        ================================================== */
 
-    sunMesh.material.opacity =
-        Math.max(
-            0,
-            Math.min(
-                1,
-                dayAmount * 2
-            )
-        );
-
-
-    sunMesh.material.transparent =
-        true;
+    sunMesh.material.opacity = 1;
 
 
     /* ==================================================
@@ -512,7 +526,7 @@ function updateDayNight(delta) {
 
     moonMesh.material.opacity =
         Math.max(
-            0,
+            0.15,
             Math.min(
                 1,
                 nightAmount * 2
@@ -520,34 +534,21 @@ function updateDayNight(delta) {
         );
 
 
-    moonMesh.material.transparent =
-        true;
-
-
     /* ==================================================
        MOON GLOW
        ================================================== */
 
     moonGlow.material.opacity =
-        nightAmount * 0.18;
+        nightAmount * 0.25;
 
 
     /* ==================================================
        STARS
        ================================================== */
 
-    /*
-       Stars become visible at night.
-    */
-
     stars.material.opacity =
         nightAmount;
 
-
-    /*
-       Keep stars surrounding the player
-       so they look like part of the sky.
-    */
 
     stars.position.copy(
         camera.position
