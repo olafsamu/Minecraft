@@ -547,67 +547,52 @@ function canBreak(
 
 function startMining() {
 
+    console.log("MINING: left click detected");
+
+
     const target =
         getTargetBlock();
 
 
+    console.log(
+        "MINING: target =",
+        target
+    );
+
+
     if (!target) {
 
-        stopMining();
+        console.log(
+            "MINING: NO BLOCK TARGETED"
+        );
 
         return;
 
     }
 
 
-    const type =
-        target.userData.type;
+    console.log(
+        "MINING: BLOCK TARGETED:",
+        target.userData.type,
+        target.userData.key
+    );
 
-
-    if (
-        !canBreak(type)
-    ) {
-
-        stopMining();
-
-
-        if (
-            type &&
-            (
-                type.id === "stone" ||
-                type.name === "Stone"
-            )
-        ) {
-
-            showMessage(
-                "You need a wooden pickaxe to break stone!"
-            );
-
-        }
-
-        return;
-
-    }
-
-
-    const key =
-        target.userData.key;
-
-
-    /*
-       Start mining this block.
-    */
 
     breaking =
         true;
 
 
     breakingKey =
-        key;
+        target.userData.key;
 
 
     breakingStart =
         performance.now();
+
+
+    console.log(
+        "MINING: STARTED"
+    );
 
 }
 
