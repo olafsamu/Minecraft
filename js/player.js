@@ -18,6 +18,62 @@ let grounded = false;
 
 
 /* ======================================================
+   CHECK WHETHER BLOCK IS SOLID
+====================================================== */
+
+function isSolidBlockAt(
+    x,
+    y,
+    z
+) {
+
+    const type =
+        world.get(
+            blockKey(
+                x,
+                y,
+                z
+            )
+        );
+
+
+    if (!type) {
+
+        return false;
+
+    }
+
+
+    /*
+       Water does not block movement.
+    */
+
+    const name =
+        String(
+            type.name || ""
+        )
+        .toLowerCase()
+        .replaceAll(
+            " ",
+            "_"
+        );
+
+
+    if (
+        name === "water"
+    ) {
+
+        return false;
+
+    }
+
+
+    return true;
+
+}
+
+
+/* ======================================================
    BLOCK COLLISION
 ====================================================== */
 
@@ -91,12 +147,10 @@ function collidesAt(
             ) {
 
                 if (
-                    world.has(
-                        blockKey(
-                            bx,
-                            by,
-                            bz
-                        )
+                    isSolidBlockAt(
+                        bx,
+                        by,
+                        bz
                     )
                 ) {
 
@@ -125,11 +179,7 @@ function updatePlayer(
 ) {
 
     /*
-       Load the chunks around the player
-       before movement occurs.
-
-       This is what allows the player to
-       cross into new chunks safely.
+       Keep chunks around the player loaded.
     */
 
     if (
@@ -262,9 +312,7 @@ function updatePlayer(
             EYE_HEIGHT;
 
 
-        /* ==================================================
-           X
-        ================================================== */
+        /* X */
 
         const nextX =
             camera.position.x +
@@ -285,9 +333,7 @@ function updatePlayer(
         }
 
 
-        /* ==================================================
-           Z
-        ================================================== */
+        /* Z */
 
         const nextZ =
             camera.position.z +
