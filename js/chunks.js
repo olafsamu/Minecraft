@@ -1,14 +1,32 @@
 /*
 =========================================================
 BLOCKWORLD
-Chunk System
+Professional Chunk Renderer
 =========================================================
 
-16 x 16 chunks
-1 chunk render distance
+Major performance upgrade:
 
-The world can extend far beyond the original 24 x 24
-area, while only nearby chunks are kept active.
+- 16 x 16 chunks
+- Instanced rendering
+- One render object per block type per chunk
+- Chunk loading queue
+- Chunk unloading
+- Persistent modified chunks
+- Hidden-block culling
+- Ores and crafting tables remain individual meshes
+- Normal terrain blocks are rendered with InstancedMesh
+
+Supported instanced blocks:
+
+Grass
+Dirt
+Stone
+Wood
+Leaves
+Planks
+
+Special blocks such as ores and crafting tables still use
+the normal mesh system because they are much rarer.
 
 =========================================================
 */
@@ -22,56 +40,119 @@ const CHUNK_SIZE = 16;
 
 
 /*
-   1 means:
+   Start conservatively.
 
-       [chunk][chunk][chunk]
-       [chunk][PLAYER][chunk]
-       [chunk][chunk][chunk]
-
-   9 chunks loaded at once.
+   1 means 3 x 3 chunks around the player.
 */
 
 const CHUNK_RENDER_DISTANCE = 1;
+
+
+/*
+   Only build one new chunk per frame.
+
+   This prevents a large FPS spike when entering
+   a completely new area.
+*/
+
+const CHUNKS_PER_FRAME = 1;
 
 
 /* ======================================================
    CHUNK STORAGE
 ====================================================== */
 
-/*
-   Loaded chunk keys.
-*/
-
 const loadedChunks =
     new Set();
 
-
-/*
-   Saved block data for chunks that have
-   been unloaded.
-
-   This means mining and placing blocks
-   survives when leaving and returning.
-*/
 
 const chunkStorage =
     new Map();
 
 
-/*
-   Every currently loaded chunk keeps a Set
-   of its block keys.
-
-   This makes saving/unloading much faster.
-*/
-
 const chunkMembers =
     new Map();
+
+
+const chunkRenderObjects =
+    new Map();
+
+
+/* ======================================================
+   CHUNK LOAD QUEUE
+====================================================== */
+
+let chunkLoadQueue = [];
 
 
 let currentChunkX = 0;
 
 let currentChunkZ = 0;
+
+
+/* ======================================================
+   INSTANCED BLOCK TYPES
+====================================================== */
+
+const INSTANCED_BLOCK_TYPES = [
+
+    "grass",
+
+    "dirt",
+
+    "stone",
+
+    "wood",
+
+    "leaves",
+
+    "planks"
+
+];
+
+
+/* ======================================================
+   NORMALIZE BLOCK NAME
+====================================================== */
+
+function normalizeChunkBlockName(
+    type
+) {
+
+    return String(
+        type &&
+        type.name
+            ? type.name
+            : ""
+    )
+    .toLowerCase()
+    .replaceAll(
+        " ",
+        "_"
+    )
+    .replaceAll(
+        "-",
+        "_"
+    );
+
+}
+
+
+/* ======================================================
+   IS INSTANCED BLOCK
+====================================================== */
+
+function isInstancedBlock(
+    type
+) {
+
+    return INSTANCED_BLOCK_TYPES.includes(
+        normalizeChunkBlockName(
+            type
+        )
+    );
+
+}
 
 
 /* ======================================================
@@ -84,16 +165,18 @@ function chunkKey(
 ) {
 
     return (
+
         chunkX +
         "," +
         chunkZ
+
     );
 
 }
 
 
 /* ======================================================
-   WORLD → CHUNK
+   GET CHUNK COORDINATE
 ====================================================== */
 
 function getChunkCoordinate(
@@ -101,37 +184,37 @@ function getChunkCoordinate(
 ) {
 
     return Math.floor(
-        value / CHUNK_SIZE
+        value /
+        CHUNK_SIZE
     );
 
 }
 
 
 /* ======================================================
-   SIMPLE DETERMINISTIC HASH
+   BLOCK NEIGHBORS
 ====================================================== */
 
-function chunkHash2D(
-    x,
-    z
-) {
+const CHUNK_NEIGHBORS = [
 
-    const value =
-        Math.sin(
-            x * 127.1 +
-            z * 311.7 +
-            74.7
-        ) *
-        43758.5453123;
+    [1, 0, 0],
+
+    [-1, 0, 0],
+
+    [0, 1, 0],
+
+    [0, -1, 0],
+
+    [0, 0, 1],
+
+    [0, 0, -1]
+
+];
 
 
-    return (
-        value -
-        Math.floor(value)
-    );
-
-}
-
+/* ======================================================
+   DETERMINISTIC HASH
+====================================================== */
 
 function chunkHash3D(
     x,
@@ -141,220 +224,62 @@ function chunkHash3D(
 
     const value =
         Math.sin(
+
             x * 127.1 +
             y * 269.5 +
             z * 311.7 +
             74.7
+
         ) *
         43758.5453123;
 
 
     return (
+
         value -
-        Math.floor(value)
+        Math.floor(
+            value
+        )
+
     );
 
 }
 
 
 /* ======================================================
-   ADD BLOCK TO CHUNK DATA
+   TREE HASH
 ====================================================== */
 
-function addChunkDataBlock(
-    data,
+function chunkHash2D(
     x,
-    y,
-    z,
-    type
+    z
 ) {
 
-    /*
-       Don't overwrite an existing block.
-    */
+    const value =
+        Math.sin(
 
-    const key =
-        blockKey(
-            x,
-            y,
-            z
-        );
+            x * 127.1 +
+            z * 311.7 +
+            74.7
+
+        ) *
+        43758.5453123;
 
 
-    if (
-        !data.has(key)
-    ) {
+    return (
 
-        data.set(
-            key,
-            type
-        );
+        value -
+        Math.floor(
+            value
+        )
 
-    }
+    );
 
 }
 
 
 /* ======================================================
-   GENERATE TREE
-====================================================== */
-
-function addTreeToChunkData(
-    data,
-    chunkX,
-    chunkZ,
-    treeX,
-    treeZ
-) {
-
-    const chunkMinX =
-        chunkX *
-        CHUNK_SIZE;
-
-
-    const chunkMaxX =
-        chunkMinX +
-        CHUNK_SIZE -
-        1;
-
-
-    const chunkMinZ =
-        chunkZ *
-        CHUNK_SIZE;
-
-
-    const chunkMaxZ =
-        chunkMinZ +
-        CHUNK_SIZE -
-        1;
-
-
-    const ground =
-        terrainHeight(
-            treeX,
-            treeZ
-        );
-
-
-    /*
-       Trunk.
-    */
-
-    for (
-        let y =
-            ground + 1;
-
-        y <=
-            ground + 4;
-
-        y++
-    ) {
-
-        if (
-            treeX >= chunkMinX &&
-            treeX <= chunkMaxX &&
-            treeZ >= chunkMinZ &&
-            treeZ <= chunkMaxZ
-        ) {
-
-            addChunkDataBlock(
-                data,
-                treeX,
-                y,
-                treeZ,
-                BLOCKS.wood
-            );
-
-        }
-
-    }
-
-
-    /*
-       Leaves.
-    */
-
-    for (
-        let dx = -2;
-        dx <= 2;
-        dx++
-    ) {
-
-        for (
-            let dz = -2;
-            dz <= 2;
-            dz++
-        ) {
-
-            if (
-                Math.abs(dx) +
-                Math.abs(dz) >
-                3
-            ) {
-
-                continue;
-
-            }
-
-
-            const leafX =
-                treeX +
-                dx;
-
-
-            const leafZ =
-                treeZ +
-                dz;
-
-
-            const leafY =
-                ground + 3;
-
-
-            /*
-               Don't put leaves inside another
-               column's terrain.
-            */
-
-            if (
-                leafY <=
-                terrainHeight(
-                    leafX,
-                    leafZ
-                )
-            ) {
-
-                continue;
-
-            }
-
-
-            if (
-                leafX >= chunkMinX &&
-                leafX <= chunkMaxX &&
-                leafZ >= chunkMinZ &&
-                leafZ <= chunkMaxZ
-            ) {
-
-                addChunkDataBlock(
-                    data,
-                    leafX,
-                    leafY,
-                    leafZ,
-                    BLOCKS.leaves
-                );
-
-            }
-
-        }
-
-    }
-
-}
-
-
-/* ======================================================
-   TREE DECISION
+   SHOULD GENERATE TREE
 ====================================================== */
 
 function shouldGenerateTree(
@@ -363,7 +288,7 @@ function shouldGenerateTree(
 ) {
 
     /*
-       Keep your original trees.
+       Preserve our original fixed trees.
     */
 
     const fixedTrees = [
@@ -393,16 +318,234 @@ function shouldGenerateTree(
 
 
     /*
-       Rare procedural trees for the
-       newly generated world.
+       Procedural trees.
+
+       Rare enough to avoid filling the world.
     */
 
     return (
         chunkHash2D(
             x,
             z
-        ) > 0.992
+        ) >
+        0.992
     );
+
+}
+
+
+/* ======================================================
+   ADD BLOCK TO CHUNK DATA
+====================================================== */
+
+function addChunkDataBlock(
+    data,
+    x,
+    y,
+    z,
+    type
+) {
+
+    if (!type) {
+
+        return;
+
+    }
+
+
+    const key =
+        blockKey(
+            x,
+            y,
+            z
+        );
+
+
+    if (
+        !data.has(
+            key
+        )
+    ) {
+
+        data.set(
+            key,
+            type
+        );
+
+    }
+
+}
+
+
+/* ======================================================
+   ADD TREE
+====================================================== */
+
+function addTreeToChunkData(
+    data,
+    chunkX,
+    chunkZ,
+    treeX,
+    treeZ
+) {
+
+    const minX =
+        chunkX *
+        CHUNK_SIZE;
+
+
+    const maxX =
+        minX +
+        CHUNK_SIZE -
+        1;
+
+
+    const minZ =
+        chunkZ *
+        CHUNK_SIZE;
+
+
+    const maxZ =
+        minZ +
+        CHUNK_SIZE -
+        1;
+
+
+    const ground =
+        terrainHeight(
+            treeX,
+            treeZ
+        );
+
+
+    /*
+       Trunk.
+    */
+
+    for (
+        let y =
+            ground + 1;
+
+        y <=
+            ground + 4;
+
+        y++
+    ) {
+
+        if (
+
+            treeX >= minX &&
+            treeX <= maxX &&
+
+            treeZ >= minZ &&
+            treeZ <= maxZ
+
+        ) {
+
+            addChunkDataBlock(
+
+                data,
+
+                treeX,
+                y,
+                treeZ,
+
+                BLOCKS.wood
+
+            );
+
+        }
+
+    }
+
+
+    /*
+       Leaves.
+
+       Generate them even when they cross the
+       chunk border, but only store the pieces
+       belonging to this chunk.
+    */
+
+    for (
+        let dx = -2;
+        dx <= 2;
+        dx++
+    ) {
+
+        for (
+            let dz = -2;
+            dz <= 2;
+            dz++
+        ) {
+
+            if (
+
+                Math.abs(dx) +
+                Math.abs(dz) >
+                3
+
+            ) {
+
+                continue;
+
+            }
+
+
+            const leafX =
+                treeX +
+                dx;
+
+
+            const leafZ =
+                treeZ +
+                dz;
+
+
+            const leafY =
+                ground + 3;
+
+
+            if (
+                leafY <=
+                terrainHeight(
+                    leafX,
+                    leafZ
+                )
+            ) {
+
+                continue;
+
+            }
+
+
+            if (
+
+                leafX >= minX &&
+                leafX <= maxX &&
+
+                leafZ >= minZ &&
+                leafZ <= maxZ
+
+            ) {
+
+                addChunkDataBlock(
+
+                    data,
+
+                    leafX,
+                    leafY,
+                    leafZ,
+
+                    BLOCKS.leaves
+
+                );
+
+            }
+
+        }
+
+    }
 
 }
 
@@ -478,7 +621,7 @@ function generateChunkData(
 
 
                 /*
-                   Surface.
+                   Grass.
                 */
 
                 if (
@@ -492,7 +635,7 @@ function generateChunkData(
 
 
                 /*
-                   Two dirt layers.
+                   Dirt.
                 */
 
                 else if (
@@ -507,7 +650,7 @@ function generateChunkData(
 
 
                 /*
-                   Underground stone.
+                   Stone + deterministic ores.
                 */
 
                 else {
@@ -515,14 +658,6 @@ function generateChunkData(
                     type =
                         BLOCKS.stone;
 
-
-                    /*
-                       Deterministic ores.
-
-                       These are generated per chunk,
-                       so newly discovered chunks get
-                       ores without needing generateOres().
-                    */
 
                     const oreRoll =
                         chunkHash3D(
@@ -537,9 +672,13 @@ function generateChunkData(
                     */
 
                     if (
+
                         BLOCKS.diamond_ore &&
+
                         y <= -15 &&
+
                         oreRoll < 0.02
+
                     ) {
 
                         type =
@@ -553,9 +692,13 @@ function generateChunkData(
                     */
 
                     else if (
+
                         BLOCKS.iron_ore &&
+
                         y <= -5 &&
+
                         oreRoll < 0.055
+
                     ) {
 
                         type =
@@ -569,8 +712,11 @@ function generateChunkData(
                     */
 
                     else if (
+
                         BLOCKS.coal_ore &&
+
                         oreRoll < 0.09
+
                     ) {
 
                         type =
@@ -582,11 +728,14 @@ function generateChunkData(
 
 
                 addChunkDataBlock(
+
                     data,
+
                     x,
                     y,
                     z,
                     type
+
                 );
 
             }
@@ -599,12 +748,6 @@ function generateChunkData(
     /* ==================================================
        TREES
     ================================================== */
-
-    /*
-       Search slightly outside the chunk so leaves
-       and trunks that cross chunk boundaries are
-       generated in the correct chunk.
-    */
 
     for (
         let treeX =
@@ -621,7 +764,7 @@ function generateChunkData(
                 minZ - 2;
 
             treeZ <=
-                maxZ + 2;
+            maxZ + 2;
 
             treeZ++
         ) {
@@ -634,11 +777,15 @@ function generateChunkData(
             ) {
 
                 addTreeToChunkData(
+
                     data,
+
                     chunkX,
                     chunkZ,
+
                     treeX,
                     treeZ
+
                 );
 
             }
@@ -654,10 +801,58 @@ function generateChunkData(
 
 
 /* ======================================================
-   LOAD CHUNK DATA INTO WORLD
+   IS BLOCK EXPOSED
 ====================================================== */
 
-function populateWorldFromChunk(
+function chunkBlockIsExposed(
+    x,
+    y,
+    z
+) {
+
+    for (
+        const offset of
+        CHUNK_NEIGHBORS
+    ) {
+
+        const key =
+            blockKey(
+
+                x +
+                offset[0],
+
+                y +
+                offset[1],
+
+                z +
+                offset[2]
+
+            );
+
+
+        if (
+            !world.has(
+                key
+            )
+        ) {
+
+            return true;
+
+        }
+
+    }
+
+
+    return false;
+
+}
+
+
+/* ======================================================
+   POPULATE WORLD
+====================================================== */
+
+function populateChunkWorld(
     chunkX,
     chunkZ,
     data
@@ -680,22 +875,10 @@ function populateWorldFromChunk(
             blockKeyValue
         ) => {
 
-            /*
-               Do not create duplicate world blocks.
-            */
-
-            if (
-                !world.has(
-                    blockKeyValue
-                )
-            ) {
-
-                world.set(
-                    blockKeyValue,
-                    type
-                );
-
-            }
+            world.set(
+                blockKeyValue,
+                type
+            );
 
 
             members.add(
@@ -715,6 +898,753 @@ function populateWorldFromChunk(
     loadedChunks.add(
         key
     );
+
+}
+
+
+/* ======================================================
+   CREATE SPECIAL MESH
+====================================================== */
+
+const chunkOriginalAddBlock =
+    addBlock;
+
+
+function createSpecialMeshFromData(
+    x,
+    y,
+    z,
+    type
+) {
+
+    const key =
+        blockKey(
+            x,
+            y,
+            z
+        );
+
+
+    /*
+       Do not duplicate.
+    */
+
+    if (
+        meshes.has(
+            key
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+       Only exposed special blocks need visible meshes.
+    */
+
+    if (
+        !chunkBlockIsExposed(
+            x,
+            y,
+            z
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+       The old addBlock() system checks world first.
+
+       Temporarily remove the data entry so it
+       can create the visual mesh.
+    */
+
+    const savedType =
+        world.get(
+            key
+        );
+
+
+    world.delete(
+        key
+    );
+
+
+    chunkOriginalAddBlock(
+        x,
+        y,
+        z,
+        type
+    );
+
+
+    /*
+       Safety: restore the exact world data.
+    */
+
+    if (
+        savedType
+    ) {
+
+        world.set(
+            key,
+            savedType
+        );
+
+    }
+
+}
+
+
+/* ======================================================
+   REMOVE SPECIAL MESH
+====================================================== */
+
+function removeSpecialMesh(
+    key
+) {
+
+    const mesh =
+        meshes.get(
+            key
+        );
+
+
+    if (!mesh) {
+
+        return;
+
+    }
+
+
+    scene.remove(
+        mesh
+    );
+
+
+    /*
+       Never dispose the shared block geometry.
+    */
+
+
+    if (
+        Array.isArray(
+            mesh.material
+        )
+    ) {
+
+        mesh.material.forEach(
+            material => {
+
+                if (
+                    material &&
+                    material.map
+                ) {
+
+                    material.map.dispose();
+
+                }
+
+
+                if (material) {
+
+                    material.dispose();
+
+                }
+
+            }
+        );
+
+    }
+
+    else if (
+        mesh.material
+    ) {
+
+        if (
+            mesh.material.map
+        ) {
+
+            mesh.material.map.dispose();
+
+        }
+
+
+        mesh.material.dispose();
+
+    }
+
+
+    meshes.delete(
+        key
+    );
+
+}
+
+
+/* ======================================================
+   REMOVE CHUNK RENDER OBJECTS
+====================================================== */
+
+function removeChunkRenderObjects(
+    chunkX,
+    chunkZ
+) {
+
+    const key =
+        chunkKey(
+            chunkX,
+            chunkZ
+        );
+
+
+    const renderInfo =
+        chunkRenderObjects.get(
+            key
+        );
+
+
+    if (!renderInfo) {
+
+        return;
+
+    }
+
+
+    /*
+       Remove instanced meshes.
+
+       IMPORTANT:
+
+       Do not dispose shared geometry or materials.
+    */
+
+    renderInfo.instancedMeshes.forEach(
+        mesh => {
+
+            scene.remove(
+                mesh
+            );
+
+        }
+    );
+
+
+    /*
+       Remove special meshes.
+    */
+
+    renderInfo.specialKeys.forEach(
+        blockKeyValue => {
+
+            removeSpecialMesh(
+                blockKeyValue
+            );
+
+        }
+    );
+
+
+    chunkRenderObjects.delete(
+        key
+    );
+
+}
+
+
+/* ======================================================
+   CREATE INSTANCED MESHES
+====================================================== */
+
+function buildChunkRender(
+    chunkX,
+    chunkZ
+) {
+
+    const key =
+        chunkKey(
+            chunkX,
+            chunkZ
+        );
+
+
+    const members =
+        chunkMembers.get(
+            key
+        );
+
+
+    if (!members) {
+
+        return;
+
+    }
+
+
+    /*
+       Remove previous rendering first.
+    */
+
+    removeChunkRenderObjects(
+        chunkX,
+        chunkZ
+    );
+
+
+    const renderInfo = {
+
+        instancedMeshes: [],
+
+        specialKeys: new Set()
+
+    };
+
+
+    const grouped =
+        new Map();
+
+
+    /* ==================================================
+       GROUP VISIBLE BASIC BLOCKS
+    ================================================== */
+
+    members.forEach(
+        blockKeyValue => {
+
+            const type =
+                world.get(
+                    blockKeyValue
+                );
+
+
+            if (!type) {
+
+                return;
+
+            }
+
+
+            const typeName =
+                normalizeChunkBlockName(
+                    type
+                );
+
+
+            if (
+                isInstancedBlock(
+                    type
+                )
+            ) {
+
+                /*
+                   Hidden blocks get no instance.
+                */
+
+                const parts =
+                    blockKeyValue.split(
+                        ","
+                    );
+
+
+                const x =
+                    Number(
+                        parts[0]
+                    );
+
+
+                const y =
+                    Number(
+                        parts[1]
+                    );
+
+
+                const z =
+                    Number(
+                        parts[2]
+                    );
+
+
+                if (
+                    !chunkBlockIsExposed(
+                        x,
+                        y,
+                        z
+                    )
+                ) {
+
+                    return;
+
+                }
+
+
+                if (
+                    !grouped.has(
+                        typeName
+                    )
+                ) {
+
+                    grouped.set(
+                        typeName,
+                        []
+                    );
+
+                }
+
+
+                grouped
+                    .get(typeName)
+                    .push({
+
+                        x: x,
+
+                        y: y,
+
+                        z: z,
+
+                        key: blockKeyValue
+
+                    });
+
+            }
+
+            else {
+
+                /*
+                   Ores/crafting tables remain normal
+                   special meshes.
+                */
+
+                renderInfo.specialKeys.add(
+                    blockKeyValue
+                );
+
+            }
+
+        }
+    );
+
+
+    /* ==================================================
+       BUILD INSTANCED MESH PER TYPE
+    ================================================== */
+
+    grouped.forEach(
+        (
+            blocks,
+            typeName
+        ) => {
+
+            const type =
+                world.get(
+                    blocks[0].key
+                );
+
+
+            if (!type) {
+
+                return;
+
+            }
+
+
+            if (
+                typeof getSharedMaterials !==
+                "function"
+            ) {
+
+                console.warn(
+                    "Shared block materials are unavailable."
+                );
+
+                return;
+
+            }
+
+
+            const materials =
+                getSharedMaterials(
+                    typeName
+                );
+
+
+            if (!materials) {
+
+                return;
+
+            }
+
+
+            const mesh =
+                new THREE.InstancedMesh(
+
+                    BLOCK_GEOMETRY,
+
+                    materials,
+
+                    blocks.length
+
+                );
+
+
+            /*
+               Keep it static.
+
+               Chunks are rebuilt only when something changes.
+            */
+
+            mesh.frustumCulled =
+                true;
+
+
+            const matrix =
+                new THREE.Matrix4();
+
+
+            blocks.forEach(
+                (
+                    block,
+                    index
+                ) => {
+
+                    matrix.makeTranslation(
+
+                        block.x,
+
+                        block.y,
+
+                        block.z
+
+                    );
+
+
+                    mesh.setMatrixAt(
+                        index,
+                        matrix
+                    );
+
+                }
+            );
+
+
+            mesh.instanceMatrix.needsUpdate =
+                true;
+
+
+            /*
+               Make the bounding sphere immediately
+               so frustum culling works correctly.
+            */
+
+            mesh.computeBoundingSphere();
+
+
+            mesh.userData.blockType =
+                typeName;
+
+
+            mesh.userData.chunkX =
+                chunkX;
+
+
+            mesh.userData.chunkZ =
+                chunkZ;
+
+
+            scene.add(
+                mesh
+            );
+
+
+            renderInfo.instancedMeshes.push(
+                mesh
+            );
+
+        }
+    );
+
+
+    /* ==================================================
+       BUILD SPECIAL BLOCKS
+    ================================================== */
+
+    renderInfo.specialKeys.forEach(
+        blockKeyValue => {
+
+            const parts =
+                blockKeyValue.split(
+                    ","
+                );
+
+
+            const x =
+                Number(
+                    parts[0]
+                );
+
+
+            const y =
+                Number(
+                    parts[1]
+                );
+
+
+            const z =
+                Number(
+                    parts[2]
+                );
+
+
+            const type =
+                world.get(
+                    blockKeyValue
+                );
+
+
+            if (!type) {
+
+                return;
+
+            }
+
+
+            createSpecialMeshFromData(
+
+                x,
+                y,
+                z,
+                type
+
+            );
+
+        }
+    );
+
+
+    chunkRenderObjects.set(
+        key,
+        renderInfo
+    );
+
+}
+
+
+/* ======================================================
+   REFRESH CHUNK
+====================================================== */
+
+function refreshChunk(
+    chunkX,
+    chunkZ
+) {
+
+    if (
+        !loadedChunks.has(
+            chunkKey(
+                chunkX,
+                chunkZ
+            )
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    buildChunkRender(
+        chunkX,
+        chunkZ
+    );
+
+}
+
+
+/* ======================================================
+   REFRESH CHUNK + NEIGHBORS
+====================================================== */
+
+function refreshChunkAroundBlock(
+    x,
+    y,
+    z
+) {
+
+    const chunkX =
+        getChunkCoordinate(
+            x
+        );
+
+
+    const chunkZ =
+        getChunkCoordinate(
+            z
+        );
+
+
+    refreshChunk(
+        chunkX,
+        chunkZ
+    );
+
+
+    /*
+       A block at a chunk boundary may change
+       visibility in an adjacent chunk.
+    */
+
+    if (
+        x % CHUNK_SIZE === 0
+    ) {
+
+        refreshChunk(
+            chunkX - 1,
+            chunkZ
+        );
+
+    }
+
+
+    if (
+        x % CHUNK_SIZE ===
+        CHUNK_SIZE - 1
+    ) {
+
+        refreshChunk(
+            chunkX + 1,
+            chunkZ
+        );
+
+    }
+
+
+    if (
+        z % CHUNK_SIZE === 0
+    ) {
+
+        refreshChunk(
+            chunkX,
+            chunkZ - 1
+        );
+
+    }
+
+
+    if (
+        z % CHUNK_SIZE ===
+        CHUNK_SIZE - 1
+    ) {
+
+        refreshChunk(
+            chunkX,
+            chunkZ + 1
+        );
+
+    }
 
 }
 
@@ -741,7 +1671,7 @@ function loadChunk(
         )
     ) {
 
-        return false;
+        return;
 
     }
 
@@ -753,7 +1683,7 @@ function loadChunk(
 
 
     /*
-       New chunk.
+       Generate new chunk.
     */
 
     if (!data) {
@@ -767,315 +1697,26 @@ function loadChunk(
     }
 
 
-    populateWorldFromChunk(
+    populateChunkWorld(
         chunkX,
         chunkZ,
         data
     );
 
 
-    return true;
-
-}
-
-
-/* ======================================================
-   UPDATE ONE MESH
-====================================================== */
-
-function refreshBlockMeshFromKey(
-    key
-) {
-
-    const parts =
-        String(
-            key
-        ).split(
-            ","
-        );
-
-
-    if (
-        parts.length !== 3
-    ) {
-
-        return;
-
-    }
-
-
-    const x =
-        Number(
-            parts[0]
-        );
-
-
-    const y =
-        Number(
-            parts[1]
-        );
-
-
-    const z =
-        Number(
-            parts[2]
-        );
-
-
-    updateCulledBlock(
-        x,
-        y,
-        z
-    );
-
-}
-
-
-/* ======================================================
-   BUILD VISIBLE MESHES FOR CHUNK
-====================================================== */
-
-function buildVisibleMeshesForChunk(
-    chunkX,
-    chunkZ
-) {
-
-    const key =
-        chunkKey(
-            chunkX,
-            chunkZ
-        );
-
-
-    const members =
-        chunkMembers.get(
-            key
-        );
-
-
-    if (!members) {
-
-        return;
-
-    }
-
-
     /*
-       All required world data is already present.
+       Build renderer.
 
-       Hidden blocks will not get a mesh.
+       Nearby chunks may still be missing, so boundary
+       blocks can temporarily be visible.
+
+       When neighbors load, their shared boundary
+       gets refreshed.
     */
 
-    members.forEach(
-        blockKeyValue => {
-
-            refreshBlockMeshFromKey(
-                blockKeyValue
-            );
-
-        }
-    );
-
-}
-
-
-/* ======================================================
-   REFRESH LOADED CHUNK FACE
-====================================================== */
-
-function refreshChunkFace(
-    chunkX,
-    chunkZ,
-    directionX,
-    directionZ
-) {
-
-    const key =
-        chunkKey(
-            chunkX,
-            chunkZ
-        );
-
-
-    const members =
-        chunkMembers.get(
-            key
-        );
-
-
-    if (!members) {
-
-        return;
-
-    }
-
-
-    const minX =
-        chunkX *
-        CHUNK_SIZE;
-
-
-    const maxX =
-        minX +
-        CHUNK_SIZE -
-        1;
-
-
-    const minZ =
-        chunkZ *
-        CHUNK_SIZE;
-
-
-    const maxZ =
-        minZ +
-        CHUNK_SIZE -
-        1;
-
-
-    members.forEach(
-        blockKeyValue => {
-
-            const parts =
-                String(
-                    blockKeyValue
-                ).split(
-                    ","
-                );
-
-
-            if (
-                parts.length !== 3
-            ) {
-
-                return;
-
-            }
-
-
-            const x =
-                Number(
-                    parts[0]
-                );
-
-
-            const z =
-                Number(
-                    parts[2]
-                );
-
-
-            /*
-               X face.
-            */
-
-            if (
-                directionX !== 0
-            ) {
-
-                if (
-                    directionX > 0 &&
-                    x !== maxX
-                ) {
-
-                    return;
-
-                }
-
-
-                if (
-                    directionX < 0 &&
-                    x !== minX
-                ) {
-
-                    return;
-
-                }
-
-            }
-
-
-            /*
-               Z face.
-            */
-
-            if (
-                directionZ !== 0
-            ) {
-
-                if (
-                    directionZ > 0 &&
-                    z !== maxZ
-                ) {
-
-                    return;
-
-                }
-
-
-                if (
-                    directionZ < 0 &&
-                    z !== minZ
-                ) {
-
-                    return;
-
-                }
-
-            }
-
-
-            refreshBlockMeshFromKey(
-                blockKeyValue
-            );
-
-        }
-    );
-
-}
-
-
-/* ======================================================
-   REFRESH SHARED BOUNDARY
-====================================================== */
-
-function refreshSharedBoundary(
-    chunkX,
-    chunkZ,
-    neighborX,
-    neighborZ
-) {
-
-    const dx =
-        neighborX -
-        chunkX;
-
-
-    const dz =
-        neighborZ -
-        chunkZ;
-
-
-    /*
-       Current chunk face.
-    */
-
-    refreshChunkFace(
+    buildChunkRender(
         chunkX,
-        chunkZ,
-        dx,
-        dz
-    );
-
-
-    /*
-       Neighbor's opposite face.
-    */
-
-    refreshChunkFace(
-        neighborX,
-        neighborZ,
-        -dx,
-        -dz
+        chunkZ
     );
 
 }
@@ -1123,10 +1764,6 @@ function unloadChunk(
         members.forEach(
             blockKeyValue => {
 
-                /*
-                   Save the latest world state.
-                */
-
                 if (
                     world.has(
                         blockKeyValue
@@ -1145,27 +1782,30 @@ function unloadChunk(
 
                 }
 
+            }
+        );
 
-                /*
-                   Remove its visible mesh.
-                */
-
-                if (
-                    meshes.has(
-                        blockKeyValue
-                    )
-                ) {
-
-                    removeCulledMesh(
-                        blockKeyValue
-                    );
-
-                }
+    }
 
 
-                /*
-                   Remove from world.
-                */
+    /*
+       Remove rendering first.
+    */
+
+    removeChunkRenderObjects(
+        chunkX,
+        chunkZ
+    );
+
+
+    /*
+       Remove block data.
+    */
+
+    if (members) {
+
+        members.forEach(
+            blockKeyValue => {
 
                 world.delete(
                     blockKeyValue
@@ -1178,7 +1818,7 @@ function unloadChunk(
 
 
     /*
-       Save the chunk for later.
+       Save modified/current chunk.
     */
 
     chunkStorage.set(
@@ -1203,13 +1843,12 @@ function unloadChunk(
    DESIRED CHUNKS
 ====================================================== */
 
-function getDesiredChunkKeys(
+function getDesiredChunks(
     centerX,
     centerZ
 ) {
 
-    const keys =
-        new Set();
+    const result = [];
 
 
     for (
@@ -1227,30 +1866,51 @@ function getDesiredChunkKeys(
                 -CHUNK_RENDER_DISTANCE;
 
             dz <=
-                CHUNK_RENDER_DISTANCE;
+            CHUNK_RENDER_DISTANCE;
 
             dz++
         ) {
 
-            keys.add(
-                chunkKey(
+            result.push({
+
+                x:
                     centerX + dx,
-                    centerZ + dz
-                )
-            );
+
+                z:
+                    centerZ + dz,
+
+                distance:
+                    Math.abs(dx) +
+                    Math.abs(dz)
+
+            });
 
         }
 
     }
 
 
-    return keys;
+    /*
+       Closest chunks first.
+    */
+
+    result.sort(
+        (
+            a,
+            b
+        ) =>
+            a.distance -
+            b.distance
+    );
+
+
+    return result;
 
 }
 
 
 /* ======================================================
-   UPDATE CHUNKS AROUND PLAYER
+   UPDATE CHUNK QUEUE
 ====================================================== */
 
 function updateChunksAroundPlayer() {
@@ -1269,12 +1929,18 @@ function updateChunksAroundPlayer() {
 
     /*
        Nothing changed.
+
+       We still process the queue elsewhere.
     */
 
     if (
-        playerChunkX === currentChunkX &&
-        playerChunkZ === currentChunkZ &&
-        loadedChunks.size > 0
+
+        playerChunkX ===
+        currentChunkX &&
+
+        playerChunkZ ===
+        currentChunkZ
+
     ) {
 
         return;
@@ -1291,29 +1957,50 @@ function updateChunksAroundPlayer() {
 
 
     const desired =
-        getDesiredChunkKeys(
+        getDesiredChunks(
+
             playerChunkX,
+
             playerChunkZ
+
         );
+
+
+    const desiredKeys =
+        new Set();
+
+
+    desired.forEach(
+        chunk => {
+
+            desiredKeys.add(
+                chunkKey(
+                    chunk.x,
+                    chunk.z
+                )
+            );
+
+        }
+    );
 
 
     /* ==================================================
        UNLOAD DISTANT CHUNKS
     ================================================== */
 
-    const chunksToUnload = [];
+    const unloadList = [];
 
 
     loadedChunks.forEach(
         key => {
 
             if (
-                !desired.has(
+                !desiredKeys.has(
                     key
                 )
             ) {
 
-                chunksToUnload.push(
+                unloadList.push(
                     key
                 );
 
@@ -1323,7 +2010,7 @@ function updateChunksAroundPlayer() {
     );
 
 
-    chunksToUnload.forEach(
+    unloadList.forEach(
         key => {
 
             const parts =
@@ -1333,8 +2020,15 @@ function updateChunksAroundPlayer() {
 
 
             unloadChunk(
-                Number(parts[0]),
-                Number(parts[1])
+
+                Number(
+                    parts[0]
+                ),
+
+                Number(
+                    parts[1]
+                )
+
             );
 
         }
@@ -1342,46 +2036,19 @@ function updateChunksAroundPlayer() {
 
 
     /* ==================================================
-       LOAD NEW CHUNKS
+       BUILD LOAD QUEUE
     ================================================== */
 
-    const newlyLoaded = [];
+    chunkLoadQueue = [];
 
 
-    for (
-        let dx =
-            -CHUNK_RENDER_DISTANCE;
-
-        dx <=
-            CHUNK_RENDER_DISTANCE;
-
-        dx++
-    ) {
-
-        for (
-            let dz =
-                -CHUNK_RENDER_DISTANCE;
-
-            dz <=
-                CHUNK_RENDER_DISTANCE;
-
-            dz++
-        ) {
-
-            const cx =
-                playerChunkX +
-                dx;
-
-
-            const cz =
-                playerChunkZ +
-                dz;
-
+    desired.forEach(
+        chunk => {
 
             const key =
                 chunkKey(
-                    cx,
-                    cz
+                    chunk.x,
+                    chunk.z
                 );
 
 
@@ -1391,90 +2058,12 @@ function updateChunksAroundPlayer() {
                 )
             ) {
 
-                loadChunk(
-                    cx,
-                    cz
-                );
-
-
-                newlyLoaded.push([
-                    cx,
-                    cz
-                ]);
+                chunkLoadQueue.push({
+                    x: chunk.x,
+                    z: chunk.z
+                });
 
             }
-
-        }
-
-    }
-
-
-    /* ==================================================
-       BUILD NEW VISIBLE MESHES
-    ================================================== */
-
-    newlyLoaded.forEach(
-        ([cx, cz]) => {
-
-            buildVisibleMeshesForChunk(
-                cx,
-                cz
-            );
-
-        }
-    );
-
-
-    /* ==================================================
-       REFRESH SHARED BOUNDARIES
-    ================================================== */
-
-    newlyLoaded.forEach(
-        ([cx, cz]) => {
-
-            const directions = [
-
-                [1, 0],
-
-                [-1, 0],
-
-                [0, 1],
-
-                [0, -1]
-
-            ];
-
-
-            directions.forEach(
-                ([dx, dz]) => {
-
-                    const neighborKey =
-                        chunkKey(
-                            cx + dx,
-                            cz + dz
-                        );
-
-
-                    if (
-                        loadedChunks.has(
-                            neighborKey
-                        )
-                    ) {
-
-                        refreshSharedBoundary(
-
-                            cx,
-                            cz,
-
-                            cx + dx,
-                            cz + dz
-
-                        );
-
-                    }
-
-                }
-            );
 
         }
     );
@@ -1483,180 +2072,136 @@ function updateChunksAroundPlayer() {
 
 
 /* ======================================================
-   INITIAL WORLD GENERATION
+   PROCESS CHUNK LOAD QUEUE
 ====================================================== */
 
-/*
-   The old world.js still contains generateWorld().
+function processChunkLoadQueue() {
 
-   We replace it here with the chunk-based version.
+    let loadedThisFrame = 0;
 
-   main.js can continue calling generateWorld()
-   exactly as before.
-*/
 
-generateWorld =
-    function() {
+    while (
+
+        chunkLoadQueue.length > 0 &&
+
+        loadedThisFrame <
+        CHUNKS_PER_FRAME
+
+    ) {
 
         /*
-           Remove any existing meshes.
-
-           IMPORTANT:
-           Do not dispose BLOCK_GEOMETRY.
+           Recalculate distance so the nearest
+           chunk remains first.
         */
 
-        meshes.forEach(
+        chunkLoadQueue.sort(
             (
-                cube,
-                key
+                a,
+                b
             ) => {
 
-                scene.remove(
-                    cube
-                );
-
-
-                if (
-                    Array.isArray(
-                        cube.material
-                    )
-                ) {
-
-                    cube.material.forEach(
-                        material => {
-
-                            if (
-                                material.map
-                            ) {
-
-                                material.map.dispose();
-
-                            }
-
-
-                            material.dispose();
-
-                        }
+                const da =
+                    Math.abs(
+                        a.x -
+                        currentChunkX
+                    ) +
+                    Math.abs(
+                        a.z -
+                        currentChunkZ
                     );
 
-                }
 
-                else {
-
-                    if (
-                        cube.material &&
-                        cube.material.map
-                    ) {
-
-                        cube.material.map.dispose();
-
-                    }
+                const db =
+                    Math.abs(
+                        b.x -
+                        currentChunkX
+                    ) +
+                    Math.abs(
+                        b.z -
+                        currentChunkZ
+                    );
 
 
-                    if (
-                        cube.material
-                    ) {
-
-                        cube.material.dispose();
-
-                    }
-
-                }
+                return da - db;
 
             }
         );
 
 
-        world.clear();
-
-        meshes.clear();
-
-        loadedChunks.clear();
-
-        chunkMembers.clear();
-
-        chunkStorage.clear();
+        const next =
+            chunkLoadQueue.shift();
 
 
-        currentChunkX = 0;
+        if (!next) {
 
-        currentChunkZ = 0;
-
-
-        /*
-           Initial 3 x 3 chunk area.
-        */
-
-        const initialChunks = [];
-
-
-        for (
-            let dx = -1;
-            dx <= 1;
-            dx++
-        ) {
-
-            for (
-                let dz = -1;
-                dz <= 1;
-                dz++
-            ) {
-
-                loadChunk(
-                    dx,
-                    dz
-                );
-
-
-                initialChunks.push([
-                    dx,
-                    dz
-                ]);
-
-            }
+            break;
 
         }
 
 
-        /*
-           Build visible blocks only after ALL
-           nine chunks exist in world data.
+        const key =
+            chunkKey(
+                next.x,
+                next.z
+            );
 
-           This means chunk boundaries are correctly
-           culled from the beginning.
+
+        if (
+            loadedChunks.has(
+                key
+            )
+        ) {
+
+            continue;
+
+        }
+
+
+        loadChunk(
+            next.x,
+            next.z
+        );
+
+
+        /*
+           Refresh neighboring chunks so their
+           shared borders cull correctly.
         */
 
-        initialChunks.forEach(
-            ([cx, cz]) => {
-
-                buildVisibleMeshesForChunk(
-                    cx,
-                    cz
-                );
-
-            }
+        refreshChunk(
+            next.x + 1,
+            next.z
         );
 
 
-        console.log(
-            "Chunk system loaded!"
+        refreshChunk(
+            next.x - 1,
+            next.z
         );
 
-        console.log(
-            "Loaded chunks:",
-            loadedChunks.size
+
+        refreshChunk(
+            next.x,
+            next.z + 1
         );
 
-    };
+
+        refreshChunk(
+            next.x,
+            next.z - 1
+        );
+
+
+        loadedThisFrame++;
+
+    }
+
+}
 
 
 /* ======================================================
-   TRACK NEW BLOCKS
+   ADD BLOCK WRAPPER
 ====================================================== */
-
-const chunkOriginalAddBlock =
-    addBlock;
-
 
 addBlock =
     function(
@@ -1666,14 +2211,6 @@ addBlock =
         type
     ) {
 
-        chunkOriginalAddBlock(
-            x,
-            y,
-            z,
-            type
-        );
-
-
         const key =
             blockKey(
                 x,
@@ -1682,9 +2219,109 @@ addBlock =
             );
 
 
+        if (
+            world.has(
+                key
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        const typeName =
+            normalizeChunkBlockName(
+                type
+            );
+
+
         /*
-           Only track blocks that actually exist.
+           Normal terrain block.
+
+           Store directly in world data instead of
+           creating an individual Mesh.
         */
+
+        if (
+            isInstancedBlock(
+                type
+            )
+        ) {
+
+            world.set(
+                key,
+                type
+            );
+
+
+            const cx =
+                getChunkCoordinate(
+                    x
+                );
+
+
+            const cz =
+                getChunkCoordinate(
+                    z
+                );
+
+
+            const cKey =
+                chunkKey(
+                    cx,
+                    cz
+                );
+
+
+            if (
+                !chunkMembers.has(
+                    cKey
+                )
+            ) {
+
+                chunkMembers.set(
+                    cKey,
+                    new Set()
+                );
+
+            }
+
+
+            chunkMembers
+                .get(cKey)
+                .add(key);
+
+
+            /*
+               Rebuild changed chunk.
+            */
+
+            refreshChunkAroundBlock(
+                x,
+                y,
+                z
+            );
+
+
+            return;
+
+        }
+
+
+        /*
+           Special block.
+
+           Use the original visual/ore system.
+        */
+
+        chunkOriginalAddBlock(
+            x,
+            y,
+            z,
+            type
+        );
+
 
         if (
             !world.has(
@@ -1734,118 +2371,191 @@ addBlock =
             .get(cKey)
             .add(key);
 
+
+        /*
+           Special blocks can hide the sides
+           of nearby normal blocks.
+        */
+
+        refreshChunkAroundBlock(
+            x,
+            y,
+            z
+        );
+
     };
 
 
 /* ======================================================
-   TRACK BROKEN BLOCKS
+   COMPATIBILITY CULLING FUNCTION
 ====================================================== */
 
-const chunkOriginalBreakBlock =
-    breakBlock;
+function updateCullingAround(
+    x,
+    y,
+    z
+) {
+
+    refreshChunkAroundBlock(
+        x,
+        y,
+        z
+    );
+
+}
 
 
-breakBlock =
-    function(
-        cube
-    ) {
+/* ======================================================
+   GENERATE WORLD
+====================================================== */
 
-        if (!cube) {
-
-            return;
-
-        }
-
-
-        const key =
-            cube.userData.key;
-
+generateWorld =
+    function() {
 
         /*
-           Run normal mining/culling logic.
+           Clear old renderer objects.
         */
 
-        chunkOriginalBreakBlock(
-            cube
+        chunkRenderObjects.forEach(
+            renderInfo => {
+
+                renderInfo.instancedMeshes
+                    .forEach(
+                        mesh => {
+
+                            scene.remove(
+                                mesh
+                            );
+
+                        }
+                    );
+
+
+                renderInfo.specialKeys
+                    .forEach(
+                        key => {
+
+                            removeSpecialMesh(
+                                key
+                            );
+
+                        }
+                    );
+
+            }
         );
 
 
-        if (!key) {
-
-            return;
-
-        }
+        chunkRenderObjects.clear();
 
 
-        const parts =
-            String(
-                key
-            ).split(
-                ","
-            );
+        world.clear();
+
+        meshes.clear();
+
+        loadedChunks.clear();
+
+        chunkMembers.clear();
+
+        chunkStorage.clear();
+
+        chunkLoadQueue = [];
 
 
-        if (
-            parts.length !== 3
+        currentChunkX = 0;
+
+        currentChunkZ = 0;
+
+
+        /*
+           Load the initial 3 x 3 area immediately.
+
+           This happens only at world startup.
+        */
+
+        const initialChunks = [];
+
+
+        for (
+            let dx = -1;
+            dx <= 1;
+            dx++
         ) {
 
-            return;
+            for (
+                let dz = -1;
+                dz <= 1;
+                dz++
+            ) {
+
+                const cx =
+                    dx;
+
+
+                const cz =
+                    dz;
+
+
+                const data =
+                    generateChunkData(
+                        cx,
+                        cz
+                    );
+
+
+                populateChunkWorld(
+                    cx,
+                    cz,
+                    data
+                );
+
+
+                initialChunks.push([
+                    cx,
+                    cz
+                ]);
+
+            }
 
         }
 
 
-        const x =
-            Number(
-                parts[0]
-            );
+        /*
+           Now that ALL starting chunk data exists,
+           boundary visibility can be calculated correctly.
+        */
+
+        initialChunks.forEach(
+            (
+                [cx, cz]
+            ) => {
+
+                buildChunkRender(
+                    cx,
+                    cz
+                );
+
+            }
+        );
 
 
-        const z =
-            Number(
-                parts[2]
-            );
+        console.log(
+            "Professional chunk renderer enabled!"
+        );
 
 
-        const cx =
-            getChunkCoordinate(
-                x
-            );
-
-
-        const cz =
-            getChunkCoordinate(
-                z
-            );
-
-
-        const cKey =
-            chunkKey(
-                cx,
-                cz
-            );
-
-
-        const members =
-            chunkMembers.get(
-                cKey
-            );
-
-
-        if (members) {
-
-            members.delete(
-                key
-            );
-
-        }
+        console.log(
+            "Loaded chunks:",
+            loadedChunks.size
+        );
 
     };
 
 
 /* ======================================================
-   STARTUP
+   READY
 ====================================================== */
 
 console.log(
-    "Chunk manager ready!"
+    "Chunk streaming + instanced rendering ready!"
 );

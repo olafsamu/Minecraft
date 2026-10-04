@@ -64,23 +64,23 @@ const camera =
 const renderer =
     new THREE.WebGLRenderer({
 
-        canvas: canvas,
+        canvas:
+            canvas,
 
-        antialias: false
+        antialias:
+            false
 
     });
 
 
 renderer.setSize(
+
     window.innerWidth,
+
     window.innerHeight
+
 );
 
-
-/*
-   Keep the performance-friendly
-   1x pixel ratio.
-*/
 
 renderer.setPixelRatio(
     1
@@ -166,7 +166,7 @@ window.addEventListener(
 
 
 /* ======================================================
-   GENERATE INITIAL CHUNKS
+   GENERATE WORLD
 ====================================================== */
 
 generateWorld();
@@ -222,28 +222,43 @@ function gameLoop() {
         );
 
 
-    /* Player */
+    /* ==================================================
+       PLAYER
+    ================================================== */
 
     updatePlayer(
         delta
     );
 
 
-    /* Mining */
+    /* ==================================================
+       STREAM NEW CHUNKS
+    ================================================== */
+
+    processChunkLoadQueue();
+
+
+    /* ==================================================
+       MINING
+    ================================================== */
 
     updateMining(
         delta
     );
 
 
-    /* Day / Night */
+    /* ==================================================
+       DAY / NIGHT
+    ================================================== */
 
     updateDayNight(
         delta
     );
 
 
-    /* Render */
+    /* ==================================================
+       RENDER
+    ================================================== */
 
     renderer.render(
         scene,

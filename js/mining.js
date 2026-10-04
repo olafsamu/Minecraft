@@ -3,6 +3,15 @@
 BLOCKWORLD
 Mining + Block Placement + Inventory
 =========================================================
+
+This version uses voxel-grid raycasting.
+
+It does NOT raycast every block mesh.
+
+This is important because terrain blocks are now rendered
+using InstancedMesh.
+
+=========================================================
 */
 
 const REACH_DISTANCE = 6;
@@ -22,73 +31,437 @@ let miningProgress = 0;
 
 
 /* ======================================================
+   TARGET PROXY
+====================================================== */
+
+/*
+   A single invisible Mesh is used as a compatibility
+   object for the existing crack system.
+
+   It is NOT part of world rendering.
+*/
+
+const targetProxyMaterial =
+    new THREE.MeshBasicMaterial({
+
+        transparent: true,
+
+        opacity: 0,
+
+        depthWrite: false
+
+    });
+
+
+const targetProxy =
+    new THREE.Mesh(
+
+        BLOCK_GEOMETRY,
+
+        targetProxyMaterial
+
+    );
+
+
+targetProxy.userData.isTargetProxy =
+    true;
+
+
+scene.add(
+    targetProxy
+);
+
+
+/* ======================================================
    GET BLOCK THE PLAYER IS LOOKING AT
 ====================================================== */
 
 function getTargetBlock() {
 
-    const raycaster =
-        new THREE.Raycaster();
+    const origin =
+        camera.position.clone();
 
 
-    raycaster.setFromCamera(
-        new THREE.Vector2(0, 0),
-        camera
+    const direction =
+        new THREE.Vector3();
+
+
+    camera.getWorldDirection(
+        direction
     );
 
 
-    const blockMeshes = [];
+    direction.normalize();
 
 
-    meshes.forEach(
-        mesh => {
-
-            blockMeshes.push(
-                mesh
-            );
-
-        }
-    );
-
-
-    const hits =
-        raycaster.intersectObjects(
-            blockMeshes
+    let x =
+        Math.floor(
+            origin.x
         );
 
 
+    let y =
+        Math.floor(
+            origin.y
+        );
+
+
+    let z =
+        Math.floor(
+            origin.z
+        );
+
+
+    const stepX =
+        direction.x >= 0
+            ? 1
+            : -1;
+
+
+    const stepY =
+        direction.y >= 0
+            ? 1
+            : -1;
+
+
+    const stepZ =
+        direction.z >= 0
+            ? 1
+            : -1;
+
+
+    const tDeltaX =
+        direction.x === 0
+            ? Infinity
+            : Math.abs(
+                1 /
+                direction.x
+            );
+
+
+    const tDeltaY =
+        direction.y === 0
+            ? Infinity
+            : Math.abs(
+                1 /
+                direction.y
+            );
+
+
+    const tDeltaZ =
+        direction.z === 0
+            ? Infinity
+            : Math.abs(
+                1 /
+                direction.z
+            );
+
+
+    let tMaxX;
+
+    let tMaxY;
+
+    let tMaxZ;
+
+
     if (
-        hits.length === 0
+        direction.x >= 0
     ) {
 
-        targetedBlock = null;
+        tMaxX =
+            (
+                x + 1 -
+                origin.x
+            ) /
+            direction.x;
 
-        return null;
+    }
+
+    else {
+
+        tMaxX =
+            (
+                x -
+                origin.x
+            ) /
+            direction.x;
 
     }
 
 
-    const hit =
-        hits[0];
+    if (
+        direction.y >= 0
+    ) {
+
+        tMaxY =
+            (
+                y + 1 -
+                origin.y
+            ) /
+            direction.y;
+
+    }
+
+    else {
+
+        tMaxY =
+            (
+                y -
+                origin.y
+            ) /
+            direction.y;
+
+    }
 
 
     if (
-        hit.distance >
+        direction.z >= 0
+    ) {
+
+        tMaxZ =
+            (
+                z + 1 -
+                origin.z
+            ) /
+            direction.z;
+
+    }
+
+    else {
+
+        tMaxZ =
+            (
+                z -
+                origin.z
+            ) /
+            direction.z;
+
+    }
+
+
+    /*
+       Zero direction components create NaN values
+       in the calculations above.
+
+       Fix them explicitly.
+    */
+
+    if (
+        direction.x === 0
+    ) {
+
+        tMaxX =
+            Infinity;
+
+    }
+
+
+    if (
+        direction.y === 0
+    ) {
+
+        tMaxY =
+            Infinity;
+
+    }
+
+
+    if (
+        direction.z === 0
+    ) {
+
+        tMaxZ =
+            Infinity;
+
+    }
+
+
+    let travelled =
+        0;
+
+
+    /*
+       Face normal of the face we entered through.
+    */
+
+    let faceNormal =
+        new THREE.Vector3();
+
+
+    /*
+       Check up to REACH_DISTANCE.
+    */
+
+    while (
+        travelled <=
         REACH_DISTANCE
     ) {
 
-        targetedBlock = null;
+        const key =
+            blockKey(
+                x,
+                y,
+                z
+            );
 
-        return null;
+
+        /*
+           We hit a block.
+        */
+
+        if (
+            world.has(
+                key
+            )
+        ) {
+
+            const type =
+                world.get(
+                    key
+                );
+
+
+            if (!type) {
+
+                return null;
+
+            }
+
+
+            targetProxy.position.set(
+
+                x +
+                0.5,
+
+                y +
+                0.5,
+
+                z +
+                0.5
+
+            );
+
+
+            targetProxy.userData.key =
+                key;
+
+
+            targetProxy.userData.type =
+                type;
+
+
+            targetProxy.userData.x =
+                x;
+
+
+            targetProxy.userData.y =
+                y;
+
+
+            targetProxy.userData.z =
+                z;
+
+
+            targetProxy.userData.faceNormal =
+                faceNormal.clone();
+
+
+            targetedBlock =
+                targetProxy;
+
+
+            return targetProxy;
+
+        }
+
+
+        /*
+           Move to the next voxel.
+        */
+
+        if (
+            tMaxX <
+            tMaxY &&
+            tMaxX <
+            tMaxZ
+        ) {
+
+            x += stepX;
+
+            travelled =
+                tMaxX;
+
+            tMaxX +=
+                tDeltaX;
+
+
+            faceNormal.set(
+
+                -stepX,
+
+                0,
+
+                0
+
+            );
+
+        }
+
+        else if (
+            tMaxY <
+            tMaxZ
+        ) {
+
+            y += stepY;
+
+            travelled =
+                tMaxY;
+
+            tMaxY +=
+                tDeltaY;
+
+
+            faceNormal.set(
+
+                0,
+
+                -stepY,
+
+                0
+
+            );
+
+        }
+
+        else {
+
+            z += stepZ;
+
+            travelled =
+                tMaxZ;
+
+            tMaxZ +=
+                tDeltaZ;
+
+
+            faceNormal.set(
+
+                0,
+
+                0,
+
+                -stepZ
+
+            );
+
+        }
 
     }
 
 
-    targetedBlock =
-        hit.object;
+    targetedBlock = null;
 
-
-    return hit.object;
+    return null;
 
 }
 
@@ -109,7 +482,7 @@ function canBreakBlock(
 
 
     /*
-       Normal blocks can be broken by hand.
+       Normal blocks.
     */
 
     if (
@@ -133,7 +506,7 @@ function canBreakBlock(
 
 
     /*
-       Pickaxe-required blocks.
+       Pickaxe.
     */
 
     if (
@@ -181,10 +554,6 @@ function startMining() {
 
     }
 
-
-    /*
-       Check tool requirement.
-    */
 
     if (
         !canBreakBlock(
@@ -241,6 +610,91 @@ function stopMining() {
 
 
 /* ======================================================
+   REMOVE SPECIAL MESH
+====================================================== */
+
+function cleanupSpecialMesh(
+    key
+) {
+
+    const mesh =
+        meshes.get(
+            key
+        );
+
+
+    if (!mesh) {
+
+        return;
+
+    }
+
+
+    scene.remove(
+        mesh
+    );
+
+
+    /*
+       Never dispose shared BLOCK_GEOMETRY.
+    */
+
+    if (
+        Array.isArray(
+            mesh.material
+        )
+    ) {
+
+        mesh.material.forEach(
+            material => {
+
+                if (
+                    material &&
+                    material.map
+                ) {
+
+                    material.map.dispose();
+
+                }
+
+
+                if (material) {
+
+                    material.dispose();
+
+                }
+
+            }
+        );
+
+    }
+
+    else if (
+        mesh.material
+    ) {
+
+        if (
+            mesh.material.map
+        ) {
+
+            mesh.material.map.dispose();
+
+        }
+
+
+        mesh.material.dispose();
+
+    }
+
+
+    meshes.delete(
+        key
+    );
+
+}
+
+
+/* ======================================================
    BREAK BLOCK
 ====================================================== */
 
@@ -270,63 +724,85 @@ function breakBlock(
         block.userData.type;
 
 
-    /*
-       Remember the block coordinates
-       BEFORE removing it.
-    */
-
-    const parts =
-        String(
-            key
-        ).split(
-            ","
-        );
-
-
     const x =
-        Number(
-            parts[0]
-        );
+        block.userData.x;
 
 
     const y =
-        Number(
-            parts[1]
-        );
+        block.userData.y;
 
 
     const z =
-        Number(
-            parts[2]
-        );
+        block.userData.z;
 
 
-    /* ==================================================
-       REMOVE FROM WORLD DATA
-    ================================================== */
+    /*
+       Remove from world.
+    */
 
     world.delete(
         key
     );
 
 
-    /* ==================================================
-       REMOVE VISUAL
-    ================================================== */
+    /*
+       Special blocks still have individual meshes.
+    */
 
-    scene.remove(
-        block
-    );
+    if (
+        meshes.has(
+            key
+        )
+    ) {
+
+        cleanupSpecialMesh(
+            key
+        );
+
+    }
 
 
-    meshes.delete(
-        key
-    );
+    /*
+       Remove from its chunk member set.
+    */
+
+    const chunkX =
+        getChunkCoordinate(
+            x
+        );
 
 
-    /* ==================================================
-       GIVE BLOCK TO PLAYER
-    ================================================== */
+    const chunkZ =
+        getChunkCoordinate(
+            z
+        );
+
+
+    const cKey =
+        chunkKey(
+            chunkX,
+            chunkZ
+        );
+
+
+    const members =
+        chunkMembers.get(
+            cKey
+        );
+
+
+    if (members) {
+
+        members.delete(
+            key
+        );
+
+    }
+
+
+    /*
+       Give the block to the player.
+    */
 
     if (blockType) {
 
@@ -338,113 +814,18 @@ function breakBlock(
     }
 
 
-    /* ==================================================
-       IMPORTANT GEOMETRY FIX
-    ==================================================
-
-       DO NOT dispose block.geometry here.
-
-       Normal blocks now share BLOCK_GEOMETRY.
-
-       Disposing it would destroy the geometry
-       used by the entire world.
-    */
-
-
-    /* ==================================================
-       CLEAN UP MATERIAL
-    ================================================== */
-
     /*
-       Only dispose the material.
-
-       The shared geometry must stay alive.
+       Rebuild the changed chunk and any
+       neighboring chunk whose visibility changed.
     */
 
-    if (
-        Array.isArray(
-            block.material
-        )
-    ) {
+    refreshChunkAroundBlock(
 
-        block.material.forEach(
-            material => {
+        x,
+        y,
+        z
 
-                if (!material) {
-
-                    return;
-
-                }
-
-
-                /*
-                   Textures may be owned by special
-                   blocks such as the crafting table
-                   or ore visuals.
-                */
-
-                if (
-                    material.map
-                ) {
-
-                    material.map.dispose();
-
-                }
-
-
-                material.dispose();
-
-            }
-        );
-
-    }
-
-    else {
-
-        if (
-            block.material &&
-            block.material.map
-        ) {
-
-            block.material.map.dispose();
-
-        }
-
-
-        if (
-            block.material
-        ) {
-
-            block.material.dispose();
-
-        }
-
-    }
-
-
-    /* ==================================================
-       UPDATE HIDDEN BLOCK CULLING
-    ================================================== */
-
-    /*
-       The blocks next to the broken block may
-       now be exposed.
-
-       The culling system will reveal them.
-    */
-
-    if (
-        typeof updateCullingAround ===
-        "function"
-    ) {
-
-        updateCullingAround(
-            x,
-            y,
-            z
-        );
-
-    }
+    );
 
 
     targetedBlock = null;
@@ -474,14 +855,14 @@ function updateMining(
 
 
     /*
-       Make sure the block still exists.
+       Find whatever the player is now looking at.
     */
 
-    if (
-        !meshes.has(
-            miningBlock.userData.key
-        )
-    ) {
+    const currentTarget =
+        getTargetBlock();
+
+
+    if (!currentTarget) {
 
         stopMining();
 
@@ -490,18 +871,9 @@ function updateMining(
     }
 
 
-    /*
-       Make sure the player is still
-       looking at the same block.
-    */
-
-    const currentTarget =
-        getTargetBlock();
-
-
     if (
-        currentTarget !==
-        miningBlock
+        currentTarget.userData.key !==
+        miningBlock.userData.key
     ) {
 
         stopMining();
@@ -524,47 +896,31 @@ function updateMining(
     }
 
 
-    /*
-       Get break time.
-    */
-
     const breakTime =
         blockType.breakTime ||
         500;
 
 
-    /*
-       Increase progress.
-    */
-
     miningProgress +=
-        delta * 1000;
+        delta *
+        1000;
 
-
-    /*
-       Convert progress to 0–1.
-    */
 
     const progress =
         Math.min(
+
             miningProgress /
             breakTime,
+
             1
+
         );
 
-
-    /*
-       Update crack effect.
-    */
 
     updateCrackOverlay(
         progress
     );
 
-
-    /*
-       Break when complete.
-    */
 
     if (
         miningProgress >=
@@ -728,68 +1084,34 @@ function placeBlock() {
     }
 
 
-    /* ==================================================
-       FIND CLICKED FACE
-    ================================================== */
+    /*
+       DDA gives us the exact face normal.
+    */
 
-    const raycaster =
-        new THREE.Raycaster();
-
-
-    raycaster.setFromCamera(
-        new THREE.Vector2(0, 0),
-        camera
-    );
+    const normal =
+        block.userData.faceNormal;
 
 
-    const hits =
-        raycaster.intersectObject(
-            block
-        );
-
-
-    if (
-        hits.length === 0
-    ) {
+    if (!normal) {
 
         return;
 
     }
 
 
-    const hit =
-        hits[0];
-
-
-    const normal =
-        hit.face.normal;
-
-
-    const position =
-        block.position.clone();
-
-
-    position.add(
-        normal
-    );
-
-
     const x =
-        Math.floor(
-            position.x
-        );
+        block.userData.x +
+        normal.x;
 
 
     const y =
-        Math.floor(
-            position.y
-        );
+        block.userData.y +
+        normal.y;
 
 
     const z =
-        Math.floor(
-            position.z
-        );
+        block.userData.z +
+        normal.z;
 
 
     const key =
@@ -815,9 +1137,9 @@ function placeBlock() {
     }
 
 
-    /* ==================================================
-       PLAYER POSITION
-    ================================================== */
+    /*
+       Player position.
+    */
 
     const playerX =
         camera.position.x;
@@ -833,7 +1155,7 @@ function placeBlock() {
 
 
     /*
-       Don't place inside player.
+       Don't place inside the player.
     */
 
     if (
@@ -868,10 +1190,6 @@ function placeBlock() {
     }
 
 
-    /* ==================================================
-       CONVERT ITEM INTO BLOCK
-    ================================================== */
-
     const blockType =
         getBlockTypeFromItem(
             selectedItem.type
@@ -885,21 +1203,25 @@ function placeBlock() {
     }
 
 
-    /* ==================================================
-       PLACE BLOCK
-    ================================================== */
+    /*
+       Our chunk-aware addBlock() handles both
+       instanced terrain and special blocks.
+    */
 
     addBlock(
+
         x,
         y,
         z,
+
         blockType
+
     );
 
 
-    /* ==================================================
-       REMOVE ONE ITEM
-    ================================================== */
+    /*
+       Remove one item.
+    */
 
     selectedItem.amount--;
 
@@ -936,7 +1258,7 @@ document.addEventListener(
 
 
         /*
-           Left click = mine.
+           Left click = mining.
         */
 
         if (
@@ -965,9 +1287,12 @@ document.addEventListener(
             */
 
             if (
+
                 block &&
+
                 block.userData.type ===
                 BLOCKS.crafting_table
+
             ) {
 
                 openCraftingTable();
@@ -978,7 +1303,7 @@ document.addEventListener(
 
 
             /*
-               Otherwise place block.
+               Otherwise place.
             */
 
             placeBlock();
