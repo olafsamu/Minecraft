@@ -118,12 +118,14 @@ function initClouds() {
     This avoids the need for expensive/manual
     instance bounding calculations.
     */
-    cloudMesh.frustumCulled = false;
+   cloudMesh.frustumCulled = false;
 
+cloudMesh.material.side =
+    THREE.DoubleSide;
 
-    scene.add(
-        cloudMesh
-    );
+scene.add(
+    cloudMesh
+);
 
 
     /*
