@@ -1,25 +1,33 @@
 /*
 =========================================================
 BLOCKWORLD
-Water System
+Natural Lake Water
 =========================================================
 
-CLEAN WATER VERSION
+Water is a separate rendering system.
 
-Water is rendered as a separate liquid surface.
+Water is NOT stored in world data.
 
-Water is NOT stored in world.
+This version creates:
 
-Features:
-
-- Natural ponds and lakes
-- Clean flat water surface
+- Natural lakes
+- Connected water regions
+- Deterministic lake locations
+- Clean shorelines
+- Cross-chunk lakes
+- No underwater tree trunks
 - One InstancedMesh per chunk
-- No transparent cube walls
-- No water blocks
-- No water collision
-- Trees do not spawn in water
 
+Water remains purely visual for now.
+
+Later we can add:
+
+- Swimming
+- Underwater fog
+- Water physics
+- Flowing water
+- Waterfalls
+- Water animation
 =========================================================
 */
 
@@ -28,18 +36,55 @@ Features:
    WATER SETTINGS
 ====================================================== */
 
-/*
-   Terrain one block below this level can become water.
 
-   This creates simple one-block-deep ponds for now.
+/*
+   Height of the water surface.
+
+   Terrain one block below this becomes the
+   preferred shoreline.
 */
 
 const WATER_LEVEL = 4;
 
 
+/*
+   Only terrain at this height is allowed to
+   become part of a lake.
+
+   This prevents water from floating over
+   deep valleys.
+*/
+
+const WATER_GROUND_LEVEL =
+    WATER_LEVEL - 1;
+
+
+/*
+   Distance between possible lake centers.
+
+   Larger number = fewer lakes.
+*/
+
+const LAKE_CELL_SIZE = 32;
+
+
+/*
+   Minimum and maximum lake radius.
+*/
+
+const LAKE_MIN_RADIUS = 5;
+
+const LAKE_MAX_RADIUS = 10;
+
+
 /* ======================================================
    WATER GEOMETRY
 ====================================================== */
+
+
+/*
+   One plane is shared by the entire game.
+*/
 
 const WATER_SURFACE_GEOMETRY =
     new THREE.PlaneGeometry(
@@ -68,23 +113,24 @@ function getWaterSurfaceMaterial() {
 
 
     /*
-       Deliberately simple.
+       Clean, simple water.
 
-       A clean material looks much better than
-       thousands of transparent textured cubes.
+       We deliberately avoid heavy transparency effects
+       because those were responsible for much of the
+       previous cursed appearance.
     */
 
     waterSurfaceMaterial =
         new THREE.MeshLambertMaterial({
 
             color:
-                0x459fbe,
+                0x4b9fbd,
 
             transparent:
                 true,
 
             opacity:
-                0.68,
+                0.72,
 
             depthWrite:
                 false,
@@ -96,7 +142,7 @@ function getWaterSurfaceMaterial() {
 
 
     /*
-       This material is shared by the entire world.
+       This material is shared globally.
 
        Never dispose it when a chunk unloads.
     */
@@ -111,47 +157,32 @@ function getWaterSurfaceMaterial() {
 
 
 /* ======================================================
-   BROAD LAKE NOISE
+   DETERMINISTIC HASH
 ====================================================== */
 
-function getLakeNoise(
+function waterHash(
     x,
     z
 ) {
 
-    const a =
+    const value =
         Math.sin(
-            x * 0.055
-        );
 
+            x * 127.1 +
+            z * 311.7 +
+            74.7
 
-    const b =
-        Math.cos(
-            z * 0.060
-        );
-
-
-    const c =
-        Math.sin(
-            (x + z) * 0.035
-        );
-
-
-    const d =
-        Math.cos(
-            (x - z) * 0.025
-        );
+        )
+        *
+        43758.5453123;
 
 
     return (
 
-        a * 0.30 +
-
-        b * 0.30 +
-
-        c * 0.25 +
-
-        d * 0.15
+        value -
+        Math.floor(
+            value
+        )
 
     );
 
@@ -159,16 +190,219 @@ function getLakeNoise(
 
 
 /* ======================================================
-   CHECK LOW NEIGHBORS
+   GET LAKE CENTER
 ====================================================== */
 
-function countLowNeighbors(
+
+/*
+   Each large grid cell has a possible lake center.
+
+   The center position and radius are deterministic,
+   meaning the same lake always exists when the
+   chunk is loaded again.
+*/
+
+function getLakeCenter(
+    cellX,
+    cellZ
+) {
+
+    /*
+       Decide whether this cell gets a lake.
+
+       Roughly half of the cells are rejected,
+       producing relatively rare lakes.
+    */
+
+    const chance =
+        waterHash(
+            cellX * 17,
+            cellZ * 31
+        );
+
+
+    if (
+        chance < 0.56
+    ) {
+
+        return null;
+
+    }
+
+
+    /*
+       Deterministic position inside the cell.
+    */
+
+    const centerOffsetX =
+        6 +
+        Math.floor(
+
+            waterHash(
+                cellX * 43,
+                cellZ * 71
+            )
+            *
+            20
+
+        );
+
+
+    const centerOffsetZ =
+        6 +
+        Math.floor(
+
+            waterHash(
+                cellX * 97,
+                cellZ * 53
+            )
+            *
+            20
+
+        );
+
+
+    const x =
+        cellX *
+        LAKE_CELL_SIZE +
+        centerOffsetX;
+
+
+    const z =
+        cellZ *
+        LAKE_CELL_SIZE +
+        centerOffsetZ;
+
+
+    /*
+       Variable lake size.
+    */
+
+    const radius =
+        LAKE_MIN_RADIUS +
+        Math.floor(
+
+            waterHash(
+                cellX * 131,
+                cellZ * 149
+            )
+            *
+            (
+                LAKE_MAX_RADIUS -
+                LAKE_MIN_RADIUS +
+                1
+            )
+
+        );
+
+
+    /*
+       IMPORTANT:
+
+       Don't create lakes on high terrain.
+
+       Otherwise the water would float on hills.
+
+       Only centers sitting at the correct terrain
+       elevation are allowed.
+    */
+
+    if (
+        terrainHeight(
+            x,
+            z
+        ) !==
+        WATER_GROUND_LEVEL
+    ) {
+
+        return null;
+
+    }
+
+
+    return {
+
+        x:
+            x,
+
+        z:
+            z,
+
+        radius:
+            radius
+
+    };
+
+}
+
+
+/* ======================================================
+   DISTANCE TO LAKE CENTER
+====================================================== */
+
+function distanceToLake(
+    x,
+    z,
+    lake
+) {
+
+    const dx =
+        x -
+        lake.x;
+
+
+    const dz =
+        z -
+        lake.z;
+
+
+    return Math.sqrt(
+
+        dx * dx +
+        dz * dz
+
+    );
+
+}
+
+
+/* ======================================================
+   FIND NEAREST LAKE
+====================================================== */
+
+function findNearestLake(
     x,
     z
 ) {
 
-    let count = 0;
+    const cellX =
+        Math.floor(
+            x /
+            LAKE_CELL_SIZE
+        );
 
+
+    const cellZ =
+        Math.floor(
+            z /
+            LAKE_CELL_SIZE
+        );
+
+
+    let nearest =
+        null;
+
+
+    let nearestDistance =
+        Infinity;
+
+
+    /*
+       Search neighboring cells.
+
+       This is important because a lake near a
+       chunk border can extend into another chunk.
+    */
 
     for (
         let dx = -1;
@@ -182,33 +416,57 @@ function countLowNeighbors(
             dz++
         ) {
 
-            /*
-               Don't count the center tile.
-            */
+            const lake =
+                getLakeCenter(
 
-            if (
-                dx === 0 &&
-                dz === 0
-            ) {
+                    cellX + dx,
+
+                    cellZ + dz
+
+                );
+
+
+            if (!lake) {
 
                 continue;
 
             }
 
 
-            const neighborHeight =
-                terrainHeight(
-                    x + dx,
-                    z + dz
+            const distance =
+                distanceToLake(
+
+                    x,
+
+                    z,
+
+                    lake
+
                 );
 
 
+            /*
+               Keep a small buffer around the lake.
+            */
+
             if (
-                neighborHeight ===
-                WATER_LEVEL - 1
+                distance <
+                lake.radius +
+                2
             ) {
 
-                count++;
+                if (
+                    distance <
+                    nearestDistance
+                ) {
+
+                    nearest =
+                        lake;
+
+                    nearestDistance =
+                        distance;
+
+                }
 
             }
 
@@ -217,13 +475,52 @@ function countLowNeighbors(
     }
 
 
-    return count;
+    return nearest;
 
 }
 
 
 /* ======================================================
-   SHOULD THIS TILE BE WATER?
+   SHORELINE VARIATION
+====================================================== */
+
+
+/*
+   This makes lakes slightly irregular without
+   creating noisy pixel-by-pixel edges.
+*/
+
+function getLakeEdgeVariation(
+    x,
+    z
+) {
+
+    const a =
+        Math.sin(
+            x * 0.37 +
+            z * 0.21
+        );
+
+
+    const b =
+        Math.cos(
+            x * 0.19 -
+            z * 0.31
+        );
+
+
+    return (
+
+        a * 0.65 +
+        b * 0.35
+
+    );
+
+}
+
+
+/* ======================================================
+   SHOULD TILE BE WATER
 ====================================================== */
 
 function shouldGenerateWater(
@@ -231,7 +528,11 @@ function shouldGenerateWater(
     z
 ) {
 
-    const height =
+    /*
+       Actual terrain height.
+    */
+
+    const groundHeight =
         terrainHeight(
             x,
             z
@@ -239,16 +540,14 @@ function shouldGenerateWater(
 
 
     /*
-       Only exactly one level below the water
-       surface becomes water.
+       Only one-block-deep low terrain.
 
-       This prevents water from floating high above
-       very deep terrain.
+       This gives us predictable, grounded lakes.
     */
 
     if (
-        height !==
-        WATER_LEVEL - 1
+        groundHeight !==
+        WATER_GROUND_LEVEL
     ) {
 
         return false;
@@ -257,21 +556,17 @@ function shouldGenerateWater(
 
 
     /*
-       Require several neighboring low tiles.
-
-       This removes tiny isolated puddles.
+       Find the nearest natural lake.
     */
 
-    const lowNeighbors =
-        countLowNeighbors(
+    const lake =
+        findNearestLake(
             x,
             z
         );
 
 
-    if (
-        lowNeighbors < 5
-    ) {
+    if (!lake) {
 
         return false;
 
@@ -279,55 +574,129 @@ function shouldGenerateWater(
 
 
     /*
-       Broad noise controls where actual lakes
-       are located.
+       Slightly deform the shoreline.
     */
 
-    const lakeNoise =
-        getLakeNoise(
+    const edgeVariation =
+        getLakeEdgeVariation(
             x,
             z
         );
 
 
-    if (
-        lakeNoise < 0.20
-    ) {
+    const effectiveRadius =
+        lake.radius +
 
-        return false;
-
-    }
+        edgeVariation *
+        1.15;
 
 
-    /*
-       Secondary variation prevents every suitable
-       basin from becoming a lake.
-    */
-
-    const detail =
-        (
-
-            Math.sin(
-                x * 0.17 +
-                z * 0.13
-            )
-
-            +
-
-            Math.cos(
-                x * 0.09 -
-                z * 0.19
-            )
-
-        ) / 2;
+    const distance =
+        distanceToLake(
+            x,
+            z,
+            lake
+        );
 
 
     return (
-        detail >
-        -0.35
+        distance <=
+        effectiveRadius
     );
 
 }
+
+
+/* ======================================================
+   TREE CHECK
+====================================================== */
+
+
+/*
+   Trees should never begin inside water.
+
+   We also keep a tiny shoreline buffer so tree trunks
+   don't appear to grow directly from a lake.
+*/
+
+function isTooCloseToWater(
+    x,
+    z
+) {
+
+    for (
+        let dx = -2;
+        dx <= 2;
+        dx++
+    ) {
+
+        for (
+            let dz = -2;
+            dz <= 2;
+            dz++
+        ) {
+
+            if (
+                shouldGenerateWater(
+                    x + dx,
+                    z + dz
+                )
+            ) {
+
+                return true;
+
+            }
+
+        }
+
+    }
+
+
+    return false;
+
+}
+
+
+/* ======================================================
+   PREVENT TREES IN WATER
+====================================================== */
+
+const waterOriginalShouldGenerateTree =
+    shouldGenerateTree;
+
+
+shouldGenerateTree =
+    function(
+        x,
+        z
+    ) {
+
+        /*
+           No trees inside lakes or directly
+           beside the shoreline.
+        */
+
+        if (
+            isTooCloseToWater(
+                x,
+                z
+            )
+        ) {
+
+            return false;
+
+        }
+
+
+        return waterOriginalShouldGenerateTree(
+
+            x,
+
+            z
+
+        );
+
+    };
 
 
 /* ======================================================
@@ -438,7 +807,7 @@ function buildWaterSurfaceForChunk(
 
 
     /*
-       One instanced mesh per chunk.
+       One GPU object for the whole chunk.
     */
 
     const mesh =
@@ -482,7 +851,7 @@ function buildWaterSurfaceForChunk(
                 0.5,
 
                 WATER_LEVEL +
-                0.01,
+                0.005,
 
                 position.z +
                 0.5
@@ -545,57 +914,9 @@ function buildWaterSurfaceForChunk(
 
 
 /* ======================================================
-   PREVENT TREES IN WATER
-====================================================== */
-
-/*
-   IMPORTANT:
-
-   water.js must be loaded AFTER chunks.js.
-
-   That way shouldGenerateTree() already exists.
-*/
-
-const waterOriginalShouldGenerateTree =
-    shouldGenerateTree;
-
-
-shouldGenerateTree =
-    function(
-        x,
-        z
-    ) {
-
-        /*
-           Absolute rule:
-
-           No tree trunk starts inside a lake.
-        */
-
-        if (
-            shouldGenerateWater(
-                x,
-                z
-            )
-        ) {
-
-            return false;
-
-        }
-
-
-        return waterOriginalShouldGenerateTree(
-            x,
-            z
-        );
-
-    };
-
-
-/* ======================================================
    READY
 ====================================================== */
 
 console.log(
-    "Clean lake water system enabled!"
+    "Natural lake system enabled!"
 );
