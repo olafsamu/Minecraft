@@ -1,101 +1,249 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>BlockWorld</title>
 
-    <link rel="stylesheet" href="css/style.css">
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
 </head>
+
 
 <body>
 
+
+    <!-- ==================================================
+         GAME
+    =================================================== -->
+
     <canvas id="game"></canvas>
+
+
+    <!-- ==================================================
+         HOTBAR
+    =================================================== -->
+
     <div id="hotbar">
 
-    <div class="hotbar-slot selected">
-        <span class="item-name">grass</span>
-        <span class="item-amount"></span>
+        <div class="hotbar-slot selected">
+
+            <div
+                class="item-icon grass-icon"
+            ></div>
+
+            <span
+                class="item-amount"
+            ></span>
+
+        </div>
+
+
+        <div class="hotbar-slot">
+
+            <div
+                class="item-icon dirt-icon"
+            ></div>
+
+            <span
+                class="item-amount"
+            ></span>
+
+        </div>
+
+
+        <div class="hotbar-slot">
+
+            <div
+                class="item-icon stone-icon"
+            ></div>
+
+            <span
+                class="item-amount"
+            ></span>
+
+        </div>
+
+
+        <div class="hotbar-slot">
+
+            <div
+                class="item-icon wood-icon"
+            ></div>
+
+            <span
+                class="item-amount"
+            ></span>
+
+        </div>
+
+
+        <div class="hotbar-slot">
+
+            <div
+                class="item-icon leaves-icon"
+            ></div>
+
+            <span
+                class="item-amount"
+            ></span>
+
+        </div>
+
+
+        <div class="hotbar-slot">
+
+            <div
+                class="item-icon planks-icon"
+            ></div>
+
+            <span
+                class="item-amount"
+            ></span>
+
+        </div>
+
+
+        <div class="hotbar-slot">
+
+            <div
+                class="item-icon crafting-table-icon"
+            ></div>
+
+            <span
+                class="item-amount"
+            ></span>
+
+        </div>
+
+
+        <div class="hotbar-slot">
+
+            <div
+                class="item-icon"
+            ></div>
+
+            <span
+                class="item-amount"
+            ></span>
+
+        </div>
+
+
+        <div class="hotbar-slot">
+
+            <div
+                class="item-icon"
+            ></div>
+
+            <span
+                class="item-amount"
+            ></span>
+
+        </div>
+
     </div>
 
-    <div class="hotbar-slot">
-        <span class="item-name">dirt</span>
-        <span class="item-amount">10</span>
+
+    <!-- ==================================================
+         CROSSHAIR
+    =================================================== -->
+
+    <div id="crosshair">
+        +
     </div>
 
-    <div class="hotbar-slot">
-        <span class="item-name"></span>
-        <span class="item-amount"></span>
-    </div>
 
-    <div class="hotbar-slot">
-        <span class="item-name"></span>
-        <span class="item-amount"></span>
-    </div>
-
-    <div class="hotbar-slot">
-        <span class="item-name"></span>
-        <span class="item-amount"></span>
-    </div>
-
-    <div class="hotbar-slot">
-        <span class="item-name"></span>
-        <span class="item-amount"></span>
-    </div>
-
-    <div class="hotbar-slot">
-        <span class="item-name"></span>
-        <span class="item-amount"></span>
-    </div>
-
-    <div class="hotbar-slot">
-        <span class="item-name"></span>
-        <span class="item-amount"></span>
-    </div>
-
-    <div class="hotbar-slot">
-        <span class="item-name"></span>
-        <span class="item-amount"></span>
-    </div>
-
-</div>
-
-    <div id="crosshair">+</div>
+    <!-- ==================================================
+         INSTRUCTIONS
+    =================================================== -->
 
     <div id="instructions">
-        <b>BlockWorld</b><br><br>
-        WASD — Move<br>
-        SPACE — Jump<br>
-        Mouse — Look around<br>
+
+        <b>BlockWorld</b>
+
+        <br>
+        <br>
+
+        WASD — Move
+        <br>
+
+        SPACE — Jump
+        <br>
+
+        Mouse — Look around
+        <br>
+
         ESC — Release mouse
+
     </div>
 
+
+    <!-- ==================================================
+         START SCREEN
+    =================================================== -->
+
     <div id="startScreen">
+
         <div class="startBox">
-            <h1>BlockWorld</h1>
+
+            <h1>
+                BlockWorld
+            </h1>
 
             <p>
                 A tiny Minecraft-inspired browser game.
             </p>
 
             <button id="startButton">
+
                 START GAME
+
             </button>
+
         </div>
+
     </div>
 
-    <!-- Three.js -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
-    <!-- BlockWorld -->
-<script src="js/blocks.js"></script>
-<script src="js/world.js"></script>
-<script src="js/player.js"></script>
-<script src="js/controls.js"></script>
-<script src="js/mining.js"></script>
-<script src="js/inventory.js"></script>
-<script src="js/main.js"></script>
+    <!-- ==================================================
+         THREE.JS
+    =================================================== -->
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"
+    ></script>
+
+
+    <!-- ==================================================
+         BLOCKWORLD JAVASCRIPT
+    =================================================== -->
+
+    <script src="js/blocks.js"></script>
+
+    <script src="js/world.js"></script>
+
+    <script src="js/player.js"></script>
+
+    <script src="js/controls.js"></script>
+
+    <script src="js/mining.js"></script>
+
+    <script src="js/inventory.js"></script>
+
+    <script src="js/main.js"></script>
+
 
 </body>
+
 </html>

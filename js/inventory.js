@@ -77,6 +77,7 @@ function selectHotbarSlot(slot) {
     selectedHotbarSlot = slot;
 
     updateHotbarUI();
+
 }
 
 
@@ -104,7 +105,7 @@ function addItem(type, amount = 1) {
 
 
     /*
-       First look for an existing stack.
+       Look for an existing stack.
     */
 
     for (
@@ -128,13 +129,14 @@ function addItem(type, amount = 1) {
             updateHotbarUI();
 
             return true;
+
         }
 
     }
 
 
     /*
-       Otherwise find an empty slot.
+       Find an empty slot.
     */
 
     for (
@@ -155,6 +157,7 @@ function addItem(type, amount = 1) {
             updateHotbarUI();
 
             return true;
+
         }
 
     }
@@ -220,7 +223,7 @@ function removeItem(type, amount = 1) {
 
 
 /* ======================================================
-   HOTBAR UI
+   UPDATE HOTBAR
 ====================================================== */
 
 function updateHotbarUI() {
@@ -234,6 +237,10 @@ function updateHotbarUI() {
     slots.forEach(
         (slot, index) => {
 
+            /*
+               Highlight selected slot.
+            */
+
             slot.classList.toggle(
                 "selected",
                 index === selectedHotbarSlot
@@ -244,9 +251,9 @@ function updateHotbarUI() {
                 hotbar[index];
 
 
-            const itemName =
+            const icon =
                 slot.querySelector(
-                    ".item-name"
+                    ".item-icon"
                 );
 
 
@@ -256,32 +263,65 @@ function updateHotbarUI() {
                 );
 
 
+            /*
+               Empty slot.
+            */
+
             if (!item) {
 
-                if (itemName) {
-                    itemName.textContent = "";
+                if (icon) {
+
+                    icon.className =
+                        "item-icon";
+
                 }
 
                 if (amount) {
+
                     amount.textContent = "";
+
                 }
 
                 return;
-            }
-
-
-            if (itemName) {
-
-                itemName.textContent =
-                    item.type;
 
             }
 
+
+            /*
+               Give the icon its
+               correct block class.
+            */
+
+            if (icon) {
+
+                icon.className =
+                    "item-icon " +
+                    normalizeItemName(
+                        item.type
+                    ) +
+                    "-icon";
+
+            }
+
+
+            /*
+               Show item amount.
+            */
 
             if (amount) {
 
-                amount.textContent =
-                    item.amount;
+                if (
+                    item.amount > 0
+                ) {
+
+                    amount.textContent =
+                        item.amount;
+
+                } else {
+
+                    amount.textContent = "";
+
+                }
 
             }
 
@@ -321,7 +361,7 @@ document.addEventListener(
 
 
 /* ======================================================
-   INITIAL UI UPDATE
+   INITIAL HOTBAR UPDATE
 ====================================================== */
 
 updateHotbarUI();

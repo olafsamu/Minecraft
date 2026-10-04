@@ -1,3 +1,14 @@
+/*
+=========================================================
+BLOCKWORLD
+Main Styles
+=========================================================
+*/
+
+
+/* ======================================================
+   BASIC PAGE
+====================================================== */
 
 * {
     box-sizing: border-box;
@@ -5,40 +16,77 @@
     padding: 0;
 }
 
+
 html,
 body {
+
     width: 100%;
     height: 100%;
+
     overflow: hidden;
+
     font-family: Arial, sans-serif;
+
     background: #87ceeb;
+
 }
+
+
+/* ======================================================
+   GAME CANVAS
+====================================================== */
 
 #game {
+
     position: fixed;
+
     top: 0;
     left: 0;
+
     width: 100%;
     height: 100%;
+
 }
 
+
+/* ======================================================
+   CROSSHAIR
+====================================================== */
+
 #crosshair {
+
     position: fixed;
+
     left: 50%;
     top: 50%;
-    transform: translate(-50%, -50%);
+
+    transform:
+        translate(-50%, -50%);
+
     z-index: 10;
 
     color: white;
+
     font-size: 25px;
+
     font-weight: bold;
 
-    text-shadow: 1px 1px 3px black;
+    text-shadow:
+        1px 1px 3px black;
+
     pointer-events: none;
+
 }
 
+
+/* ======================================================
+   INSTRUCTIONS
+====================================================== */
+
 #instructions {
+
     position: fixed;
+
     top: 15px;
     left: 15px;
 
@@ -47,18 +95,29 @@ body {
     padding: 12px 16px;
 
     color: white;
-    background: rgba(0, 0, 0, 0.5);
+
+    background:
+        rgba(0, 0, 0, 0.5);
 
     border-radius: 8px;
 
     font-size: 14px;
+
     line-height: 1.5;
 
     pointer-events: none;
+
 }
 
+
+/* ======================================================
+   START SCREEN
+====================================================== */
+
 #startScreen {
+
     position: fixed;
+
     top: 0;
     left: 0;
     right: 0;
@@ -67,14 +126,21 @@ body {
     z-index: 100;
 
     display: flex;
+
     justify-content: center;
+
     align-items: center;
 
-    background: rgba(20, 40, 70, 0.9);
+    background:
+        rgba(20, 40, 70, 0.9);
+
 }
 
+
 .startBox {
+
     width: 90%;
+
     max-width: 550px;
 
     padding: 45px 30px;
@@ -85,129 +151,398 @@ body {
 
     border-radius: 20px;
 
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    box-shadow:
+        0 20px 60px
+        rgba(0, 0, 0, 0.4);
+
 }
 
+
 .startBox h1 {
+
     margin-bottom: 15px;
 
     font-size: 60px;
 
     color: #4caf50;
 
-    text-shadow: 3px 3px #2e7d32;
+    text-shadow:
+        3px 3px #2e7d32;
+
 }
 
+
 .startBox p {
+
     margin-bottom: 30px;
 
     color: #555;
 
     font-size: 18px;
+
 }
 
+
 #startButton {
+
     padding: 16px 55px;
 
     border: none;
+
     border-radius: 10px;
 
     color: white;
+
     background: #4caf50;
 
     font-size: 24px;
+
     font-weight: bold;
 
     cursor: pointer;
 
-    box-shadow: 0 6px #2e7d32;
+    box-shadow:
+        0 6px #2e7d32;
+
 }
+
 
 #startButton:hover {
+
     background: #5bcf60;
+
 }
 
+
 #startButton:active {
-    transform: translateY(5px);
-    box-shadow: 0 1px #2e7d32;
+
+    transform:
+        translateY(5px);
+
+    box-shadow:
+        0 1px #2e7d32;
+
 }
+
+
+/* ======================================================
+   HOTBAR
+====================================================== */
+
 #hotbar {
+
     position: fixed;
 
     bottom: 20px;
     left: 50%;
 
-    transform: translateX(-50%);
+    transform:
+        translateX(-50%);
 
     display: flex;
 
-    gap: 4px;
+    gap: 3px;
 
-    padding: 6px;
+    padding: 5px;
 
-    background: rgba(0, 0, 0, 0.55);
+    background:
+        rgba(20, 20, 20, 0.85);
 
-    border: 2px solid rgba(255, 255, 255, 0.35);
+    border: 3px solid #555;
+
+    box-shadow:
+        0 0 0 2px #222;
 
     z-index: 1000;
 
     user-select: none;
+
+    pointer-events: none;
+
 }
 
 
-.hotbar-slot {
-    width: 52px;
-    height: 52px;
+/* ======================================================
+   HOTBAR SLOTS
+====================================================== */
 
-    box-sizing: border-box;
+.hotbar-slot {
+
+    width: 54px;
+    height: 54px;
 
     position: relative;
 
     display: flex;
 
     align-items: center;
+
     justify-content: center;
 
-    background: rgba(80, 80, 80, 0.75);
+    box-sizing: border-box;
 
-    border: 2px solid rgba(255, 255, 255, 0.25);
+    background:
+        linear-gradient(
+            135deg,
+            #777,
+            #444
+        );
 
-    font-family: Arial, sans-serif;
+    border: 3px solid #222;
+
+}
+
+
+/* ======================================================
+   SELECTED SLOT
+====================================================== */
+
+.hotbar-slot.selected {
+
+    border: 3px solid white;
+
+    background:
+        linear-gradient(
+            135deg,
+            #999,
+            #555
+        );
+
+}
+
+
+/* ======================================================
+   ITEM ICON
+====================================================== */
+
+.item-icon {
+
+    width: 38px;
+
+    height: 38px;
+
+    box-sizing: border-box;
+
+    image-rendering: pixelated;
+
+}
+
+
+/* ======================================================
+   GRASS
+====================================================== */
+
+.grass-icon {
+
+    background:
+        linear-gradient(
+            to bottom,
+            #55a832 0%,
+            #55a832 28%,
+            #8b5a2b 28%,
+            #8b5a2b 100%
+        );
+
+    border: 2px solid #333;
+
+}
+
+
+/* ======================================================
+   DIRT
+====================================================== */
+
+.dirt-icon {
+
+    background:
+        #8b5a2b;
+
+    border: 2px solid #333;
+
+}
+
+
+/* ======================================================
+   STONE
+====================================================== */
+
+.stone-icon {
+
+    background:
+        #777;
+
+    border: 2px solid #333;
+
+    position: relative;
+
+}
+
+
+.stone-icon::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 6px;
+    height: 5px;
+
+    left: 7px;
+    top: 9px;
+
+    background: #999;
+
+    box-shadow:
+
+        14px 4px #555,
+
+        5px 18px #999,
+
+        24px 21px #555;
+
+}
+
+
+/* ======================================================
+   WOOD
+====================================================== */
+
+.wood-icon {
+
+    background:
+        repeating-linear-gradient(
+            90deg,
+            #7a4a24 0px,
+            #7a4a24 6px,
+            #9b632f 6px,
+            #9b632f 11px
+        );
+
+    border: 2px solid #333;
+
+}
+
+
+/* ======================================================
+   LEAVES
+====================================================== */
+
+.leaves-icon {
+
+    background:
+        #348c32;
+
+    border: 2px solid #333;
+
+    position: relative;
+
+}
+
+
+.leaves-icon::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 5px;
+    height: 5px;
+
+    left: 8px;
+    top: 8px;
+
+    background: #55a832;
+
+    box-shadow:
+
+        13px 5px #246b28,
+
+        6px 18px #246b28,
+
+        22px 20px #55a832;
+
+}
+
+
+/* ======================================================
+   PLANKS
+====================================================== */
+
+.planks-icon {
+
+    background:
+        repeating-linear-gradient(
+            0deg,
+            #c18a52 0px,
+            #c18a52 8px,
+            #9b673b 8px,
+            #9b673b 10px
+        );
+
+    border: 2px solid #333;
+
+}
+
+
+/* ======================================================
+   CRAFTING TABLE
+====================================================== */
+
+.crafting-table-icon {
+
+    background:
+        repeating-linear-gradient(
+            45deg,
+            #8b5a2b 0px,
+            #8b5a2b 6px,
+            #c18a52 6px,
+            #c18a52 10px
+        );
+
+    border: 2px solid #333;
+
+    position: relative;
+
+}
+
+
+.crafting-table-icon::after {
+
+    content: "";
+
+    position: absolute;
+
+    left: 7px;
+    top: 7px;
+
+    width: 20px;
+    height: 20px;
+
+    border: 3px solid #5b351b;
+
+}
+
+
+/* ======================================================
+   ITEM AMOUNT
+====================================================== */
+
+.item-amount {
+
+    position: absolute;
+
+    right: 4px;
+    bottom: 1px;
 
     color: white;
 
-    font-size: 11px;
-
-    text-shadow:
-        1px 1px 2px black;
-}
-
-
-.hotbar-slot.selected {
-    border: 3px solid white;
-
-    background: rgba(120, 120, 120, 0.9);
-}
-
-
-.item-name {
-    text-align: center;
-
-    max-width: 48px;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-}
-
-
-.item-amount {
-    position: absolute;
-
-    right: 3px;
-    bottom: 1px;
-
-    font-size: 14px;
+    font-size: 16px;
 
     font-weight: bold;
+
+    font-family: Arial, sans-serif;
+
+    text-shadow:
+        2px 2px 2px black;
+
 }
