@@ -1001,3 +1001,59 @@ body {
         var(--crafting-grid);
 
 }
+/* ======================================================
+   WOODEN PICKAXE HOTBAR ICON
+====================================================== */
+
+.pickaxe-icon {
+    width: 30px;
+    height: 30px;
+
+    position: relative;
+}
+
+
+/* Pickaxe head */
+
+.pickaxe-icon::before {
+
+    content: "";
+
+    position: absolute;
+
+    left: 3px;
+    top: 5px;
+
+    width: 23px;
+    height: 7px;
+
+    background: #8b5a2b;
+
+    border: 2px solid #4d2e17;
+
+    transform: rotate(-20deg);
+
+}
+
+
+/* Pickaxe handle */
+
+.pickaxe-icon::after {
+
+    content: "";
+
+    position: absolute;
+
+    left: 14px;
+    top: 7px;
+
+    width: 5px;
+    height: 22px;
+
+    background: #b98245;
+
+    border: 2px solid #68431f;
+
+    transform: rotate(-20deg);
+
+}

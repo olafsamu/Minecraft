@@ -49,3 +49,11 @@ const BLOCKS = {
         requiresTool: false
     }
 };
+const ITEMS = {
+
+    pickaxe: {
+        name: "Wooden Pickaxe",
+        type: "pickaxe"
+    }
+
+};

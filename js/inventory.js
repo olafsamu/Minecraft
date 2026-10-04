@@ -39,14 +39,17 @@ const hotbar = [
         amount: 0
     },
 
-    {
-        type: "crafting_table",
-        amount: 0
-    },
+   {
+    type: "crafting_table",
+    amount: 0
+},
 
-    null,
+{
+    type: "pickaxe",
+    amount: 0
+},
 
-    null
+null
 
 ];
 
