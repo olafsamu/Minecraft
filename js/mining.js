@@ -2,14 +2,14 @@
 =========================================================
 BLOCKWORLD
 Mining + Block Placement
-Chunk-Compatible Version
+Clean Chunk-Compatible Version
 =========================================================
 */
 
 
 /* ======================================================
    SETTINGS
-   ====================================================== */
+====================================================== */
 
 const REACH_DISTANCE = 6;
 
@@ -18,7 +18,7 @@ const BREAK_TIME = 0.5;
 
 /* ======================================================
    MINING STATE
-   ====================================================== */
+====================================================== */
 
 let targetedBlock = null;
 
@@ -33,7 +33,7 @@ let leftMouseDown = false;
 
 /* ======================================================
    TARGET PROXY
-   ====================================================== */
+====================================================== */
 
 const targetProxy =
     new THREE.Mesh(
@@ -49,8 +49,18 @@ targetProxy.visible = false;
 
 
 /* ======================================================
-   VOXEL RAYCAST
+   GET TARGET BLOCK
 ====================================================== */
+
+/*
+   Uses a simple ray march through the voxel world.
+
+   This is intentionally simple:
+   - reliable
+   - easy to debug
+   - only 6 blocks of reach
+   - does not raycast every rendered mesh
+*/
 
 function getTargetBlock() {
 
@@ -70,197 +80,103 @@ function getTargetBlock() {
     direction.normalize();
 
 
-    let x =
+    const stepSize =
+        0.05;
+
+
+    const steps =
+        Math.ceil(
+            REACH_DISTANCE /
+            stepSize
+        );
+
+
+    let previousX =
         Math.floor(
             origin.x
         );
 
-
-    let y =
+    let previousY =
         Math.floor(
             origin.y
         );
 
-
-    let z =
+    let previousZ =
         Math.floor(
             origin.z
         );
 
 
-    const stepX =
-        direction.x >= 0
-            ? 1
-            : -1;
+    for (
+        let i = 0;
+        i <= steps;
+        i++
+    ) {
+
+        const distance =
+            i * stepSize;
 
 
-    const stepY =
-        direction.y >= 0
-            ? 1
-            : -1;
+        if (
+            distance >
+            REACH_DISTANCE
+        ) {
+
+            break;
+
+        }
 
 
-    const stepZ =
-        direction.z >= 0
-            ? 1
-            : -1;
+        const point =
+            origin.clone()
+                .addScaledVector(
+                    direction,
+                    distance
+                );
 
 
-    const tDeltaX =
-        direction.x === 0
-            ? Infinity
-            : Math.abs(
-                1 /
-                direction.x
+        const x =
+            Math.floor(
+                point.x
             );
 
 
-    const tDeltaY =
-        direction.y === 0
-            ? Infinity
-            : Math.abs(
-                1 /
-                direction.y
+        const y =
+            Math.floor(
+                point.y
             );
 
 
-    const tDeltaZ =
-        direction.z === 0
-            ? Infinity
-            : Math.abs(
-                1 /
-                direction.z
+        const z =
+            Math.floor(
+                point.z
             );
 
 
-    let tMaxX;
+        /*
+           Skip the same voxel.
+        */
 
-    let tMaxY;
+        if (
+            x === previousX &&
+            y === previousY &&
+            z === previousZ
+        ) {
 
-    let tMaxZ;
+            continue;
 
-
-    if (
-        direction.x >= 0
-    ) {
-
-        tMaxX =
-            (
-                x + 1 -
-                origin.x
-            ) /
-            direction.x;
-
-    }
-
-    else {
-
-        tMaxX =
-            (
-                x -
-                origin.x
-            ) /
-            direction.x;
-
-    }
+        }
 
 
-    if (
-        direction.y >= 0
-    ) {
+        previousX =
+            x;
 
-        tMaxY =
-            (
-                y + 1 -
-                origin.y
-            ) /
-            direction.y;
+        previousY =
+            y;
 
-    }
+        previousZ =
+            z;
 
-    else {
-
-        tMaxY =
-            (
-                y -
-                origin.y
-            ) /
-            direction.y;
-
-    }
-
-
-    if (
-        direction.z >= 0
-    ) {
-
-        tMaxZ =
-            (
-                z + 1 -
-                origin.z
-            ) /
-            direction.z;
-
-    }
-
-    else {
-
-        tMaxZ =
-            (
-                z -
-                origin.z
-            ) /
-            direction.z;
-
-    }
-
-
-    /*
-       Prevent division-by-zero problems.
-    */
-
-    if (
-        direction.x === 0
-    ) {
-
-        tMaxX =
-            Infinity;
-
-    }
-
-
-    if (
-        direction.y === 0
-    ) {
-
-        tMaxY =
-            Infinity;
-
-    }
-
-
-    if (
-        direction.z === 0
-    ) {
-
-        tMaxZ =
-            Infinity;
-
-    }
-
-
-    let travelled =
-        0;
-
-
-    let faceNormal =
-        new THREE.Vector3();
-
-
-    while (
-        travelled <=
-        REACH_DISTANCE
-    ) {
 
         const key =
             blockKey(
@@ -269,6 +185,10 @@ function getTargetBlock() {
                 z
             );
 
+
+        /*
+           Did we hit a block?
+        */
 
         if (
             world.has(
@@ -289,6 +209,10 @@ function getTargetBlock() {
             }
 
 
+            /*
+               Store target information.
+            */
+
             targetProxy.position.set(
 
                 x + 0.5,
@@ -320,295 +244,36 @@ function getTargetBlock() {
                 z;
 
 
-            targetProxy.userData.faceNormal =
-                faceNormal.clone();
-
-
-            targetedBlock =
-                targetProxy;
-
-
-            return targetProxy;
-
-        }
-
-
-        if (
-            tMaxX <
-            tMaxY &&
-            tMaxX <
-            tMaxZ
-        ) {
-
-            x += stepX;
-
-            travelled =
-                tMaxX;
-
-            tMaxX +=
-                tDeltaX;
-
-
-            faceNormal.set(
-
-                -stepX,
-
-                0,
-
-                0
-
-            );
-
-        }
-
-        else if (
-            tMaxY <
-            tMaxZ
-        ) {
-
-            y += stepY;
-
-            travelled =
-                tMaxY;
-
-            tMaxY +=
-                tDeltaY;
-
-
-            faceNormal.set(
-
-                0,
-
-                -stepY,
-
-                0
-
-            );
-
-        }
-
-        else {
-
-            z += stepZ;
-
-            travelled =
-                tMaxZ;
-
-            tMaxZ +=
-                tDeltaZ;
-
-
-            faceNormal.set(
-
-                0,
-
-                0,
-
-                -stepZ
-
-            );
-
-        }
-
-    }
-
-
-    targetedBlock =
-        null;
-
-
-    return null;
-
-}
-
-
-    /*
-       Walk through the world in tiny steps.
-
-       This is deliberately simple and reliable.
-       Six blocks of reach at 0.05-block steps
-       is only 120 checks.
-    */
-
-    const step =
-        0.05;
-
-
-    for (
-        let distance = 0;
-        distance <= REACH_DISTANCE;
-        distance += step
-    ) {
-
-        const point =
-            origin.clone().addScaledVector(
-                direction,
-                distance
-            );
-
-
-        const x =
-            Math.floor(point.x);
-
-        const y =
-            Math.floor(point.y);
-
-        const z =
-            Math.floor(point.z);
-
-
-    /*
-    Small step size gives reliable voxel targeting.
-    */
-    const stepSize = 0.05;
-
-
-    const steps =
-        Math.ceil(
-            REACH_DISTANCE /
-            stepSize
-        );
-
-
-    for (
-        let i = 0;
-        i <= steps;
-        i++
-    ) {
-
-        const distance =
-            i * stepSize;
-
-
-        if (
-            distance >
-            REACH_DISTANCE
-        ) {
-            break;
-        }
-
-
-        const position =
-            start.clone().addScaledVector(
-                direction,
-                distance
-            );
-
-
-        const x =
-            Math.floor(
-                position.x
-            );
-
-        const y =
-            Math.floor(
-                position.y
-            );
-
-        const z =
-            Math.floor(
-                position.z
-            );
-
-
-        const key =
-            blockKey(
-                x,
-                y,
-                z
-            );
-
-
-<<<<<<< HEAD
-        /*
-           Did we hit a block?
-        */
-
-=======
->>>>>>> 47a8facad26dd03af3d1122f7c045cee8a4b3173
-        if (
-            world.has(key)
-        ) {
-
-            const type =
-                world.get(key);
-
-
-<<<<<<< HEAD
-            if (!type) {
-                return null;
-            }
-
-
             /*
-               Store everything mining needs.
-            */
+               Determine which face was entered.
 
-            targetProxy.position.set(
-
-                x + 0.5,
-
-                y + 0.5,
-
-                z + 0.5
-
-            );
-
-
-=======
-            /*
-            Store target information.
-            */
->>>>>>> 47a8facad26dd03af3d1122f7c045cee8a4b3173
-            targetProxy.userData.key =
-                key;
-
-            targetProxy.userData.type =
-                type;
-
-            targetProxy.userData.x =
-                x;
-
-            targetProxy.userData.y =
-                y;
-
-            targetProxy.userData.z =
-                z;
-
-
-<<<<<<< HEAD
-            /*
-               Calculate the face we entered.
-
-               This is mainly needed for block placement.
+               This is needed for block placement.
             */
 
             const previousPoint =
-                origin.clone().addScaledVector(
-                    direction,
-                    Math.max(
-                        0,
-                        distance - step
-                    )
-                );
-=======
-            targetedBlock =
-                targetProxy;
->>>>>>> 47a8facad26dd03af3d1122f7c045cee8a4b3173
+                origin.clone()
+                    .addScaledVector(
+                        direction,
+                        Math.max(
+                            0,
+                            distance - stepSize
+                        )
+                    );
 
 
-<<<<<<< HEAD
-            const previousX =
+            const previousVoxelX =
                 Math.floor(
                     previousPoint.x
                 );
 
-            const previousY =
+
+            const previousVoxelY =
                 Math.floor(
                     previousPoint.y
                 );
 
-            const previousZ =
+
+            const previousVoxelZ =
                 Math.floor(
                     previousPoint.z
                 );
@@ -617,19 +282,19 @@ function getTargetBlock() {
             const faceNormal =
                 new THREE.Vector3(
 
-                    previousX - x,
+                    previousVoxelX - x,
 
-                    previousY - y,
+                    previousVoxelY - y,
 
-                    previousZ - z
+                    previousVoxelZ - z
 
                 );
 
 
             /*
-               If we entered through exactly the same
-               voxel because of the first step, determine
-               the dominant direction instead.
+               If the previous voxel could not
+               determine the face, use the dominant
+               direction of the camera ray.
             */
 
             if (
@@ -641,31 +306,18 @@ function getTargetBlock() {
                         direction.x
                     );
 
+
                 const ay =
                     Math.abs(
                         direction.y
                     );
-=======
-            /*
-            Keep the proxy positioned correctly
-            for the crack overlay.
-            */
-            targetProxy.position.set(
-                x + 0.5,
-                y + 0.5,
-                z + 0.5
-            );
->>>>>>> 47a8facad26dd03af3d1122f7c045cee8a4b3173
 
-<<<<<<< HEAD
+
                 const az =
                     Math.abs(
                         direction.z
                     );
-=======
->>>>>>> 47a8facad26dd03af3d1122f7c045cee8a4b3173
 
-<<<<<<< HEAD
 
                 if (
                     ax >= ay &&
@@ -732,11 +384,9 @@ function getTargetBlock() {
 
 
             return targetProxy;
+
         }
-=======
-            return targetProxy;
-        }
->>>>>>> 47a8facad26dd03af3d1122f7c045cee8a4b3173
+
     }
 
 
@@ -745,69 +395,155 @@ function getTargetBlock() {
 
 
     return null;
+
 }
 
 
 /* ======================================================
-   CAN THE PLAYER BREAK THIS BLOCK?
-   ====================================================== */
+   CAN BREAK
+====================================================== */
 
 function canBreak(
     type
 ) {
 
-    if (
-        !type
-    ) {
+    if (!type) {
+
         return false;
+
     }
 
 
     /*
-    Normal breakable blocks.
+       Normal blocks.
     */
+
     if (
         type.breakable === true
     ) {
+
         return true;
+
     }
 
 
     /*
-    Stone / ore blocks requiring a pickaxe.
+       Blocks requiring a pickaxe.
     */
+
     if (
-        type.breakable ===
-        "pickaxe"
+        type.breakable === "pickaxe"
     ) {
 
+        /*
+           Check the selected hotbar item.
+        */
+
+        if (
+            typeof hotbar === "undefined"
+        ) {
+
+            return false;
+
+        }
+
+
+        if (
+            typeof selectedBlock === "undefined"
+        ) {
+
+            return false;
+
+        }
+
+
+        const selectedItem =
+            hotbar[
+                selectedBlock
+            ];
+
+
+        if (!selectedItem) {
+
+            return false;
+
+        }
+
+
         return (
-            typeof inventory !==
-                "undefined" &&
-
-            typeof hotbar !==
-                "undefined" &&
-
-            typeof selectedBlock !==
-                "undefined" &&
-
-            inventory.wood_pickaxe > 0 &&
-
-            hotbar[selectedBlock] &&
-
-            hotbar[selectedBlock].id ===
-                "wood_pickaxe"
+            selectedItem.id ===
+            "wood_pickaxe"
         );
+
+    }
+
+
+    /*
+       Also support the older
+       requiresTool system.
+    */
+
+    if (
+        type.requiresTool
+    ) {
+
+        if (
+            typeof hotbar === "undefined"
+        ) {
+
+            return false;
+
+        }
+
+
+        if (
+            typeof selectedBlock === "undefined"
+        ) {
+
+            return false;
+
+        }
+
+
+        const selectedItem =
+            hotbar[
+                selectedBlock
+            ];
+
+
+        if (!selectedItem) {
+
+            return false;
+
+        }
+
+
+        if (
+            type.requiredTool ===
+            "pickaxe"
+        ) {
+
+            return (
+                selectedItem.id ===
+                "wood_pickaxe"
+            );
+
+        }
+
+
+        return false;
+
     }
 
 
     return false;
+
 }
 
 
 /* ======================================================
    START MINING
-   ====================================================== */
+====================================================== */
 
 function startMining() {
 
@@ -815,13 +551,12 @@ function startMining() {
         getTargetBlock();
 
 
-    if (
-        !target
-    ) {
+    if (!target) {
 
         stopMining();
 
         return;
+
     }
 
 
@@ -838,22 +573,20 @@ function startMining() {
 
         if (
             type &&
-            type.id === "stone"
+            (
+                type.id === "stone" ||
+                type.name === "Stone"
+            )
         ) {
 
             showMessage(
                 "You need a wooden pickaxe to break stone!"
             );
 
-        } else {
-
-            showMessage(
-                "You cannot break this!"
-            );
         }
 
-
         return;
+
     }
 
 
@@ -862,45 +595,49 @@ function startMining() {
 
 
     /*
-    Start a new block.
+       Start mining this block.
     */
-    if (
-        !breaking ||
-        breakingKey !== key
-    ) {
 
-        breaking =
-            true;
+    breaking =
+        true;
 
-        breakingKey =
-            key;
 
-        breakingStart =
-            performance.now();
-    }
+    breakingKey =
+        key;
+
+
+    breakingStart =
+        performance.now();
+
 }
 
 
 /* ======================================================
    UPDATE MINING
-   ====================================================== */
+====================================================== */
 
 function updateMining(
     delta
 ) {
 
     /*
-    Mouse must still be held.
+       Stop if the mouse is no longer held.
     */
+
     if (
         !mouseLocked ||
-        craftingOpen ||
+        (
+            typeof craftingOpen !==
+            "undefined" &&
+            craftingOpen
+        ) ||
         !leftMouseDown
     ) {
 
         stopMining();
 
         return;
+
     }
 
 
@@ -908,13 +645,16 @@ function updateMining(
         getTargetBlock();
 
 
-    if (
-        !target
-    ) {
+    /*
+       Player stopped looking at a block.
+    */
+
+    if (!target) {
 
         stopMining();
 
         return;
+
     }
 
 
@@ -928,19 +668,8 @@ function updateMining(
 
         stopMining();
 
-
-        if (
-            type &&
-            type.id === "stone"
-        ) {
-
-            showMessage(
-                "You need a wooden pickaxe to break stone!"
-            );
-
-        }
-
         return;
+
     }
 
 
@@ -949,9 +678,10 @@ function updateMining(
 
 
     /*
-    Looking at a different block
-    starts a new mining operation.
+       Player moved the crosshair
+       onto another block.
     */
+
     if (
         !breaking ||
         breakingKey !== key
@@ -960,11 +690,14 @@ function updateMining(
         breaking =
             true;
 
+
         breakingKey =
             key;
 
+
         breakingStart =
             performance.now();
+
     }
 
 
@@ -975,15 +708,23 @@ function updateMining(
 
     const progress =
         Math.min(
+
             1,
+
             elapsed /
-            (BREAK_TIME * 1000)
+            (
+                BREAK_TIME *
+                1000
+            )
+
         );
 
 
     /*
-    Show breaking cracks.
+       Use the existing crack system
+       if it exists.
     */
+
     if (
         typeof drawCracks ===
         "function"
@@ -995,25 +736,44 @@ function updateMining(
                 progress
             )
         );
+
     }
 
 
+    /*
+       Keep compatibility with
+       crackMesh systems.
+    */
+
     if (
         typeof crackMesh !==
-        "undefined"
+        "undefined" &&
+        crackMesh
     ) {
 
         crackMesh.position.set(
-            target.userData.x + 0.5,
-            target.userData.y + 0.5,
-            target.userData.z + 0.5
+
+            target.userData.x +
+            0.5,
+
+            target.userData.y +
+            0.5,
+
+            target.userData.z +
+            0.5
+
         );
 
 
         crackMesh.visible =
             true;
+
     }
 
+
+    /*
+       Optional breaking text.
+    */
 
     const breakingText =
         document.getElementById(
@@ -1028,12 +788,14 @@ function updateMining(
         breakingText.classList.add(
             "show"
         );
+
     }
 
 
     /*
-    Block is finished.
+       Finished!
     */
+
     if (
         progress >= 1
     ) {
@@ -1041,13 +803,15 @@ function updateMining(
         breakBlock(
             target
         );
+
     }
+
 }
 
 
 /* ======================================================
    BREAK BLOCK
-   ====================================================== */
+====================================================== */
 
 function breakBlock(
     target
@@ -1061,14 +825,17 @@ function breakBlock(
         stopMining();
 
         return;
+
     }
 
 
     const x =
         target.userData.x;
 
+
     const y =
         target.userData.y;
+
 
     const z =
         target.userData.z;
@@ -1079,8 +846,9 @@ function breakBlock(
 
 
     /*
-    Make sure the block still exists.
+       Make sure the block still exists.
     */
+
     if (
         !world.has(key)
     ) {
@@ -1088,6 +856,7 @@ function breakBlock(
         stopMining();
 
         return;
+
     }
 
 
@@ -1096,17 +865,21 @@ function breakBlock(
 
 
     /*
-    Remove from the actual world data.
+       Remove from world data.
     */
-    world.delete(key);
+
+    world.delete(
+        key
+    );
 
 
     /*
-    Remove old special mesh if this block
-    is one of the non-instanced block types.
+       Remove special mesh if one exists.
     */
+
     if (
-        meshes &&
+        typeof meshes !==
+        "undefined" &&
         meshes.has(key)
     ) {
 
@@ -1121,19 +894,21 @@ function breakBlock(
             mesh.parent.remove(
                 mesh
             );
+
         }
 
 
-        meshes.delete(key);
+        meshes.delete(
+            key
+        );
+
     }
 
 
     /*
-    Update chunk membership.
-
-    The chunk renderer should rebuild the
-    affected chunk and its neighbors.
+       Remove from chunk membership.
     */
+
     if (
         typeof removeBlockFromChunkMembers ===
         "function"
@@ -1145,23 +920,28 @@ function breakBlock(
             z
         );
 
-    } else if (
+    }
+
+    else if (
         typeof chunkMembers !==
         "undefined"
     ) {
 
         const chunkX =
             Math.floor(
-                x / CHUNK_SIZE
+                x /
+                CHUNK_SIZE
             );
+
 
         const chunkZ =
             Math.floor(
-                z / CHUNK_SIZE
+                z /
+                CHUNK_SIZE
             );
 
 
-        const chunkKey =
+        const cKey =
             chunkX +
             "," +
             chunkZ;
@@ -1169,46 +949,57 @@ function breakBlock(
 
         const members =
             chunkMembers.get(
-                chunkKey
+                cKey
             );
 
 
-        if (
-            members
-        ) {
+        if (members) {
 
-            members.delete(key);
+            members.delete(
+                key
+            );
+
         }
+
     }
 
 
     /*
-    Give the block to the player.
+       Give the block to the player.
     */
+
     if (
         typeof addItem ===
         "function"
     ) {
 
         addItem(
+
             blockType.name,
+
             1
+
         );
 
-    } else if (
+    }
+
+    else if (
         typeof inventory !==
-            "undefined" &&
+        "undefined" &&
         blockType.id
     ) {
 
         if (
-            inventory[blockType.id] !==
-                undefined
+            inventory[
+                blockType.id
+            ] !==
+            undefined
         ) {
 
             inventory[
                 blockType.id
             ]++;
+
         }
 
 
@@ -1218,63 +1009,92 @@ function breakBlock(
         ) {
 
             updateHotbar();
+
         }
+
     }
 
 
     /*
-    Rebuild the changed chunk and
-    surrounding chunk borders.
+       Rebuild affected chunks.
     */
+
     if (
         typeof refreshChunkAroundBlock ===
         "function"
     ) {
 
         refreshChunkAroundBlock(
+
             x,
+
             y,
+
             z
+
         );
+
     }
 
 
-    showMessage(
-        "Collected " +
-        blockType.name +
-        "!"
-    );
+    if (
+        typeof showMessage ===
+        "function"
+    ) {
+
+        showMessage(
+
+            "Collected " +
+            blockType.name +
+            "!"
+
+        );
+
+    }
 
 
     stopMining();
+
 }
 
 
 /* ======================================================
    STOP MINING
-   ====================================================== */
+====================================================== */
 
 function stopMining() {
 
     breaking =
         false;
 
+
     breakingKey =
         null;
+
 
     breakingStart =
         0;
 
 
+    /*
+       Hide old crack mesh.
+    */
+
     if (
         typeof crackMesh !==
-        "undefined"
+        "undefined" &&
+        crackMesh
     ) {
 
         crackMesh.visible =
             false;
+
     }
 
+
+    /*
+       Hide breaking text.
+    */
 
     const breakingText =
         document.getElementById(
@@ -1289,13 +1109,15 @@ function stopMining() {
         breakingText.classList.remove(
             "show"
         );
+
     }
+
 }
 
 
 /* ======================================================
    PLACE BLOCK
-   ====================================================== */
+====================================================== */
 
 function placeBlock() {
 
@@ -1303,15 +1125,27 @@ function placeBlock() {
         getTargetBlock();
 
 
-    if (
-        !target
-    ) {
+    if (!target) {
+
         return;
+
+    }
+
+
+    if (
+        typeof hotbar ===
+        "undefined"
+    ) {
+
+        return;
+
     }
 
 
     const item =
-        hotbar[selectedBlock];
+        hotbar[
+            selectedBlock
+        ];
 
 
     if (
@@ -1319,11 +1153,29 @@ function placeBlock() {
         !item.placeable
     ) {
 
-        showMessage(
-            "That item cannot be placed."
-        );
+        if (
+            typeof showMessage ===
+            "function"
+        ) {
+
+            showMessage(
+                "That item cannot be placed."
+            );
+
+        }
 
         return;
+
+    }
+
+
+    if (
+        typeof inventory ===
+        "undefined"
+    ) {
+
+        return;
+
     }
 
 
@@ -1332,200 +1184,217 @@ function placeBlock() {
         inventory[item.id] <= 0
     ) {
 
-        showMessage(
-            "You don't have any " +
-            item.name +
-            "!"
-        );
+        if (
+            typeof showMessage ===
+            "function"
+        ) {
+
+            showMessage(
+
+                "You don't have any " +
+                item.name +
+                "!"
+
+            );
+
+        }
 
         return;
+
+    }
+
+
+    /*
+       Use the face detected by the voxel ray.
+    */
+
+    const normal =
+        target.userData.faceNormal;
+
+
+    if (!normal) {
+
+        return;
+
     }
 
 
     const x =
-        target.userData.x;
+        target.userData.x +
+        normal.x;
+
 
     const y =
-        target.userData.y;
+        target.userData.y +
+        normal.y;
+
 
     const z =
-        target.userData.z;
+        target.userData.z +
+        normal.z;
 
 
-    /*
-    Determine which face the player is
-    looking at from the ray direction.
-
-    We use the point where the ray first
-    entered the target block.
-    */
-    const direction =
-        new THREE.Vector3();
-
-    camera.getWorldDirection(
-        direction
-    );
-
-    direction.normalize();
-
-
-    const center =
-        new THREE.Vector3(
-            x + 0.5,
-            y + 0.5,
-            z + 0.5
+    const key =
+        blockKey(
+            x,
+            y,
+            z
         );
 
 
-    const relative =
-        camera.position.clone()
-            .sub(center);
-
-
-    let faceX = 0;
-    let faceY = 0;
-    let faceZ = 0;
-
+    /*
+       Don't place inside another block.
+    */
 
     if (
-        Math.abs(relative.x) >
-        Math.abs(relative.y) &&
-
-        Math.abs(relative.x) >
-        Math.abs(relative.z)
+        world.has(key)
     ) {
 
-        faceX =
-            relative.x > 0
-                ? 1
-                : -1;
+        return;
 
-    } else if (
-        Math.abs(relative.y) >
-        Math.abs(relative.z)
-    ) {
-
-        faceY =
-            relative.y > 0
-                ? 1
-                : -1;
-
-    } else {
-
-        faceZ =
-            relative.z > 0
-                ? 1
-                : -1;
     }
 
 
-    const placeX =
-        x + faceX;
-
-    const placeY =
-        y + faceY;
-
-    const placeZ =
-        z + faceZ;
-
-
     /*
-    Do not place inside the player.
+       Player collision box.
     */
+
     const bottom =
         camera.position.y -
         EYE_HEIGHT;
 
 
     if (
+
         camera.position.x +
             PLAYER_RADIUS >
-            placeX &&
+            x &&
 
         camera.position.x -
             PLAYER_RADIUS <
-            placeX + 1 &&
+            x + 1 &&
 
         camera.position.z +
             PLAYER_RADIUS >
-            placeZ &&
+            z &&
 
         camera.position.z -
             PLAYER_RADIUS <
-            placeZ + 1 &&
+            z + 1 &&
 
         bottom +
             PLAYER_HEIGHT >
-            placeY &&
+            y &&
 
         bottom <
-            placeY + 1
+            y + 1
+
     ) {
 
-        showMessage(
-            "You cannot place a block here!"
-        );
+        if (
+            typeof showMessage ===
+            "function"
+        ) {
+
+            showMessage(
+                "You cannot place a block here!"
+            );
+
+        }
 
         return;
+
     }
 
 
     /*
-    Do not place inside an existing block.
+       Add through the chunk-aware
+       world system.
     */
-    if (
-        world.has(
-            blockKey(
-                placeX,
-                placeY,
-                placeZ
-            )
-        )
-    ) {
 
-        return;
-    }
-
-
-    /*
-    Add through the chunk-aware system.
-    */
     addBlock(
-        placeX,
-        placeY,
-        placeZ,
+
+        x,
+
+        y,
+
+        z,
+
         item
+
     );
 
+
+    /*
+       Remove one item.
+    */
 
     inventory[item.id]--;
 
 
-    updateHotbar();
+    if (
+        inventory[item.id] <= 0
+    ) {
+
+        inventory[item.id] =
+            0;
+
+    }
 
 
-    showMessage(
-        "Placed " +
-        item.name
-    );
+    if (
+        typeof updateHotbar ===
+        "function"
+    ) {
+
+        updateHotbar();
+
+    }
+
+
+    if (
+        typeof showMessage ===
+        "function"
+    ) {
+
+        showMessage(
+
+            "Placed " +
+            item.name
+
+        );
+
+    }
+
 }
 
 
 /* ======================================================
-   MOUSE INPUT
-   ====================================================== */
+   MOUSE DOWN
+====================================================== */
 
 document.addEventListener(
     "mousedown",
     function(event) {
 
+        /*
+           Crafting table currently open.
+        */
+
         if (
+            typeof craftingOpen !==
+            "undefined" &&
             craftingOpen
         ) {
 
             return;
+
         }
 
+
+        /*
+           Left mouse = mining.
+        */
 
         if (
             event.button === 0 &&
@@ -1535,9 +1404,15 @@ document.addEventListener(
             leftMouseDown =
                 true;
 
+
             startMining();
+
         }
 
+
+        /*
+           Right mouse = placement.
+        */
 
         if (
             event.button === 2 &&
@@ -1545,14 +1420,16 @@ document.addEventListener(
         ) {
 
             placeBlock();
+
         }
+
     }
 );
 
 
 /* ======================================================
-   MOUSE RELEASE
-   ====================================================== */
+   MOUSE UP
+====================================================== */
 
 document.addEventListener(
     "mouseup",
@@ -1565,20 +1442,24 @@ document.addEventListener(
             leftMouseDown =
                 false;
 
+
             stopMining();
+
         }
+
     }
 );
 
 
 /* ======================================================
-   PREVENT CONTEXT MENU
-   ====================================================== */
+   DISABLE RIGHT CLICK MENU
+====================================================== */
 
 document.addEventListener(
     "contextmenu",
     function(event) {
 
         event.preventDefault();
+
     }
 );
