@@ -15,7 +15,9 @@ let targetedBlock = null;
 ====================================================== */
 
 let mining = false;
+
 let miningBlock = null;
+
 let miningProgress = 0;
 
 
@@ -28,6 +30,7 @@ function getTargetBlock() {
     const raycaster =
         new THREE.Raycaster();
 
+
     raycaster.setFromCamera(
         new THREE.Vector2(0, 0),
         camera
@@ -36,10 +39,13 @@ function getTargetBlock() {
 
     const blockMeshes = [];
 
+
     meshes.forEach(
         mesh => {
 
-            blockMeshes.push(mesh);
+            blockMeshes.push(
+                mesh
+            );
 
         }
     );
@@ -91,10 +97,14 @@ function getTargetBlock() {
    CHECK IF PLAYER CAN BREAK BLOCK
 ====================================================== */
 
-function canBreakBlock(blockType) {
+function canBreakBlock(
+    blockType
+) {
 
     if (!blockType) {
+
         return false;
+
     }
 
 
@@ -123,7 +133,7 @@ function canBreakBlock(blockType) {
 
 
     /*
-       Stone requires a pickaxe.
+       Pickaxe-required blocks.
     */
 
     if (
@@ -155,7 +165,9 @@ function startMining() {
 
 
     if (!block) {
+
         return;
+
     }
 
 
@@ -164,7 +176,9 @@ function startMining() {
 
 
     if (!blockType) {
+
         return;
+
     }
 
 
@@ -173,7 +187,9 @@ function startMining() {
     */
 
     if (
-        !canBreakBlock(blockType)
+        !canBreakBlock(
+            blockType
+        )
     ) {
 
         if (
@@ -182,7 +198,7 @@ function startMining() {
         ) {
 
             console.log(
-                "You need a pickaxe to break stone!"
+                "You need a pickaxe to break this block!"
             );
 
         }
@@ -198,10 +214,6 @@ function startMining() {
 
     miningProgress = 0;
 
-
-    /*
-       Start the crack effect.
-    */
 
     createCrackOverlay(
         block
@@ -223,10 +235,6 @@ function stopMining() {
     miningProgress = 0;
 
 
-    /*
-       Remove crack effect.
-    */
-
     removeCrackOverlay();
 
 }
@@ -236,10 +244,14 @@ function stopMining() {
    BREAK BLOCK
 ====================================================== */
 
-function breakBlock(block) {
+function breakBlock(
+    block
+) {
 
     if (!block) {
+
         return;
+
     }
 
 
@@ -248,7 +260,9 @@ function breakBlock(block) {
 
 
     if (!key) {
+
         return;
+
     }
 
 
@@ -257,29 +271,62 @@ function breakBlock(block) {
 
 
     /*
-       Remove from world.
+       Remember the block coordinates
+       BEFORE removing it.
     */
 
-    world.delete(key);
+    const parts =
+        String(
+            key
+        ).split(
+            ","
+        );
 
 
-    /*
-       Remove visually.
-    */
-
-    scene.remove(block);
-
-
-    /*
-       Remove from mesh collection.
-    */
-
-    meshes.delete(key);
+    const x =
+        Number(
+            parts[0]
+        );
 
 
-    /*
-       Give block to player.
-    */
+    const y =
+        Number(
+            parts[1]
+        );
+
+
+    const z =
+        Number(
+            parts[2]
+        );
+
+
+    /* ==================================================
+       REMOVE FROM WORLD DATA
+    ================================================== */
+
+    world.delete(
+        key
+    );
+
+
+    /* ==================================================
+       REMOVE VISUAL
+    ================================================== */
+
+    scene.remove(
+        block
+    );
+
+
+    meshes.delete(
+        key
+    );
+
+
+    /* ==================================================
+       GIVE BLOCK TO PLAYER
+    ================================================== */
 
     if (blockType) {
 
@@ -291,15 +338,27 @@ function breakBlock(block) {
     }
 
 
-    /*
-       Clean up geometry.
+    /* ==================================================
+       IMPORTANT GEOMETRY FIX
+    ==================================================
+
+       DO NOT dispose block.geometry here.
+
+       Normal blocks now share BLOCK_GEOMETRY.
+
+       Disposing it would destroy the geometry
+       used by the entire world.
     */
 
-    block.geometry.dispose();
 
+    /* ==================================================
+       CLEAN UP MATERIAL
+    ================================================== */
 
     /*
-       Clean up materials.
+       Only dispose the material.
+
+       The shared geometry must stay alive.
     */
 
     if (
@@ -311,6 +370,19 @@ function breakBlock(block) {
         block.material.forEach(
             material => {
 
+                if (!material) {
+
+                    return;
+
+                }
+
+
+                /*
+                   Textures may be owned by special
+                   blocks such as the crafting table
+                   or ore visuals.
+                */
+
                 if (
                     material.map
                 ) {
@@ -318,6 +390,7 @@ function breakBlock(block) {
                     material.map.dispose();
 
                 }
+
 
                 material.dispose();
 
@@ -329,6 +402,7 @@ function breakBlock(block) {
     else {
 
         if (
+            block.material &&
             block.material.map
         ) {
 
@@ -336,17 +410,45 @@ function breakBlock(block) {
 
         }
 
-        block.material.dispose();
+
+        if (
+            block.material
+        ) {
+
+            block.material.dispose();
+
+        }
+
+    }
+
+
+    /* ==================================================
+       UPDATE HIDDEN BLOCK CULLING
+    ================================================== */
+
+    /*
+       The blocks next to the broken block may
+       now be exposed.
+
+       The culling system will reveal them.
+    */
+
+    if (
+        typeof updateCullingAround ===
+        "function"
+    ) {
+
+        updateCullingAround(
+            x,
+            y,
+            z
+        );
 
     }
 
 
     targetedBlock = null;
 
-
-    /*
-       Stop mining and remove cracks.
-    */
 
     stopMining();
 
@@ -357,7 +459,9 @@ function breakBlock(block) {
    UPDATE MINING
 ====================================================== */
 
-function updateMining(delta) {
+function updateMining(
+    delta
+) {
 
     if (
         !mining ||
@@ -387,8 +491,8 @@ function updateMining(delta) {
 
 
     /*
-       Make sure the player is
-       still looking at the same block.
+       Make sure the player is still
+       looking at the same block.
     */
 
     const currentTarget =
@@ -430,7 +534,7 @@ function updateMining(delta) {
 
 
     /*
-       Increase mining progress.
+       Increase progress.
     */
 
     miningProgress +=
@@ -438,13 +542,13 @@ function updateMining(delta) {
 
 
     /*
-       Convert progress to
-       a value between 0 and 1.
+       Convert progress to 0–1.
     */
 
     const progress =
         Math.min(
-            miningProgress / breakTime,
+            miningProgress /
+            breakTime,
             1
         );
 
@@ -459,7 +563,7 @@ function updateMining(delta) {
 
 
     /*
-       Break block when finished.
+       Break when complete.
     */
 
     if (
@@ -485,7 +589,8 @@ function getBlockTypeFromItem(
 ) {
 
     if (
-        itemType === "grass"
+        itemType ===
+        "grass"
     ) {
 
         return BLOCKS.grass;
@@ -494,7 +599,8 @@ function getBlockTypeFromItem(
 
 
     if (
-        itemType === "dirt"
+        itemType ===
+        "dirt"
     ) {
 
         return BLOCKS.dirt;
@@ -503,7 +609,8 @@ function getBlockTypeFromItem(
 
 
     if (
-        itemType === "stone"
+        itemType ===
+        "stone"
     ) {
 
         return BLOCKS.stone;
@@ -512,7 +619,8 @@ function getBlockTypeFromItem(
 
 
     if (
-        itemType === "wood"
+        itemType ===
+        "wood"
     ) {
 
         return BLOCKS.wood;
@@ -521,7 +629,8 @@ function getBlockTypeFromItem(
 
 
     if (
-        itemType === "leaves"
+        itemType ===
+        "leaves"
     ) {
 
         return BLOCKS.leaves;
@@ -530,7 +639,8 @@ function getBlockTypeFromItem(
 
 
     if (
-        itemType === "planks"
+        itemType ===
+        "planks"
     ) {
 
         return BLOCKS.planks;
@@ -539,7 +649,8 @@ function getBlockTypeFromItem(
 
 
     if (
-        itemType === "crafting_table"
+        itemType ===
+        "crafting_table"
     ) {
 
         return BLOCKS.crafting_table;
@@ -563,7 +674,9 @@ function placeBlock() {
 
 
     if (!block) {
+
         return;
+
     }
 
 
@@ -572,7 +685,9 @@ function placeBlock() {
 
 
     if (!selectedItem) {
+
         return;
+
     }
 
 
@@ -613,12 +728,13 @@ function placeBlock() {
     }
 
 
-    /*
-       Find clicked face.
-    */
+    /* ==================================================
+       FIND CLICKED FACE
+    ================================================== */
 
     const raycaster =
         new THREE.Raycaster();
+
 
     raycaster.setFromCamera(
         new THREE.Vector2(0, 0),
@@ -653,17 +769,27 @@ function placeBlock() {
         block.position.clone();
 
 
-    position.add(normal);
+    position.add(
+        normal
+    );
 
 
     const x =
-        Math.floor(position.x);
+        Math.floor(
+            position.x
+        );
+
 
     const y =
-        Math.floor(position.y);
+        Math.floor(
+            position.y
+        );
+
 
     const z =
-        Math.floor(position.z);
+        Math.floor(
+            position.z
+        );
 
 
     const key =
@@ -679,7 +805,9 @@ function placeBlock() {
     */
 
     if (
-        world.has(key)
+        world.has(
+            key
+        )
     ) {
 
         return;
@@ -687,9 +815,9 @@ function placeBlock() {
     }
 
 
-    /*
-       Player position.
-    */
+    /* ==================================================
+       PLAYER POSITION
+    ================================================== */
 
     const playerX =
         camera.position.x;
@@ -711,22 +839,27 @@ function placeBlock() {
     if (
 
         x + 1 >
-        playerX - PLAYER_RADIUS &&
+        playerX -
+        PLAYER_RADIUS &&
 
         x <
-        playerX + PLAYER_RADIUS &&
+        playerX +
+        PLAYER_RADIUS &&
 
         y + 1 >
         playerY &&
 
         y <
-        playerY + PLAYER_HEIGHT &&
+        playerY +
+        PLAYER_HEIGHT &&
 
         z + 1 >
-        playerZ - PLAYER_RADIUS &&
+        playerZ -
+        PLAYER_RADIUS &&
 
         z <
-        playerZ + PLAYER_RADIUS
+        playerZ +
+        PLAYER_RADIUS
 
     ) {
 
@@ -735,9 +868,9 @@ function placeBlock() {
     }
 
 
-    /*
-       Convert item into block.
-    */
+    /* ==================================================
+       CONVERT ITEM INTO BLOCK
+    ================================================== */
 
     const blockType =
         getBlockTypeFromItem(
@@ -752,9 +885,9 @@ function placeBlock() {
     }
 
 
-    /*
-       Place block.
-    */
+    /* ==================================================
+       PLACE BLOCK
+    ================================================== */
 
     addBlock(
         x,
@@ -764,9 +897,9 @@ function placeBlock() {
     );
 
 
-    /*
-       Remove one item.
-    */
+    /* ==================================================
+       REMOVE ONE ITEM
+    ================================================== */
 
     selectedItem.amount--;
 
@@ -803,7 +936,7 @@ document.addEventListener(
 
 
         /*
-           Left click = start mining.
+           Left click = mine.
         */
 
         if (
@@ -828,8 +961,7 @@ document.addEventListener(
 
 
             /*
-               Right-clicking a crafting
-               table opens the 3x3 menu.
+               Crafting table.
             */
 
             if (
@@ -846,7 +978,7 @@ document.addEventListener(
 
 
             /*
-               Otherwise place a block.
+               Otherwise place block.
             */
 
             placeBlock();
