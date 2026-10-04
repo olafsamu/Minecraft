@@ -11,7 +11,9 @@ Main Game
 ====================================================== */
 
 const canvas =
-    document.getElementById("game");
+    document.getElementById(
+        "game"
+    );
 
 
 /* ======================================================
@@ -42,11 +44,16 @@ scene.fog =
 
 const camera =
     new THREE.PerspectiveCamera(
+
         75,
+
         window.innerWidth /
         window.innerHeight,
+
         0.1,
+
         200
+
     );
 
 
@@ -56,8 +63,11 @@ const camera =
 
 const renderer =
     new THREE.WebGLRenderer({
+
         canvas: canvas,
+
         antialias: false
+
     });
 
 
@@ -67,12 +77,14 @@ renderer.setSize(
 );
 
 
-renderer.setPixelRatio(
-    Math.min(
-        window.devicePixelRatio,
-        2
-    )
-);
+/*
+   Performance setting.
+
+   1x pixel ratio is much easier
+   for lower-powered Chromebooks.
+*/
+
+renderer.setPixelRatio(1);
 
 
 /* ======================================================
@@ -81,9 +93,13 @@ renderer.setPixelRatio(
 
 const skyLight =
     new THREE.HemisphereLight(
+
         0xffffff,
+
         0x557755,
+
         1.8
+
     );
 
 
@@ -94,15 +110,22 @@ scene.add(
 
 const sun =
     new THREE.DirectionalLight(
+
         0xffffff,
+
         1.5
+
     );
 
 
 sun.position.set(
+
     30,
+
     50,
+
     20
+
 );
 
 
@@ -116,7 +139,9 @@ scene.add(
 ====================================================== */
 
 window.addEventListener(
+
     "resize",
+
     function() {
 
         camera.aspect =
@@ -128,33 +153,45 @@ window.addEventListener(
 
 
         renderer.setSize(
+
             window.innerWidth,
+
             window.innerHeight
+
         );
 
     }
+
 );
 
 
 /* ======================================================
-   CREATE WORLD
+   GENERATE WORLD
 ====================================================== */
 
 generateWorld();
 
 generateOres();
 
+
 /* ======================================================
    PLAYER START POSITION
 ====================================================== */
 
 camera.position.set(
+
     12.5,
-    terrainHeight(12, 12)
-        + 1
-        + EYE_HEIGHT
-        + 0.1,
+
+    terrainHeight(
+        12,
+        12
+    )
+    + 1
+    + EYE_HEIGHT
+    + 0.1,
+
     12.5
+
 );
 
 
@@ -179,41 +216,36 @@ function gameLoop() {
 
     const delta =
         Math.min(
+
             clock.getDelta(),
+
             0.05
+
         );
 
 
-    /*
-       Player movement.
-    */
+    /* Player */
 
     updatePlayer(
         delta
     );
 
 
-    /*
-       Mining.
-    */
+    /* Mining */
 
     updateMining(
         delta
     );
 
 
-    /*
-       Day / night cycle.
-    */
+    /* Day / Night */
 
     updateDayNight(
         delta
     );
 
 
-    /*
-       Render everything.
-    */
+    /* Render */
 
     renderer.render(
         scene,
