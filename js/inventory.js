@@ -1,4 +1,3 @@
-```js
 /*
 =========================================================
 BLOCKWORLD
@@ -110,18 +109,14 @@ function getSelectedItem() {
    ADD ITEM
 ====================================================== */
 
-function addItem(
-    type,
-    amount = 1
-) {
+function addItem(type, amount = 1) {
 
     const normalizedType =
         normalizeItemName(type);
 
 
     /*
-       First try to add to an
-       existing stack.
+       Add to an existing stack.
     */
 
     for (
@@ -192,10 +187,7 @@ function addItem(
    REMOVE ITEM
 ====================================================== */
 
-function removeItem(
-    type,
-    amount = 1
-) {
+function removeItem(type, amount = 1) {
 
     const normalizedType =
         normalizeItemName(type);
@@ -219,7 +211,9 @@ function removeItem(
     if (
         item.amount < amount
     ) {
+
         return false;
+
     }
 
 
@@ -241,45 +235,6 @@ function removeItem(
     updateHotbarUI();
 
     return true;
-
-}
-
-
-/* ======================================================
-   GET ICON CLASS
-====================================================== */
-
-function getItemIconClass(type) {
-
-    switch (
-        normalizeItemName(type)
-    ) {
-
-        case "grass":
-            return "grass-icon";
-
-        case "dirt":
-            return "dirt-icon";
-
-        case "stone":
-            return "stone-icon";
-
-        case "wood":
-            return "wood-icon";
-
-        case "leaves":
-            return "leaves-icon";
-
-        case "planks":
-            return "planks-icon";
-
-        case "crafting_table":
-            return "crafting-table-icon";
-
-        default:
-            return "";
-
-    }
 
 }
 
@@ -316,7 +271,7 @@ function updateHotbarUI() {
                 hotbar[index];
 
 
-            const icon =
+            const itemIcon =
                 slot.querySelector(
                     ".item-icon"
                 );
@@ -334,12 +289,13 @@ function updateHotbarUI() {
 
             if (!item) {
 
-                if (icon) {
+                if (itemIcon) {
 
-                    icon.className =
+                    itemIcon.className =
                         "item-icon";
 
                 }
+
 
                 if (amount) {
 
@@ -348,28 +304,87 @@ function updateHotbarUI() {
 
                 }
 
+
                 return;
 
             }
 
 
             /*
-               Set the correct icon.
+               Keep the icon that belongs
+               to this slot.
             */
 
-            if (icon) {
+            if (itemIcon) {
 
-                icon.className =
-                    "item-icon " +
-                    getItemIconClass(
-                        item.type
-                    );
+                if (
+                    item.type === "grass"
+                ) {
+
+                    itemIcon.className =
+                        "item-icon grass-icon";
+
+                }
+
+                else if (
+                    item.type === "dirt"
+                ) {
+
+                    itemIcon.className =
+                        "item-icon dirt-icon";
+
+                }
+
+                else if (
+                    item.type === "stone"
+                ) {
+
+                    itemIcon.className =
+                        "item-icon stone-icon";
+
+                }
+
+                else if (
+                    item.type === "wood"
+                ) {
+
+                    itemIcon.className =
+                        "item-icon wood-icon";
+
+                }
+
+                else if (
+                    item.type === "leaves"
+                ) {
+
+                    itemIcon.className =
+                        "item-icon leaves-icon";
+
+                }
+
+                else if (
+                    item.type === "planks"
+                ) {
+
+                    itemIcon.className =
+                        "item-icon planks-icon";
+
+                }
+
+                else if (
+                    item.type === "crafting_table"
+                ) {
+
+                    itemIcon.className =
+                        "item-icon crafting-table-icon";
+
+                }
 
             }
 
 
             /*
-               Set amount.
+               Amount.
             */
 
             if (amount) {
@@ -432,4 +447,3 @@ document.addEventListener(
 ====================================================== */
 
 updateHotbarUI();
-```
