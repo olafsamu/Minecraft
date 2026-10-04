@@ -4,12 +4,12 @@ BLOCKWORLD
 Cloud System
 =========================================================
 
-Voxel-style clouds
-- Instanced rendering
-- Deterministic positions
-- Only nearby cloud regions rendered
-- Terrain blocks clouds
-- Changes appearance with day/night
+Lightweight voxel-style clouds
+- One InstancedMesh
+- Deterministic generation
+- Follows the player
+- Day/night color changes
+- Terrain can block clouds
 =========================================================
 */
 
@@ -20,35 +20,26 @@ Voxel-style clouds
 
 const CLOUD_TILE_SIZE = 64;
 
-const CLOUD_GRID_RADIUS = 3;
+const CLOUD_GRID_RADIUS = 2;
 
 const CLOUD_HEIGHT = 42;
 
-const MAX_CLOUD_PUFFS = 700;
+const MAX_CLOUD_PUFFS = 500;
 
 
 /* ======================================================
-   CLOUD OBJECT
+   CLOUD SYSTEM
    ====================================================== */
 
 let cloudMesh = null;
 
-let cloudCenterTileX = null;
-let cloudCenterTileZ = null;
-
-
-/* ======================================================
-   CLOUD MATERIAL
-   ====================================================== */
-
 let cloudMaterial = null;
 
-
-/* ======================================================
-   CLOUD GEOMETRY
-   ====================================================== */
-
 let cloudGeometry = null;
+
+let cloudCenterTileX = null;
+
+let cloudCenterTileZ = null;
 
 
 /* ======================================================
@@ -58,7 +49,7 @@ let cloudGeometry = null;
 function cloudRandom(
     x,
     z,
-    extra = 0
+    extra
 ) {
 
     const value =
@@ -82,9 +73,6 @@ function cloudRandom(
 
 function initClouds() {
 
-    /*
-    One shared cube for every cloud piece.
-    */
     cloudGeometry =
         new THREE.BoxGeometry(
             1,
@@ -94,22 +82,23 @@ function initClouds() {
 
 
     /*
-    Opaque material is intentional.
+    Basic material is intentionally used here.
 
-    This is much cheaper than transparent cloud layers
-    and avoids transparency sorting problems.
+    We change the color ourselves depending on
+    the time of day, which keeps the system simple.
     */
     cloudMaterial =
-        new THREE.MeshLambertMaterial({
+        new THREE.MeshBasicMaterial({
             color: 0xffffff,
 
-            fog: true
+            fog: true,
+
+            depthTest: true,
+
+            depthWrite: true
         });
 
 
-    /*
-    One InstancedMesh for the entire nearby cloud field.
-    */
     cloudMesh =
         new THREE.InstancedMesh(
             cloudGeometry,
@@ -120,16 +109,14 @@ function initClouds() {
 
     cloudMesh.count = 0;
 
+
     /*
-    Clouds must respect the depth buffer.
+    Disable frustum culling for the cloud field.
 
-    This means:
-    terrain in front of a cloud
-    will correctly hide the cloud.
+    This avoids the need for expensive/manual
+    instance bounding calculations.
     */
-    cloudMesh.material.depthTest = true;
-
-    cloudMesh.material.depthWrite = true;
+    cloudMesh.frustumCulled = false;
 
 
     scene.add(
@@ -138,7 +125,7 @@ function initClouds() {
 
 
     /*
-    Build the first cloud field.
+    Build initial clouds.
     */
     rebuildClouds(
         Math.floor(
@@ -154,44 +141,7 @@ function initClouds() {
 
 
 /* ======================================================
-   ADD ONE CLOUD PUFF
-   ====================================================== */
-
-function addCloudPuff(
-    matrix,
-    x,
-    y,
-    z,
-    scaleX,
-    scaleY,
-    scaleZ,
-    rotationY
-) {
-
-    matrix.makeRotationY(
-        rotationY
-    );
-
-    matrix.scale(
-        new THREE.Vector3(
-            scaleX,
-            scaleY,
-            scaleZ
-        )
-    );
-
-    matrix.setPosition(
-        x,
-        y,
-        z
-    );
-
-    return matrix;
-}
-
-
-/* ======================================================
-   REBUILD CLOUD FIELD
+   REBUILD CLOUDS
    ====================================================== */
 
 function rebuildClouds(
@@ -209,13 +159,17 @@ function rebuildClouds(
     const matrix =
         new THREE.Matrix4();
 
+    const scale =
+        new THREE.Vector3();
+
 
     let instanceIndex = 0;
 
 
-    /*
-    Generate nearby cloud tiles.
-    */
+    /* ==================================================
+       CLOUD TILES
+       ================================================== */
+
     for (
         let tileX =
             centerTileX -
@@ -240,8 +194,16 @@ function rebuildClouds(
             tileZ++
         ) {
 
+            if (
+                instanceIndex >=
+                MAX_CLOUD_PUFFS
+            ) {
+                break;
+            }
+
+
             /*
-            Decide whether this tile contains clouds.
+            Not every tile contains clouds.
             */
             const tileChance =
                 cloudRandom(
@@ -250,30 +212,86 @@ function rebuildClouds(
                     1
                 );
 
+
             if (
-                tileChance < 0.42
+                tileChance < 0.38
             ) {
                 continue;
             }
 
 
-            /*
-            1–2 cloud clusters per tile.
-            */
-            const clusterCount =
+            /* ==================================================
+               CLUSTER POSITION
+               ================================================== */
+
+            const baseX =
+                tileX *
+                CLOUD_TILE_SIZE;
+
+            const baseZ =
+                tileZ *
+                CLOUD_TILE_SIZE;
+
+
+            const clusterX =
+                baseX +
+                10 +
                 cloudRandom(
                     tileX,
                     tileZ,
                     2
-                ) > 0.7
-                    ? 2
-                    : 1;
+                ) *
+                44;
 
+
+            const clusterZ =
+                baseZ +
+                10 +
+                cloudRandom(
+                    tileX,
+                    tileZ,
+                    3
+                ) *
+                44;
+
+
+            const clusterY =
+                CLOUD_HEIGHT +
+                (
+                    cloudRandom(
+                        tileX,
+                        tileZ,
+                        4
+                    ) -
+                    0.5
+                ) *
+                3;
+
+
+            /* ==================================================
+               PUFF COUNT
+               ================================================== */
+
+            const puffCount =
+                8 +
+                Math.floor(
+                    cloudRandom(
+                        tileX,
+                        tileZ,
+                        5
+                    ) *
+                    8
+                );
+
+
+            /* ==================================================
+               CREATE PUFFS
+               ================================================== */
 
             for (
-                let cluster = 0;
-                cluster < clusterCount;
-                cluster++
+                let puff = 0;
+                puff < puffCount;
+                puff++
             ) {
 
                 if (
@@ -284,226 +302,130 @@ function rebuildClouds(
                 }
 
 
-                /* ======================================
-                   CLUSTER POSITION
-                   ====================================== */
-
-                const tileWorldX =
-                    tileX *
-                    CLOUD_TILE_SIZE;
-
-                const tileWorldZ =
-                    tileZ *
-                    CLOUD_TILE_SIZE;
-
-
-                const clusterX =
-                    tileWorldX +
-                    8 +
-                    cloudRandom(
-                        tileX,
-                        tileZ,
-                        cluster * 10 + 3
-                    ) *
-                    (CLOUD_TILE_SIZE - 16);
-
-
-                const clusterZ =
-                    tileWorldZ +
-                    8 +
-                    cloudRandom(
-                        tileX,
-                        tileZ,
-                        cluster * 10 + 4
-                    ) *
-                    (CLOUD_TILE_SIZE - 16);
-
-
-                /*
-                Slightly vary cloud altitude.
-                */
-                const clusterY =
-                    CLOUD_HEIGHT +
+                const spreadX =
                     (
                         cloudRandom(
                             tileX,
                             tileZ,
-                            cluster * 10 + 5
+                            100 +
+                            puff * 3
                         ) -
                         0.5
                     ) *
-                    3;
+                    24;
 
 
-                /* ======================================
-                   CLUSTER SIZE
-                   ====================================== */
-
-                const puffCount =
-                    7 +
-                    Math.floor(
+                const spreadZ =
+                    (
                         cloudRandom(
                             tileX,
                             tileZ,
-                            cluster * 10 + 6
-                        ) *
-                        10
-                    );
+                            101 +
+                            puff * 3
+                        ) -
+                        0.5
+                    ) *
+                    16;
 
 
-                for (
-                    let puff = 0;
-                    puff < puffCount;
-                    puff++
-                ) {
-
-                    if (
-                        instanceIndex >=
-                        MAX_CLOUD_PUFFS
-                    ) {
-                        break;
-                    }
+                const x =
+                    clusterX +
+                    spreadX;
 
 
-                    /* ==================================
-                       PUFF POSITION
-                       ================================== */
-
-                    const spreadX =
-                        (
-                            cloudRandom(
-                                tileX,
-                                tileZ,
-                                cluster * 100 +
-                                puff * 3 +
-                                20
-                            ) -
-                            0.5
-                        ) *
-                        22;
-
-
-                    const spreadZ =
-                        (
-                            cloudRandom(
-                                tileX,
-                                tileZ,
-                                cluster * 100 +
-                                puff * 3 +
-                                21
-                            ) -
-                            0.5
-                        ) *
-                        14;
-
-
-                    const puffX =
-                        clusterX +
-                        spreadX;
-
-
-                    const puffZ =
-                        clusterZ +
-                        spreadZ;
-
-
-                    const puffY =
-                        clusterY +
-                        (
-                            cloudRandom(
-                                tileX,
-                                tileZ,
-                                cluster * 100 +
-                                puff * 3 +
-                                22
-                            ) -
-                            0.5
-                        ) *
-                        1.2;
-
-
-                    /* ==================================
-                       PUFF SIZE
-                       ================================== */
-
-                    const scaleX =
-                        3 +
+                const y =
+                    clusterY +
+                    (
                         cloudRandom(
                             tileX,
                             tileZ,
-                            cluster * 100 +
-                            puff * 3 +
-                            23
-                        ) *
-                        5;
+                            102 +
+                            puff * 3
+                        ) -
+                        0.5
+                    ) *
+                    1.5;
 
 
-                    const scaleY =
-                        0.9 +
-                        cloudRandom(
-                            tileX,
-                            tileZ,
-                            cluster * 100 +
-                            puff * 3 +
-                            24
-                        ) *
-                        0.8;
+                const z =
+                    clusterZ +
+                    spreadZ;
 
 
-                    const scaleZ =
-                        2.5 +
-                        cloudRandom(
-                            tileX,
-                            tileZ,
-                            cluster * 100 +
-                            puff * 3 +
-                            25
-                        ) *
-                        4;
+                /* ==================================================
+                   PUFF SIZE
+                   ================================================== */
+
+                const sizeX =
+                    3 +
+                    cloudRandom(
+                        tileX,
+                        tileZ,
+                        103 +
+                        puff * 3
+                    ) *
+                    5;
 
 
-                    const rotationY =
-                        cloudRandom(
-                            tileX,
-                            tileZ,
-                            cluster * 100 +
-                            puff * 3 +
-                            26
-                        ) *
-                        Math.PI;
+                const sizeY =
+                    1 +
+                    cloudRandom(
+                        tileX,
+                        tileZ,
+                        104 +
+                        puff * 3
+                    ) *
+                    0.8;
 
 
-                    /* ==================================
-                       BUILD MATRIX
-                       ================================== */
-
-                    addCloudPuff(
-                        matrix,
-                        puffX,
-                        puffY,
-                        puffZ,
-                        scaleX,
-                        scaleY,
-                        scaleZ,
-                        rotationY
-                    );
+                const sizeZ =
+                    3 +
+                    cloudRandom(
+                        tileX,
+                        tileZ,
+                        105 +
+                        puff * 3
+                    ) *
+                    4;
 
 
-                    cloudMesh.setMatrixAt(
-                        instanceIndex,
-                        matrix
-                    );
+                /* ==================================================
+                   BUILD INSTANCE
+                   ================================================== */
+
+                matrix.makeTranslation(
+                    x,
+                    y,
+                    z
+                );
 
 
-                    instanceIndex++;
-                }
+                scale.set(
+                    sizeX,
+                    sizeY,
+                    sizeZ
+                );
+
+
+                matrix.scale(
+                    scale
+                );
+
+
+                cloudMesh.setMatrixAt(
+                    instanceIndex,
+                    matrix
+                );
+
+
+                instanceIndex++;
             }
         }
     }
 
 
     /* ==================================================
-       APPLY INSTANCE COUNT
+       APPLY
        ================================================== */
 
     cloudMesh.count =
@@ -511,15 +433,6 @@ function rebuildClouds(
 
     cloudMesh.instanceMatrix.needsUpdate =
         true;
-
-
-    /*
-    Recalculate bounds so Three.js can cull
-    the cloud field correctly.
-    */
-    cloudMesh.computeBoundingBox();
-
-    cloudMesh.computeBoundingSphere();
 
 
     cloudCenterTileX =
@@ -545,14 +458,18 @@ function updateClouds(
     }
 
 
-    const currentTileX =
+    /* ==================================================
+       CHECK PLAYER TILE
+       ================================================== */
+
+    const tileX =
         Math.floor(
             camera.position.x /
             CLOUD_TILE_SIZE
         );
 
 
-    const currentTileZ =
+    const tileZ =
         Math.floor(
             camera.position.z /
             CLOUD_TILE_SIZE
@@ -560,114 +477,90 @@ function updateClouds(
 
 
     /*
-    Only rebuild when the player actually
-    enters a new cloud tile.
-
-    This keeps the system very cheap.
+    Only rebuild when the player crosses
+    a cloud tile boundary.
     */
     if (
-        currentTileX !==
+        tileX !==
             cloudCenterTileX ||
 
-        currentTileZ !==
+        tileZ !==
             cloudCenterTileZ
     ) {
 
         rebuildClouds(
-            currentTileX,
-            currentTileZ
+            tileX,
+            tileZ
         );
     }
 
 
     /* ==================================================
-       DAY / NIGHT CLOUD COLOR
+       DAY / NIGHT COLOR
        ================================================== */
 
     if (
-        typeof dayTime !==
+        typeof dayTime ===
         "undefined"
     ) {
-
-        const sunHeight =
-            Math.sin(
-                dayTime *
-                Math.PI *
-                2
-            );
-
-
-        const dayAmount =
-            Math.max(
-                0,
-                Math.min(
-                    1,
-                    (sunHeight + 0.25) /
-                    0.75
-                )
-            );
-
-
-        const nightColor =
-            new THREE.Color(
-                0x6c7890
-            );
-
-
-        const sunsetColor =
-            new THREE.Color(
-                0xf0c6a6
-            );
-
-
-        const dayColor =
-            new THREE.Color(
-                0xffffff
-            );
-
-
-        let targetColor;
-
-
-        if (
-            sunHeight < -0.15
-        ) {
-
-            /*
-            Night
-            */
-            targetColor =
-                nightColor;
-
-        } else if (
-            sunHeight < 0.2
-        ) {
-
-            /*
-            Sunrise / sunset
-            */
-            targetColor =
-                sunsetColor;
-
-        } else {
-
-            /*
-            Day
-            */
-            targetColor =
-                dayColor;
-        }
-
-
-        /*
-        Smoothly approach the target color.
-        */
-        cloudMaterial.color.lerp(
-            targetColor,
-            Math.min(
-                1,
-                delta * 3
-            )
-        );
+        return;
     }
+
+
+    const sunHeight =
+        Math.sin(
+            dayTime *
+            Math.PI *
+            2
+        );
+
+
+    let targetColor;
+
+
+    /*
+    NIGHT
+    */
+    if (
+        sunHeight < -0.15
+    ) {
+
+        targetColor =
+            0x68758c;
+
+    }
+
+
+    /*
+    SUNRISE / SUNSET
+    */
+    else if (
+        sunHeight < 0.2
+    ) {
+
+        targetColor =
+            0xe8c2a5;
+
+    }
+
+
+    /*
+    DAY
+    */
+    else {
+
+        targetColor =
+            0xffffff;
+    }
+
+
+    cloudMaterial.color.lerp(
+        new THREE.Color(
+            targetColor
+        ),
+        Math.min(
+            1,
+            delta * 3
+        )
+    );
 }
