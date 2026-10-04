@@ -1,3 +1,4 @@
+```js
 /*
 =========================================================
 BLOCKWORLD
@@ -8,37 +9,48 @@ Inventory + Hotbar
 const HOTBAR_SIZE = 9;
 
 const hotbar = [
+
     {
         type: "grass",
         amount: 0
     },
+
     {
         type: "dirt",
         amount: 10
     },
+
     {
         type: "stone",
         amount: 0
     },
+
     {
         type: "wood",
         amount: 0
     },
+
     {
         type: "leaves",
         amount: 0
     },
+
     {
         type: "planks",
         amount: 0
     },
+
     {
         type: "crafting_table",
         amount: 0
     },
+
     null,
+
     null
+
 ];
+
 
 let selectedHotbarSlot = 0;
 
@@ -98,14 +110,18 @@ function getSelectedItem() {
    ADD ITEM
 ====================================================== */
 
-function addItem(type, amount = 1) {
+function addItem(
+    type,
+    amount = 1
+) {
 
     const normalizedType =
         normalizeItemName(type);
 
 
     /*
-       Look for an existing stack.
+       First try to add to an
+       existing stack.
     */
 
     for (
@@ -116,6 +132,7 @@ function addItem(type, amount = 1) {
 
         const slot =
             hotbar[i];
+
 
         if (
             slot &&
@@ -136,7 +153,7 @@ function addItem(type, amount = 1) {
 
 
     /*
-       Find an empty slot.
+       Otherwise find an empty slot.
     */
 
     for (
@@ -150,8 +167,11 @@ function addItem(type, amount = 1) {
         ) {
 
             hotbar[i] = {
+
                 type: normalizedType,
+
                 amount: amount
+
             };
 
             updateHotbarUI();
@@ -172,7 +192,10 @@ function addItem(type, amount = 1) {
    REMOVE ITEM
 ====================================================== */
 
-function removeItem(type, amount = 1) {
+function removeItem(
+    type,
+    amount = 1
+) {
 
     const normalizedType =
         normalizeItemName(type);
@@ -223,7 +246,46 @@ function removeItem(type, amount = 1) {
 
 
 /* ======================================================
-   UPDATE HOTBAR
+   GET ICON CLASS
+====================================================== */
+
+function getItemIconClass(type) {
+
+    switch (
+        normalizeItemName(type)
+    ) {
+
+        case "grass":
+            return "grass-icon";
+
+        case "dirt":
+            return "dirt-icon";
+
+        case "stone":
+            return "stone-icon";
+
+        case "wood":
+            return "wood-icon";
+
+        case "leaves":
+            return "leaves-icon";
+
+        case "planks":
+            return "planks-icon";
+
+        case "crafting_table":
+            return "crafting-table-icon";
+
+        default:
+            return "";
+
+    }
+
+}
+
+
+/* ======================================================
+   HOTBAR UI
 ====================================================== */
 
 function updateHotbarUI() {
@@ -235,10 +297,13 @@ function updateHotbarUI() {
 
 
     slots.forEach(
-        (slot, index) => {
+        (
+            slot,
+            index
+        ) => {
 
             /*
-               Highlight selected slot.
+               Selected slot.
             */
 
             slot.classList.toggle(
@@ -278,7 +343,8 @@ function updateHotbarUI() {
 
                 if (amount) {
 
-                    amount.textContent = "";
+                    amount.textContent =
+                        "";
 
                 }
 
@@ -288,24 +354,22 @@ function updateHotbarUI() {
 
 
             /*
-               Give the icon its
-               correct block class.
+               Set the correct icon.
             */
 
             if (icon) {
 
                 icon.className =
                     "item-icon " +
-                    normalizeItemName(
+                    getItemIconClass(
                         item.type
-                    ) +
-                    "-icon";
+                    );
 
             }
 
 
             /*
-               Show item amount.
+               Set amount.
             */
 
             if (amount) {
@@ -317,9 +381,12 @@ function updateHotbarUI() {
                     amount.textContent =
                         item.amount;
 
-                } else {
+                }
 
-                    amount.textContent = "";
+                else {
+
+                    amount.textContent =
+                        "";
 
                 }
 
@@ -361,7 +428,8 @@ document.addEventListener(
 
 
 /* ======================================================
-   INITIAL HOTBAR UPDATE
+   INITIAL UI UPDATE
 ====================================================== */
 
 updateHotbarUI();
+```

@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 
@@ -36,121 +37,105 @@
 
     <div id="hotbar">
 
+
+        <!-- GRASS -->
+
         <div class="hotbar-slot selected">
 
-            <div
-                class="item-icon grass-icon"
-            ></div>
+            <div class="item-icon"></div>
 
-            <span
-                class="item-amount"
-            ></span>
+            <span class="item-amount"></span>
 
         </div>
 
+
+        <!-- DIRT -->
 
         <div class="hotbar-slot">
 
-            <div
-                class="item-icon dirt-icon"
-            ></div>
+            <div class="item-icon"></div>
 
-            <span
-                class="item-amount"
-            ></span>
+            <span class="item-amount"></span>
 
         </div>
 
+
+        <!-- STONE -->
 
         <div class="hotbar-slot">
 
-            <div
-                class="item-icon stone-icon"
-            ></div>
+            <div class="item-icon"></div>
 
-            <span
-                class="item-amount"
-            ></span>
+            <span class="item-amount"></span>
 
         </div>
 
+
+        <!-- WOOD -->
 
         <div class="hotbar-slot">
 
-            <div
-                class="item-icon wood-icon"
-            ></div>
+            <div class="item-icon"></div>
 
-            <span
-                class="item-amount"
-            ></span>
+            <span class="item-amount"></span>
 
         </div>
 
+
+        <!-- LEAVES -->
 
         <div class="hotbar-slot">
 
-            <div
-                class="item-icon leaves-icon"
-            ></div>
+            <div class="item-icon"></div>
 
-            <span
-                class="item-amount"
-            ></span>
+            <span class="item-amount"></span>
 
         </div>
 
+
+        <!-- PLANKS -->
 
         <div class="hotbar-slot">
 
-            <div
-                class="item-icon planks-icon"
-            ></div>
+            <div class="item-icon"></div>
 
-            <span
-                class="item-amount"
-            ></span>
+            <span class="item-amount"></span>
 
         </div>
 
+
+        <!-- CRAFTING TABLE -->
 
         <div class="hotbar-slot">
 
-            <div
-                class="item-icon crafting-table-icon"
-            ></div>
+            <div class="item-icon"></div>
 
-            <span
-                class="item-amount"
-            ></span>
+            <span class="item-amount"></span>
 
         </div>
 
+
+        <!-- EMPTY -->
 
         <div class="hotbar-slot">
 
-            <div
-                class="item-icon"
-            ></div>
+            <div class="item-icon"></div>
 
-            <span
-                class="item-amount"
-            ></span>
+            <span class="item-amount"></span>
 
         </div>
 
+
+        <!-- EMPTY -->
 
         <div class="hotbar-slot">
 
-            <div
-                class="item-icon"
-            ></div>
+            <div class="item-icon"></div>
 
-            <span
-                class="item-amount"
-            ></span>
+            <span class="item-amount"></span>
 
         </div>
+
 
     </div>
 
@@ -163,157 +148,183 @@
         +
     </div>
 
-<!-- ==================================================
-     NORMAL 2x2 CRAFTING MENU
-================================================== -->
 
-<div id="craftingMenu">
+    <!-- ==================================================
+         NORMAL 2x2 CRAFTING MENU
+    =================================================== -->
 
-    <div class="crafting-window">
+    <div id="craftingMenu">
 
-        <h2>Crafting</h2>
+        <div class="crafting-window">
 
-        <div class="crafting-content">
+            <h2>Crafting</h2>
 
-            <div class="crafting-grid">
+
+            <div class="crafting-content">
+
+
+                <div class="crafting-grid">
+
+
+                    <button
+                        class="crafting-slot"
+                        id="crafting-slot-0"
+                        data-slot="0"
+                    ></button>
+
+
+                    <button
+                        class="crafting-slot"
+                        id="crafting-slot-1"
+                        data-slot="1"
+                    ></button>
+
+
+                    <button
+                        class="crafting-slot"
+                        id="crafting-slot-2"
+                        data-slot="2"
+                    ></button>
+
+
+                    <button
+                        class="crafting-slot"
+                        id="crafting-slot-3"
+                        data-slot="3"
+                    ></button>
+
+
+                </div>
+
+
+                <div class="crafting-arrow">
+                    →
+                </div>
+
 
                 <button
-                    class="crafting-slot"
-                    id="crafting-slot-0"
-                    data-slot="0"
+                    id="crafting-result"
                 ></button>
 
-                <button
-                    class="crafting-slot"
-                    id="crafting-slot-1"
-                    data-slot="1"
-                ></button>
-
-                <button
-                    class="crafting-slot"
-                    id="crafting-slot-2"
-                    data-slot="2"
-                ></button>
-
-                <button
-                    class="crafting-slot"
-                    id="crafting-slot-3"
-                    data-slot="3"
-                ></button>
 
             </div>
 
-            <div class="crafting-arrow">
-                →
-            </div>
 
-            <button
-                id="crafting-result"
-            ></button>
+            <p>
+                Press C to close
+            </p>
+
 
         </div>
 
-        <p>
-            Press C to close
-        </p>
-
     </div>
 
-</div>
+
+    <!-- ==================================================
+         3x3 CRAFTING TABLE MENU
+    =================================================== -->
+
+    <div id="tableCraftingMenu">
+
+        <div class="crafting-window table-window">
+
+            <h2>Crafting Table</h2>
 
 
-<!-- ==================================================
-     3x3 CRAFTING TABLE MENU
-================================================== -->
+            <div class="table-crafting-content">
 
-<div id="tableCraftingMenu">
 
-    <div class="crafting-window table-window">
+                <div class="table-crafting-grid">
 
-        <h2>Crafting Table</h2>
 
-        <div class="table-crafting-content">
+                    <button
+                        class="table-crafting-slot"
+                        id="table-crafting-slot-0"
+                        data-slot="0"
+                    ></button>
 
-            <div class="table-crafting-grid">
+
+                    <button
+                        class="table-crafting-slot"
+                        id="table-crafting-slot-1"
+                        data-slot="1"
+                    ></button>
+
+
+                    <button
+                        class="table-crafting-slot"
+                        id="table-crafting-slot-2"
+                        data-slot="2"
+                    ></button>
+
+
+                    <button
+                        class="table-crafting-slot"
+                        id="table-crafting-slot-3"
+                        data-slot="3"
+                    ></button>
+
+
+                    <button
+                        class="table-crafting-slot"
+                        id="table-crafting-slot-4"
+                        data-slot="4"
+                    ></button>
+
+
+                    <button
+                        class="table-crafting-slot"
+                        id="table-crafting-slot-5"
+                        data-slot="5"
+                    ></button>
+
+
+                    <button
+                        class="table-crafting-slot"
+                        id="table-crafting-slot-6"
+                        data-slot="6"
+                    ></button>
+
+
+                    <button
+                        class="table-crafting-slot"
+                        id="table-crafting-slot-7"
+                        data-slot="7"
+                    ></button>
+
+
+                    <button
+                        class="table-crafting-slot"
+                        id="table-crafting-slot-8"
+                        data-slot="8"
+                    ></button>
+
+
+                </div>
+
+
+                <div class="crafting-arrow">
+                    →
+                </div>
+
 
                 <button
-                    class="table-crafting-slot"
-                    id="table-crafting-slot-0"
-                    data-slot="0"
+                    id="table-crafting-result"
                 ></button>
 
-                <button
-                    class="table-crafting-slot"
-                    id="table-crafting-slot-1"
-                    data-slot="1"
-                ></button>
-
-                <button
-                    class="table-crafting-slot"
-                    id="table-crafting-slot-2"
-                    data-slot="2"
-                ></button>
-
-
-                <button
-                    class="table-crafting-slot"
-                    id="table-crafting-slot-3"
-                    data-slot="3"
-                ></button>
-
-                <button
-                    class="table-crafting-slot"
-                    id="table-crafting-slot-4"
-                    data-slot="4"
-                ></button>
-
-                <button
-                    class="table-crafting-slot"
-                    id="table-crafting-slot-5"
-                    data-slot="5"
-                ></button>
-
-
-                <button
-                    class="table-crafting-slot"
-                    id="table-crafting-slot-6"
-                    data-slot="6"
-                ></button>
-
-                <button
-                    class="table-crafting-slot"
-                    id="table-crafting-slot-7"
-                    data-slot="7"
-                ></button>
-
-                <button
-                    class="table-crafting-slot"
-                    id="table-crafting-slot-8"
-                    data-slot="8"
-                ></button>
 
             </div>
 
 
-            <div class="crafting-arrow">
-                →
-            </div>
+            <p>
+                Press C to close
+            </p>
 
-
-            <button
-                id="table-crafting-result"
-            ></button>
 
         </div>
 
-
-        <p>
-            Press C to close
-        </p>
-
     </div>
 
-</div>
 
     <!-- ==================================================
          INSTRUCTIONS
@@ -327,12 +338,15 @@
         <br>
 
         WASD — Move
+
         <br>
 
         SPACE — Jump
+
         <br>
 
         Mouse — Look around
+
         <br>
 
         ESC — Release mouse
@@ -352,15 +366,18 @@
                 BlockWorld
             </h1>
 
+
             <p>
                 A tiny Minecraft-inspired browser game.
             </p>
+
 
             <button id="startButton">
 
                 START GAME
 
             </button>
+
 
         </div>
 
@@ -380,23 +397,24 @@
          BLOCKWORLD JAVASCRIPT
     =================================================== -->
 
-<script src="js/blocks.js"></script>
+    <script src="js/blocks.js"></script>
 
-<script src="js/world.js"></script>
+    <script src="js/world.js"></script>
 
-<script src="js/player.js"></script>
+    <script src="js/player.js"></script>
 
-<script src="js/controls.js"></script>
+    <script src="js/controls.js"></script>
 
-<script src="js/mining.js"></script>
+    <script src="js/mining.js"></script>
 
-<script src="js/inventory.js"></script>
+    <script src="js/inventory.js"></script>
 
-<script src="js/crafting.js"></script>
+    <script src="js/crafting.js"></script>
 
-<script src="js/main.js"></script>
+    <script src="js/main.js"></script>
 
 
 </body>
 
 </html>
+```
