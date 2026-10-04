@@ -56,17 +56,13 @@ BLOCKS.diamond_ore = {
 
 
 /* ======================================================
-   REPLACE STONE WITH ORES
+   GENERATE ORES
 ====================================================== */
 
 function generateOres() {
 
     const blocksToReplace = [];
 
-
-    /*
-       Look through every block in the world.
-    */
 
     world.forEach(
         (blockType, key) => {
@@ -86,10 +82,7 @@ function generateOres() {
 
 
             /*
-               Read the coordinates from the key.
-
-               This works with common separators such as
-               commas, spaces, or pipes.
+               Get coordinates.
             */
 
             const numbers =
@@ -118,29 +111,16 @@ function generateOres() {
                 Number(numbers[2]);
 
 
-            /*
-               Only generate ores underground.
-            */
-
-            if (
-                y < 1
-            ) {
-
-                return;
-
-            }
-
-
             let ore = null;
 
 
-            /* =========================================
+            /* ==================================================
                DIAMOND
-               Very rare and mostly deep underground.
-               ========================================= */
+               Very deep and very rare.
+               ================================================== */
 
             if (
-                y <= 3 &&
+                y <= -15 &&
                 Math.random() < 0.035
             ) {
 
@@ -150,12 +130,13 @@ function generateOres() {
             }
 
 
-            /* =========================================
+            /* ==================================================
                IRON
-               ========================================= */
+               Medium/deep underground.
+               ================================================== */
 
             else if (
-                y <= 5 &&
+                y <= -5 &&
                 Math.random() < 0.055
             ) {
 
@@ -165,10 +146,10 @@ function generateOres() {
             }
 
 
-            /* =========================================
+            /* ==================================================
                COAL
-               Most common ore.
-               ========================================= */
+               Common throughout underground.
+               ================================================== */
 
             else if (
                 Math.random() < 0.075
@@ -183,11 +164,17 @@ function generateOres() {
             if (ore) {
 
                 blocksToReplace.push({
+
                     key: key,
+
                     x: x,
+
                     y: y,
+
                     z: z,
+
                     type: ore
+
                 });
 
             }
@@ -196,9 +183,9 @@ function generateOres() {
     );
 
 
-    /*
-       Replace the selected stone blocks.
-    */
+    /* ======================================================
+       REPLACE STONE
+====================================================== */
 
     blocksToReplace.forEach(
         block => {
@@ -208,10 +195,6 @@ function generateOres() {
                     block.key
                 );
 
-
-            /*
-               Remove the old stone visually.
-            */
 
             if (oldMesh) {
 
@@ -231,10 +214,6 @@ function generateOres() {
                 block.key
             );
 
-
-            /*
-               Add the ore block.
-            */
 
             addBlock(
                 block.x,
