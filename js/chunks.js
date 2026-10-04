@@ -4,29 +4,16 @@ BLOCKWORLD
 Professional Chunk Renderer
 =========================================================
 
-Major performance upgrade:
+Features:
 
 - 16 x 16 chunks
-- Instanced rendering
-- One render object per block type per chunk
-- Chunk loading queue
+- Instanced terrain rendering
+- Hidden-block culling
+- Chunk streaming
 - Chunk unloading
 - Persistent modified chunks
-- Hidden-block culling
-- Ores and crafting tables remain individual meshes
-- Normal terrain blocks are rendered with InstancedMesh
-
-Supported instanced blocks:
-
-Grass
-Dirt
-Stone
-Wood
-Leaves
-Planks
-
-Special blocks such as ores and crafting tables still use
-the normal mesh system because they are much rarer.
+- Special meshes for rare blocks
+- Separate water surface rendering
 
 =========================================================
 */
@@ -40,19 +27,18 @@ const CHUNK_SIZE = 16;
 
 
 /*
-   Start conservatively.
+   Keep render distance at 1 while testing.
 
-   1 means 3 x 3 chunks around the player.
+   This gives a 3 x 3 loaded area.
 */
 
 const CHUNK_RENDER_DISTANCE = 1;
 
 
 /*
-   Only build one new chunk per frame.
+   Only generate one new chunk per frame.
 
-   This prevents a large FPS spike when entering
-   a completely new area.
+   This prevents large loading spikes.
 */
 
 const CHUNKS_PER_FRAME = 1;
@@ -79,7 +65,7 @@ const chunkRenderObjects =
 
 
 /* ======================================================
-   CHUNK LOAD QUEUE
+   CHUNK QUEUE
 ====================================================== */
 
 let chunkLoadQueue = [];
@@ -120,10 +106,12 @@ function normalizeChunkBlockName(
 ) {
 
     return String(
+
         type &&
         type.name
             ? type.name
             : ""
+
     )
     .toLowerCase()
     .replaceAll(
@@ -147,9 +135,11 @@ function isInstancedBlock(
 ) {
 
     return INSTANCED_BLOCK_TYPES.includes(
+
         normalizeChunkBlockName(
             type
         )
+
     );
 
 }
@@ -176,7 +166,7 @@ function chunkKey(
 
 
 /* ======================================================
-   GET CHUNK COORDINATE
+   WORLD TO CHUNK
 ====================================================== */
 
 function getChunkCoordinate(
@@ -184,8 +174,10 @@ function getChunkCoordinate(
 ) {
 
     return Math.floor(
+
         value /
         CHUNK_SIZE
+
     );
 
 }
@@ -230,7 +222,8 @@ function chunkHash3D(
             z * 311.7 +
             74.7
 
-        ) *
+        )
+        *
         43758.5453123;
 
 
@@ -262,7 +255,8 @@ function chunkHash2D(
             z * 311.7 +
             74.7
 
-        ) *
+        )
+        *
         43758.5453123;
 
 
@@ -279,17 +273,13 @@ function chunkHash2D(
 
 
 /* ======================================================
-   SHOULD GENERATE TREE
+   TREE GENERATION
 ====================================================== */
 
 function shouldGenerateTree(
     x,
     z
 ) {
-
-    /*
-       Preserve our original fixed trees.
-    */
 
     const fixedTrees = [
 
@@ -317,25 +307,22 @@ function shouldGenerateTree(
     }
 
 
-    /*
-       Procedural trees.
-
-       Rare enough to avoid filling the world.
-    */
-
     return (
+
         chunkHash2D(
             x,
             z
-        ) >
+        )
+        >
         0.992
+
     );
 
 }
 
 
 /* ======================================================
-   ADD BLOCK TO CHUNK DATA
+   ADD BLOCK DATA
 ====================================================== */
 
 function addChunkDataBlock(
@@ -427,7 +414,7 @@ function addTreeToChunkData(
             ground + 1;
 
         y <=
-            ground + 4;
+        ground + 4;
 
         y++
     ) {
@@ -461,10 +448,6 @@ function addTreeToChunkData(
 
     /*
        Leaves.
-
-       Generate them even when they cross the
-       chunk border, but only store the pieces
-       belonging to this chunk.
     */
 
     for (
@@ -482,7 +465,8 @@ function addTreeToChunkData(
             if (
 
                 Math.abs(dx) +
-                Math.abs(dz) >
+                Math.abs(dz)
+                >
                 3
 
             ) {
@@ -503,7 +487,8 @@ function addTreeToChunkData(
 
 
             const leafY =
-                ground + 3;
+                ground +
+                3;
 
 
             if (
@@ -551,7 +536,7 @@ function addTreeToChunkData(
 
 
 /* ======================================================
-   GENERATE CHUNK DATA
+   GENERATE CHUNK
 ====================================================== */
 
 function generateChunkData(
@@ -650,7 +635,7 @@ function generateChunkData(
 
 
                 /*
-                   Stone + deterministic ores.
+                   Stone and ores.
                 */
 
                 else {
@@ -661,15 +646,13 @@ function generateChunkData(
 
                     const oreRoll =
                         chunkHash3D(
+
                             x,
                             y,
                             z
+
                         );
 
-
-                    /*
-                       Diamond.
-                    */
 
                     if (
 
@@ -677,7 +660,8 @@ function generateChunkData(
 
                         y <= -15 &&
 
-                        oreRoll < 0.02
+                        oreRoll <
+                        0.02
 
                     ) {
 
@@ -686,18 +670,14 @@ function generateChunkData(
 
                     }
 
-
-                    /*
-                       Iron.
-                    */
-
                     else if (
 
                         BLOCKS.iron_ore &&
 
                         y <= -5 &&
 
-                        oreRoll < 0.055
+                        oreRoll <
+                        0.055
 
                     ) {
 
@@ -706,16 +686,12 @@ function generateChunkData(
 
                     }
 
-
-                    /*
-                       Coal.
-                    */
-
                     else if (
 
                         BLOCKS.coal_ore &&
 
-                        oreRoll < 0.09
+                        oreRoll <
+                        0.09
 
                     ) {
 
@@ -754,7 +730,7 @@ function generateChunkData(
             minX - 2;
 
         treeX <=
-            maxX + 2;
+        maxX + 2;
 
         treeX++
     ) {
@@ -801,7 +777,7 @@ function generateChunkData(
 
 
 /* ======================================================
-   IS BLOCK EXPOSED
+   CHECK BLOCK EXPOSURE
 ====================================================== */
 
 function chunkBlockIsExposed(
@@ -849,66 +825,16 @@ function chunkBlockIsExposed(
 
 
 /* ======================================================
-   POPULATE WORLD
-====================================================== */
-
-function populateChunkWorld(
-    chunkX,
-    chunkZ,
-    data
-) {
-
-    const key =
-        chunkKey(
-            chunkX,
-            chunkZ
-        );
-
-
-    const members =
-        new Set();
-
-
-    data.forEach(
-        (
-            type,
-            blockKeyValue
-        ) => {
-
-            world.set(
-                blockKeyValue,
-                type
-            );
-
-
-            members.add(
-                blockKeyValue
-            );
-
-        }
-    );
-
-
-    chunkMembers.set(
-        key,
-        members
-    );
-
-
-    loadedChunks.add(
-        key
-    );
-
-}
-
-
-/* ======================================================
-   CREATE SPECIAL MESH
+   ORIGINAL ADD BLOCK
 ====================================================== */
 
 const chunkOriginalAddBlock =
     addBlock;
 
+
+/* ======================================================
+   CREATE SPECIAL MESH
+====================================================== */
 
 function createSpecialMeshFromData(
     x,
@@ -925,10 +851,6 @@ function createSpecialMeshFromData(
         );
 
 
-    /*
-       Do not duplicate.
-    */
-
     if (
         meshes.has(
             key
@@ -939,10 +861,6 @@ function createSpecialMeshFromData(
 
     }
 
-
-    /*
-       Only exposed special blocks need visible meshes.
-    */
 
     if (
         !chunkBlockIsExposed(
@@ -957,13 +875,6 @@ function createSpecialMeshFromData(
     }
 
 
-    /*
-       The old addBlock() system checks world first.
-
-       Temporarily remove the data entry so it
-       can create the visual mesh.
-    */
-
     const savedType =
         world.get(
             key
@@ -976,15 +887,17 @@ function createSpecialMeshFromData(
 
 
     chunkOriginalAddBlock(
+
         x,
         y,
         z,
         type
+
     );
 
 
     /*
-       Safety: restore the exact world data.
+       Restore world data.
     */
 
     if (
@@ -1028,7 +941,8 @@ function removeSpecialMesh(
 
 
     /*
-       Never dispose the shared block geometry.
+       Shared BLOCK_GEOMETRY must never
+       be disposed here.
     */
 
 
@@ -1088,7 +1002,7 @@ function removeSpecialMesh(
 
 
 /* ======================================================
-   REMOVE CHUNK RENDER OBJECTS
+   REMOVE CHUNK RENDER
 ====================================================== */
 
 function removeChunkRenderObjects(
@@ -1117,37 +1031,53 @@ function removeChunkRenderObjects(
 
 
     /*
-       Remove instanced meshes.
-
-       IMPORTANT:
-
-       Do not dispose shared geometry or materials.
+       Remove normal instanced meshes.
     */
 
-    renderInfo.instancedMeshes.forEach(
-        mesh => {
+    renderInfo.instancedMeshes
+        .forEach(
+            mesh => {
 
-            scene.remove(
-                mesh
-            );
+                scene.remove(
+                    mesh
+                );
 
-        }
-    );
+            }
+        );
 
 
     /*
        Remove special meshes.
     */
 
-    renderInfo.specialKeys.forEach(
-        blockKeyValue => {
+    renderInfo.specialKeys
+        .forEach(
+            blockKeyValue => {
 
-            removeSpecialMesh(
-                blockKeyValue
-            );
+                removeSpecialMesh(
+                    blockKeyValue
+                );
 
-        }
-    );
+            }
+        );
+
+
+    /*
+       Remove water surface.
+
+       Water geometry and material are shared
+       globally and therefore are NOT disposed.
+    */
+
+    if (
+        renderInfo.waterMesh
+    ) {
+
+        scene.remove(
+            renderInfo.waterMesh
+        );
+
+    }
 
 
     chunkRenderObjects.delete(
@@ -1158,7 +1088,7 @@ function removeChunkRenderObjects(
 
 
 /* ======================================================
-   CREATE INSTANCED MESHES
+   BUILD CHUNK RENDER
 ====================================================== */
 
 function buildChunkRender(
@@ -1187,12 +1117,14 @@ function buildChunkRender(
 
 
     /*
-       Remove previous rendering first.
+       Remove any previous render.
     */
 
     removeChunkRenderObjects(
+
         chunkX,
         chunkZ
+
     );
 
 
@@ -1200,7 +1132,9 @@ function buildChunkRender(
 
         instancedMeshes: [],
 
-        specialKeys: new Set()
+        specialKeys: new Set(),
+
+        waterMesh: null
 
     };
 
@@ -1210,7 +1144,7 @@ function buildChunkRender(
 
 
     /* ==================================================
-       GROUP VISIBLE BASIC BLOCKS
+       GROUP VISIBLE BLOCKS
     ================================================== */
 
     members.forEach(
@@ -1241,10 +1175,6 @@ function buildChunkRender(
                 )
             ) {
 
-                /*
-                   Hidden blocks get no instance.
-                */
-
                 const parts =
                     blockKeyValue.split(
                         ","
@@ -1269,6 +1199,10 @@ function buildChunkRender(
                     );
 
 
+                /*
+                   Hidden blocks receive no instance.
+                */
+
                 if (
                     !chunkBlockIsExposed(
                         x,
@@ -1289,24 +1223,33 @@ function buildChunkRender(
                 ) {
 
                     grouped.set(
+
                         typeName,
+
                         []
+
                     );
 
                 }
 
 
                 grouped
-                    .get(typeName)
+                    .get(
+                        typeName
+                    )
                     .push({
 
-                        x: x,
+                        x:
+                            x,
 
-                        y: y,
+                        y:
+                            y,
 
-                        z: z,
+                        z:
+                            z,
 
-                        key: blockKeyValue
+                        key:
+                            blockKeyValue
 
                     });
 
@@ -1315,8 +1258,7 @@ function buildChunkRender(
             else {
 
                 /*
-                   Ores/crafting tables remain normal
-                   special meshes.
+                   Ores and crafting tables.
                 */
 
                 renderInfo.specialKeys.add(
@@ -1330,7 +1272,7 @@ function buildChunkRender(
 
 
     /* ==================================================
-       BUILD INSTANCED MESH PER TYPE
+       BUILD INSTANCED BLOCK MESHES
     ================================================== */
 
     grouped.forEach(
@@ -1346,20 +1288,6 @@ function buildChunkRender(
 
 
             if (!type) {
-
-                return;
-
-            }
-
-
-            if (
-                typeof getSharedMaterials !==
-                "function"
-            ) {
-
-                console.warn(
-                    "Shared block materials are unavailable."
-                );
 
                 return;
 
@@ -1391,12 +1319,6 @@ function buildChunkRender(
                 );
 
 
-            /*
-               Keep it static.
-
-               Chunks are rebuilt only when something changes.
-            */
-
             mesh.frustumCulled =
                 true;
 
@@ -1423,8 +1345,11 @@ function buildChunkRender(
 
 
                     mesh.setMatrixAt(
+
                         index,
+
                         matrix
+
                     );
 
                 }
@@ -1434,11 +1359,6 @@ function buildChunkRender(
             mesh.instanceMatrix.needsUpdate =
                 true;
 
-
-            /*
-               Make the bounding sphere immediately
-               so frustum culling works correctly.
-            */
 
             mesh.computeBoundingSphere();
 
@@ -1472,62 +1392,94 @@ function buildChunkRender(
        BUILD SPECIAL BLOCKS
     ================================================== */
 
-    renderInfo.specialKeys.forEach(
-        blockKeyValue => {
+    renderInfo.specialKeys
+        .forEach(
+            blockKeyValue => {
 
-            const parts =
-                blockKeyValue.split(
-                    ","
+                const parts =
+                    blockKeyValue.split(
+                        ","
+                    );
+
+
+                const x =
+                    Number(
+                        parts[0]
+                    );
+
+
+                const y =
+                    Number(
+                        parts[1]
+                    );
+
+
+                const z =
+                    Number(
+                        parts[2]
+                    );
+
+
+                const type =
+                    world.get(
+                        blockKeyValue
+                    );
+
+
+                if (!type) {
+
+                    return;
+
+                }
+
+
+                createSpecialMeshFromData(
+
+                    x,
+                    y,
+                    z,
+                    type
+
                 );
-
-
-            const x =
-                Number(
-                    parts[0]
-                );
-
-
-            const y =
-                Number(
-                    parts[1]
-                );
-
-
-            const z =
-                Number(
-                    parts[2]
-                );
-
-
-            const type =
-                world.get(
-                    blockKeyValue
-                );
-
-
-            if (!type) {
-
-                return;
 
             }
+        );
 
 
-            createSpecialMeshFromData(
+    /* ==================================================
+       BUILD WATER
+    ================================================== */
 
-                x,
-                y,
-                z,
-                type
+    /*
+       Water is completely separate from block data.
+
+       One instanced water surface is created for this
+       entire chunk.
+    */
+
+    if (
+        typeof buildWaterSurfaceForChunk ===
+        "function"
+    ) {
+
+        renderInfo.waterMesh =
+            buildWaterSurfaceForChunk(
+
+                chunkX,
+
+                chunkZ
 
             );
 
-        }
-    );
+    }
 
 
     chunkRenderObjects.set(
+
         key,
+
         renderInfo
+
     );
 
 }
@@ -1557,15 +1509,18 @@ function refreshChunk(
 
 
     buildChunkRender(
+
         chunkX,
+
         chunkZ
+
     );
 
 }
 
 
 /* ======================================================
-   REFRESH CHUNK + NEIGHBORS
+   REFRESH CHUNK AROUND BLOCK
 ====================================================== */
 
 function refreshChunkAroundBlock(
@@ -1587,14 +1542,16 @@ function refreshChunkAroundBlock(
 
 
     refreshChunk(
+
         chunkX,
+
         chunkZ
+
     );
 
 
     /*
-       A block at a chunk boundary may change
-       visibility in an adjacent chunk.
+       Update neighboring chunk boundaries.
     */
 
     if (
@@ -1602,8 +1559,11 @@ function refreshChunkAroundBlock(
     ) {
 
         refreshChunk(
+
             chunkX - 1,
+
             chunkZ
+
         );
 
     }
@@ -1615,8 +1575,11 @@ function refreshChunkAroundBlock(
     ) {
 
         refreshChunk(
+
             chunkX + 1,
+
             chunkZ
+
         );
 
     }
@@ -1627,8 +1590,11 @@ function refreshChunkAroundBlock(
     ) {
 
         refreshChunk(
+
             chunkX,
+
             chunkZ - 1
+
         );
 
     }
@@ -1640,8 +1606,11 @@ function refreshChunkAroundBlock(
     ) {
 
         refreshChunk(
+
             chunkX,
+
             chunkZ + 1
+
         );
 
     }
@@ -1683,40 +1652,78 @@ function loadChunk(
 
 
     /*
-       Generate new chunk.
+       New chunk.
     */
 
     if (!data) {
 
         data =
             generateChunkData(
+
                 chunkX,
+
                 chunkZ
+
             );
 
     }
 
 
-    populateChunkWorld(
-        chunkX,
-        chunkZ,
-        data
+    /*
+       Put blocks into world.
+    */
+
+    const members =
+        new Set();
+
+
+    data.forEach(
+        (
+            type,
+            blockKeyValue
+        ) => {
+
+            world.set(
+
+                blockKeyValue,
+
+                type
+
+            );
+
+
+            members.add(
+                blockKeyValue
+            );
+
+        }
+    );
+
+
+    chunkMembers.set(
+
+        key,
+
+        members
+
+    );
+
+
+    loadedChunks.add(
+        key
     );
 
 
     /*
-       Build renderer.
-
-       Nearby chunks may still be missing, so boundary
-       blocks can temporarily be visible.
-
-       When neighbors load, their shared boundary
-       gets refreshed.
+       Build render.
     */
 
     buildChunkRender(
+
         chunkX,
+
         chunkZ
+
     );
 
 }
@@ -1789,17 +1796,20 @@ function unloadChunk(
 
 
     /*
-       Remove rendering first.
+       Remove rendering.
     */
 
     removeChunkRenderObjects(
+
         chunkX,
+
         chunkZ
+
     );
 
 
     /*
-       Remove block data.
+       Remove world blocks.
     */
 
     if (members) {
@@ -1818,12 +1828,15 @@ function unloadChunk(
 
 
     /*
-       Save modified/current chunk.
+       Save chunk.
     */
 
     chunkStorage.set(
+
         key,
+
         savedData
+
     );
 
 
@@ -1856,7 +1869,7 @@ function getDesiredChunks(
             -CHUNK_RENDER_DISTANCE;
 
         dx <=
-            CHUNK_RENDER_DISTANCE;
+        CHUNK_RENDER_DISTANCE;
 
         dx++
     ) {
@@ -1880,8 +1893,14 @@ function getDesiredChunks(
                     centerZ + dz,
 
                 distance:
-                    Math.abs(dx) +
-                    Math.abs(dz)
+
+                    Math.abs(
+                        dx
+                    ) +
+
+                    Math.abs(
+                        dz
+                    )
 
             });
 
@@ -1889,10 +1908,6 @@ function getDesiredChunks(
 
     }
 
-
-    /*
-       Closest chunks first.
-    */
 
     result.sort(
         (
@@ -1910,7 +1925,7 @@ function getDesiredChunks(
 
 
 /* ======================================================
-   UPDATE CHUNK QUEUE
+   UPDATE CHUNK SYSTEM
 ====================================================== */
 
 function updateChunksAroundPlayer() {
@@ -1929,8 +1944,6 @@ function updateChunksAroundPlayer() {
 
     /*
        Nothing changed.
-
-       We still process the queue elsewhere.
     */
 
     if (
@@ -1974,10 +1987,15 @@ function updateChunksAroundPlayer() {
         chunk => {
 
             desiredKeys.add(
+
                 chunkKey(
+
                     chunk.x,
+
                     chunk.z
+
                 )
+
             );
 
         }
@@ -1985,7 +2003,7 @@ function updateChunksAroundPlayer() {
 
 
     /* ==================================================
-       UNLOAD DISTANT CHUNKS
+       UNLOAD
     ================================================== */
 
     const unloadList = [];
@@ -2036,7 +2054,7 @@ function updateChunksAroundPlayer() {
 
 
     /* ==================================================
-       BUILD LOAD QUEUE
+       QUEUE NEW CHUNKS
     ================================================== */
 
     chunkLoadQueue = [];
@@ -2047,8 +2065,11 @@ function updateChunksAroundPlayer() {
 
             const key =
                 chunkKey(
+
                     chunk.x,
+
                     chunk.z
+
                 );
 
 
@@ -2059,8 +2080,13 @@ function updateChunksAroundPlayer() {
             ) {
 
                 chunkLoadQueue.push({
-                    x: chunk.x,
-                    z: chunk.z
+
+                    x:
+                        chunk.x,
+
+                    z:
+                        chunk.z
+
                 });
 
             }
@@ -2072,7 +2098,7 @@ function updateChunksAroundPlayer() {
 
 
 /* ======================================================
-   PROCESS CHUNK LOAD QUEUE
+   PROCESS CHUNK QUEUE
 ====================================================== */
 
 function processChunkLoadQueue() {
@@ -2082,16 +2108,18 @@ function processChunkLoadQueue() {
 
     while (
 
-        chunkLoadQueue.length > 0 &&
+        chunkLoadQueue.length >
+
+        0 &&
 
         loadedThisFrame <
+
         CHUNKS_PER_FRAME
 
     ) {
 
         /*
-           Recalculate distance so the nearest
-           chunk remains first.
+           Closest first.
         */
 
         chunkLoadQueue.sort(
@@ -2102,23 +2130,33 @@ function processChunkLoadQueue() {
 
                 const da =
                     Math.abs(
+
                         a.x -
                         currentChunkX
+
                     ) +
+
                     Math.abs(
+
                         a.z -
                         currentChunkZ
+
                     );
 
 
                 const db =
                     Math.abs(
+
                         b.x -
                         currentChunkX
+
                     ) +
+
                     Math.abs(
+
                         b.z -
                         currentChunkZ
+
                     );
 
 
@@ -2141,8 +2179,11 @@ function processChunkLoadQueue() {
 
         const key =
             chunkKey(
+
                 next.x,
+
                 next.z
+
             );
 
 
@@ -2158,37 +2199,51 @@ function processChunkLoadQueue() {
 
 
         loadChunk(
+
             next.x,
+
             next.z
+
         );
 
 
         /*
-           Refresh neighboring chunks so their
-           shared borders cull correctly.
+           Refresh borders.
         */
 
         refreshChunk(
+
             next.x + 1,
+
             next.z
+
         );
 
 
         refreshChunk(
+
             next.x - 1,
+
             next.z
+
         );
 
 
         refreshChunk(
+
             next.x,
+
             next.z + 1
+
         );
 
 
         refreshChunk(
+
             next.x,
+
             next.z - 1
+
         );
 
 
@@ -2200,7 +2255,7 @@ function processChunkLoadQueue() {
 
 
 /* ======================================================
-   ADD BLOCK WRAPPER
+   ADD BLOCK
 ====================================================== */
 
 addBlock =
@@ -2213,9 +2268,13 @@ addBlock =
 
         const key =
             blockKey(
+
                 x,
+
                 y,
+
                 z
+
             );
 
 
@@ -2230,17 +2289,11 @@ addBlock =
         }
 
 
-        const typeName =
-            normalizeChunkBlockName(
-                type
-            );
-
-
         /*
-           Normal terrain block.
+           Normal terrain.
 
-           Store directly in world data instead of
-           creating an individual Mesh.
+           Store in chunk data without creating
+           an individual mesh.
         */
 
         if (
@@ -2250,8 +2303,11 @@ addBlock =
         ) {
 
             world.set(
+
                 key,
+
                 type
+
             );
 
 
@@ -2269,8 +2325,11 @@ addBlock =
 
             const cKey =
                 chunkKey(
+
                     cx,
+
                     cz
+
                 );
 
 
@@ -2281,26 +2340,33 @@ addBlock =
             ) {
 
                 chunkMembers.set(
+
                     cKey,
+
                     new Set()
+
                 );
 
             }
 
 
             chunkMembers
-                .get(cKey)
-                .add(key);
+                .get(
+                    cKey
+                )
+                .add(
+                    key
+                );
 
-
-            /*
-               Rebuild changed chunk.
-            */
 
             refreshChunkAroundBlock(
+
                 x,
+
                 y,
+
                 z
+
             );
 
 
@@ -2310,16 +2376,19 @@ addBlock =
 
 
         /*
-           Special block.
-
-           Use the original visual/ore system.
+           Special blocks.
         */
 
         chunkOriginalAddBlock(
+
             x,
+
             y,
+
             z,
+
             type
+
         );
 
 
@@ -2348,8 +2417,11 @@ addBlock =
 
         const cKey =
             chunkKey(
+
                 cx,
+
                 cz
+
             );
 
 
@@ -2360,27 +2432,33 @@ addBlock =
         ) {
 
             chunkMembers.set(
+
                 cKey,
+
                 new Set()
+
             );
 
         }
 
 
         chunkMembers
-            .get(cKey)
-            .add(key);
+            .get(
+                cKey
+            )
+            .add(
+                key
+            );
 
-
-        /*
-           Special blocks can hide the sides
-           of nearby normal blocks.
-        */
 
         refreshChunkAroundBlock(
+
             x,
+
             y,
+
             z
+
         );
 
     };
@@ -2397,9 +2475,13 @@ function updateCullingAround(
 ) {
 
     refreshChunkAroundBlock(
+
         x,
+
         y,
+
         z
+
     );
 
 }
@@ -2413,7 +2495,7 @@ generateWorld =
     function() {
 
         /*
-           Clear old renderer objects.
+           Remove old chunk renderer objects.
         */
 
         chunkRenderObjects.forEach(
@@ -2442,6 +2524,17 @@ generateWorld =
                         }
                     );
 
+
+                if (
+                    renderInfo.waterMesh
+                ) {
+
+                    scene.remove(
+                        renderInfo.waterMesh
+                    );
+
+                }
+
             }
         );
 
@@ -2468,9 +2561,10 @@ generateWorld =
 
 
         /*
-           Load the initial 3 x 3 area immediately.
+           Initial 3 x 3 chunks.
 
-           This happens only at world startup.
+           Generate all block data first so
+           culling works correctly across borders.
         */
 
         const initialChunks = [];
@@ -2498,21 +2592,75 @@ generateWorld =
 
                 const data =
                     generateChunkData(
+
                         cx,
+
                         cz
+
                     );
 
 
-                populateChunkWorld(
-                    cx,
-                    cz,
-                    data
+                const key =
+                    chunkKey(
+
+                        cx,
+
+                        cz
+
+                    );
+
+
+                const members =
+                    new Set();
+
+
+                data.forEach(
+
+                    (
+                        type,
+
+                        blockKeyValue
+
+                    ) => {
+
+                        world.set(
+
+                            blockKeyValue,
+
+                            type
+
+                        );
+
+
+                        members.add(
+                            blockKeyValue
+                        );
+
+                    }
+
+                );
+
+
+                chunkMembers.set(
+
+                    key,
+
+                    members
+
+                );
+
+
+                loadedChunks.add(
+                    key
                 );
 
 
                 initialChunks.push([
+
                     cx,
+
                     cz
+
                 ]);
 
             }
@@ -2521,8 +2669,7 @@ generateWorld =
 
 
         /*
-           Now that ALL starting chunk data exists,
-           boundary visibility can be calculated correctly.
+           Render after all block data exists.
         */
 
         initialChunks.forEach(
@@ -2531,8 +2678,11 @@ generateWorld =
             ) => {
 
                 buildChunkRender(
+
                     cx,
+
                     cz
+
                 );
 
             }
@@ -2540,22 +2690,25 @@ generateWorld =
 
 
         console.log(
+
             "Professional chunk renderer enabled!"
+
         );
 
 
         console.log(
+
             "Loaded chunks:",
+
             loadedChunks.size
+
         );
 
     };
 
 
-/* ======================================================
-   READY
-====================================================== */
-
 console.log(
+
     "Chunk streaming + instanced rendering ready!"
+
 );
