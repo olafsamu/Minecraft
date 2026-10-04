@@ -4,27 +4,21 @@ BLOCKWORLD
 Water System
 =========================================================
 
-PROFESSIONAL WATER VERSION
+CLEAN WATER VERSION
 
-Water is NOT a block in world data.
+Water is rendered as a separate liquid surface.
 
-Instead:
+Water is NOT stored in world.
 
-- Terrain remains completely separate
-- Water is generated as a surface
-- One InstancedMesh is used per chunk
-- Water does not interfere with block culling
-- Water does not interfere with mining
-- Water is non-solid
+Features:
 
-Later this system can be extended with:
-
-- Swimming
-- Underwater fog
-- Water movement
-- Flow
-- Waterfalls
-- Boats
+- Natural ponds and lakes
+- Clean flat water surface
+- One InstancedMesh per chunk
+- No transparent cube walls
+- No water blocks
+- No water collision
+- Trees do not spawn in water
 
 =========================================================
 */
@@ -34,217 +28,24 @@ Later this system can be extended with:
    WATER SETTINGS
 ====================================================== */
 
-
 /*
-   Height of the water surface.
+   Terrain one block below this level can become water.
 
-   Water only appears in terrain that is slightly
-   below this height.
+   This creates simple one-block-deep ponds for now.
 */
 
 const WATER_LEVEL = 4;
-
-
-/*
-   Only shallow depressions become lakes.
-
-   This prevents huge oceans from appearing.
-*/
-
-const WATER_MIN_GROUND =
-    WATER_LEVEL - 2;
-
-
-const WATER_MAX_GROUND =
-    WATER_LEVEL - 1;
 
 
 /* ======================================================
    WATER GEOMETRY
 ====================================================== */
 
-
-/*
-   One plane is reused by every water instance.
-
-   This is dramatically cheaper than creating
-   separate geometry for every water tile.
-*/
-
 const WATER_SURFACE_GEOMETRY =
     new THREE.PlaneGeometry(
         1,
         1
     );
-
-
-/* ======================================================
-   WATER TEXTURE
-====================================================== */
-
-let waterTexture =
-    null;
-
-
-function createWaterTexture() {
-
-    if (
-        waterTexture
-    ) {
-
-        return waterTexture;
-
-    }
-
-
-    const canvas =
-        document.createElement(
-            "canvas"
-        );
-
-
-    canvas.width = 32;
-
-    canvas.height = 32;
-
-
-    const ctx =
-        canvas.getContext(
-            "2d"
-        );
-
-
-    ctx.imageSmoothingEnabled =
-        false;
-
-
-    /*
-       Base blue.
-    */
-
-    ctx.fillStyle =
-        "#438fab";
-
-
-    ctx.fillRect(
-        0,
-        0,
-        32,
-        32
-    );
-
-
-    /*
-       Light reflection strips.
-    */
-
-    ctx.fillStyle =
-        "#78c5d7";
-
-
-    ctx.fillRect(
-        1,
-        4,
-        10,
-        2
-    );
-
-
-    ctx.fillRect(
-        17,
-        9,
-        12,
-        2
-    );
-
-
-    ctx.fillRect(
-        5,
-        17,
-        8,
-        2
-    );
-
-
-    ctx.fillRect(
-        21,
-        25,
-        9,
-        2
-    );
-
-
-    /*
-       Dark variation.
-    */
-
-    ctx.fillStyle =
-        "#347b96";
-
-
-    ctx.fillRect(
-        12,
-        2,
-        5,
-        2
-    );
-
-
-    ctx.fillRect(
-        2,
-        13,
-        6,
-        2
-    );
-
-
-    ctx.fillRect(
-        18,
-        20,
-        8,
-        2
-    );
-
-
-    ctx.fillRect(
-        9,
-        28,
-        7,
-        2
-    );
-
-
-    waterTexture =
-        new THREE.CanvasTexture(
-            canvas
-        );
-
-
-    waterTexture.magFilter =
-        THREE.NearestFilter;
-
-
-    waterTexture.minFilter =
-        THREE.NearestFilter;
-
-
-    waterTexture.colorSpace =
-        THREE.SRGBColorSpace;
-
-
-    /*
-       This texture is shared for the whole game.
-
-       Do not let individual cleanup code destroy it.
-    */
-
-    waterTexture.dispose =
-        function() {};
-
-
-    return waterTexture;
-
-}
 
 
 /* ======================================================
@@ -266,17 +67,24 @@ function getWaterSurfaceMaterial() {
     }
 
 
+    /*
+       Deliberately simple.
+
+       A clean material looks much better than
+       thousands of transparent textured cubes.
+    */
+
     waterSurfaceMaterial =
         new THREE.MeshLambertMaterial({
 
-            map:
-                createWaterTexture(),
+            color:
+                0x459fbe,
 
             transparent:
                 true,
 
             opacity:
-                0.72,
+                0.68,
 
             depthWrite:
                 false,
@@ -288,10 +96,9 @@ function getWaterSurfaceMaterial() {
 
 
     /*
-       The material belongs to the global
-       water system.
+       This material is shared by the entire world.
 
-       Never dispose it when unloading a chunk.
+       Never dispose it when a chunk unloads.
     */
 
     waterSurfaceMaterial.dispose =
@@ -304,77 +111,47 @@ function getWaterSurfaceMaterial() {
 
 
 /* ======================================================
-   WATER NOISE
+   BROAD LAKE NOISE
 ====================================================== */
 
-function getWaterNoise(
+function getLakeNoise(
     x,
     z
 ) {
 
-    /*
-       Large-scale noise.
-
-       This creates broad connected areas.
-    */
-
-    const largeA =
+    const a =
         Math.sin(
             x * 0.055
         );
 
 
-    const largeB =
+    const b =
         Math.cos(
-            z * 0.062
+            z * 0.060
         );
 
 
-    const largeC =
+    const c =
         Math.sin(
-            (x + z) * 0.032
+            (x + z) * 0.035
         );
 
 
-    const largeNoise =
-        (
-            largeA +
-            largeB +
-            largeC
-        ) / 3;
-
-
-    /*
-       Smaller detail prevents the shorelines
-       from looking perfectly smooth.
-    */
-
-    const smallA =
-        Math.sin(
-            x * 0.16 +
-            z * 0.07
-        );
-
-
-    const smallB =
+    const d =
         Math.cos(
-            z * 0.13 -
-            x * 0.05
+            (x - z) * 0.025
         );
-
-
-    const smallNoise =
-        (
-            smallA +
-            smallB
-        ) / 2;
 
 
     return (
 
-        largeNoise * 0.78 +
+        a * 0.30 +
 
-        smallNoise * 0.22
+        b * 0.30 +
+
+        c * 0.25 +
+
+        d * 0.15
 
     );
 
@@ -382,7 +159,71 @@ function getWaterNoise(
 
 
 /* ======================================================
-   SHOULD GENERATE WATER
+   CHECK LOW NEIGHBORS
+====================================================== */
+
+function countLowNeighbors(
+    x,
+    z
+) {
+
+    let count = 0;
+
+
+    for (
+        let dx = -1;
+        dx <= 1;
+        dx++
+    ) {
+
+        for (
+            let dz = -1;
+            dz <= 1;
+            dz++
+        ) {
+
+            /*
+               Don't count the center tile.
+            */
+
+            if (
+                dx === 0 &&
+                dz === 0
+            ) {
+
+                continue;
+
+            }
+
+
+            const neighborHeight =
+                terrainHeight(
+                    x + dx,
+                    z + dz
+                );
+
+
+            if (
+                neighborHeight ===
+                WATER_LEVEL - 1
+            ) {
+
+                count++;
+
+            }
+
+        }
+
+    }
+
+
+    return count;
+
+}
+
+
+/* ======================================================
+   SHOULD THIS TILE BE WATER?
 ====================================================== */
 
 function shouldGenerateWater(
@@ -390,7 +231,7 @@ function shouldGenerateWater(
     z
 ) {
 
-    const groundHeight =
+    const height =
         terrainHeight(
             x,
             z
@@ -398,12 +239,16 @@ function shouldGenerateWater(
 
 
     /*
-       Only shallow low areas become water.
+       Only exactly one level below the water
+       surface becomes water.
+
+       This prevents water from floating high above
+       very deep terrain.
     */
 
     if (
-        groundHeight <
-        WATER_MIN_GROUND
+        height !==
+        WATER_LEVEL - 1
     ) {
 
         return false;
@@ -411,40 +256,82 @@ function shouldGenerateWater(
     }
 
 
-    if (
-        groundHeight >
-        WATER_MAX_GROUND
-    ) {
+    /*
+       Require several neighboring low tiles.
 
-        return false;
+       This removes tiny isolated puddles.
+    */
 
-    }
-
-
-    const noise =
-        getWaterNoise(
+    const lowNeighbors =
+        countLowNeighbors(
             x,
             z
         );
 
 
-    /*
-       Higher threshold = fewer lakes.
+    if (
+        lowNeighbors < 5
+    ) {
 
-       This gives us ponds/lakes instead of
-       flooding the world.
+        return false;
+
+    }
+
+
+    /*
+       Broad noise controls where actual lakes
+       are located.
     */
 
+    const lakeNoise =
+        getLakeNoise(
+            x,
+            z
+        );
+
+
+    if (
+        lakeNoise < 0.20
+    ) {
+
+        return false;
+
+    }
+
+
+    /*
+       Secondary variation prevents every suitable
+       basin from becoming a lake.
+    */
+
+    const detail =
+        (
+
+            Math.sin(
+                x * 0.17 +
+                z * 0.13
+            )
+
+            +
+
+            Math.cos(
+                x * 0.09 -
+                z * 0.19
+            )
+
+        ) / 2;
+
+
     return (
-        noise >
-        0.54
+        detail >
+        -0.35
     );
 
 }
 
 
 /* ======================================================
-   GET WATER POSITIONS
+   GET WATER POSITIONS FOR CHUNK
 ====================================================== */
 
 function getWaterPositionsForChunk(
@@ -490,26 +377,23 @@ function getWaterPositionsForChunk(
         ) {
 
             if (
-                !shouldGenerateWater(
+                shouldGenerateWater(
                     x,
                     z
                 )
             ) {
 
-                continue;
+                positions.push({
+
+                    x:
+                        x,
+
+                    z:
+                        z
+
+                });
 
             }
-
-
-            positions.push({
-
-                x:
-                    x,
-
-                z:
-                    z
-
-            });
 
         }
 
@@ -532,8 +416,11 @@ function buildWaterSurfaceForChunk(
 
     const positions =
         getWaterPositionsForChunk(
+
             chunkX,
+
             chunkZ
+
         );
 
 
@@ -551,8 +438,7 @@ function buildWaterSurfaceForChunk(
 
 
     /*
-       ONE InstancedMesh for ALL water
-       surfaces inside this chunk.
+       One instanced mesh per chunk.
     */
 
     const mesh =
@@ -566,12 +452,6 @@ function buildWaterSurfaceForChunk(
 
         );
 
-
-    /*
-       PlaneGeometry initially stands vertically.
-
-       Rotate it flat.
-    */
 
     const rotation =
         new THREE.Matrix4();
@@ -602,7 +482,7 @@ function buildWaterSurfaceForChunk(
                 0.5,
 
                 WATER_LEVEL +
-                0.005,
+                0.01,
 
                 position.z +
                 0.5
@@ -665,9 +545,57 @@ function buildWaterSurfaceForChunk(
 
 
 /* ======================================================
+   PREVENT TREES IN WATER
+====================================================== */
+
+/*
+   IMPORTANT:
+
+   water.js must be loaded AFTER chunks.js.
+
+   That way shouldGenerateTree() already exists.
+*/
+
+const waterOriginalShouldGenerateTree =
+    shouldGenerateTree;
+
+
+shouldGenerateTree =
+    function(
+        x,
+        z
+    ) {
+
+        /*
+           Absolute rule:
+
+           No tree trunk starts inside a lake.
+        */
+
+        if (
+            shouldGenerateWater(
+                x,
+                z
+            )
+        ) {
+
+            return false;
+
+        }
+
+
+        return waterOriginalShouldGenerateTree(
+            x,
+            z
+        );
+
+    };
+
+
+/* ======================================================
    READY
 ====================================================== */
 
 console.log(
-    "Professional water system ready!"
+    "Clean lake water system enabled!"
 );
