@@ -78,13 +78,13 @@ renderer.setSize(
 
 
 /*
-   Performance setting.
-
-   1x pixel ratio is much easier
-   for lower-powered Chromebooks.
+   Keep the performance-friendly
+   1x pixel ratio.
 */
 
-renderer.setPixelRatio(1);
+renderer.setPixelRatio(
+    1
+);
 
 
 /* ======================================================
@@ -166,12 +166,10 @@ window.addEventListener(
 
 
 /* ======================================================
-   GENERATE WORLD
+   GENERATE INITIAL CHUNKS
 ====================================================== */
 
 generateWorld();
-
-generateOres();
 
 
 /* ======================================================

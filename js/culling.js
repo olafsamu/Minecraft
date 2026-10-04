@@ -3,32 +3,12 @@
 BLOCKWORLD
 Hidden Block Culling
 =========================================================
-
-Blocks that are completely surrounded by other blocks
-do not need a visible THREE.Mesh.
-
-The block still exists in the world Map, so:
-
-- Collision still works
-- World data stays intact
-- Hidden blocks can become visible after mining
-- Hidden blocks can become hidden again after placing
-
-=========================================================
 */
 
 
 /* ======================================================
    SAVE ORIGINAL ADD BLOCK
 ====================================================== */
-
-/*
-   By the time this file loads, ore_visuals.js has already
-   wrapped addBlock.
-
-   Keeping that version means revealed ore blocks still
-   receive their special ore textures.
-*/
 
 const cullingOriginalAddBlock =
     addBlock;
@@ -56,7 +36,7 @@ const CULLING_NEIGHBORS = [
 
 
 /* ======================================================
-   CHECK IF BLOCK IS EXPOSED
+   CHECK BLOCK EXPOSURE
 ====================================================== */
 
 function isBlockExposed(
@@ -65,41 +45,32 @@ function isBlockExposed(
     z
 ) {
 
-    /*
-       A block is visible if at least one of its six
-       neighboring positions is empty.
-    */
-
     for (
         const offset of CULLING_NEIGHBORS
     ) {
 
         const nx =
-            x + offset[0];
+            x +
+            offset[0];
+
 
         const ny =
-            y + offset[1];
+            y +
+            offset[1];
+
 
         const nz =
-            z + offset[2];
+            z +
+            offset[2];
 
-
-        const neighborKey =
-            blockKey(
-                nx,
-                ny,
-                nz
-            );
-
-
-        /*
-           Empty neighboring space means
-           this block needs a mesh.
-        */
 
         if (
             !world.has(
-                neighborKey
+                blockKey(
+                    nx,
+                    ny,
+                    nz
+                )
             )
         ) {
 
@@ -109,10 +80,6 @@ function isBlockExposed(
 
     }
 
-
-    /*
-       All six sides are blocked.
-    */
 
     return false;
 
@@ -128,14 +95,11 @@ function disposeCullingMaterial(
 ) {
 
     if (!material) {
+
         return;
+
     }
 
-
-    /*
-       Handle materials such as crafting tables
-       which use an array of materials.
-    */
 
     if (
         Array.isArray(
@@ -146,8 +110,14 @@ function disposeCullingMaterial(
         material.forEach(
             item => {
 
+                if (!item) {
+
+                    return;
+
+                }
+
+
                 if (
-                    item &&
                     item.map
                 ) {
 
@@ -156,11 +126,7 @@ function disposeCullingMaterial(
                 }
 
 
-                if (item) {
-
-                    item.dispose();
-
-                }
+                item.dispose();
 
             }
         );
@@ -185,7 +151,7 @@ function disposeCullingMaterial(
 
 
 /* ======================================================
-   REMOVE VISIBLE MESH
+   REMOVE CULLED MESH
 ====================================================== */
 
 function removeCulledMesh(
@@ -211,19 +177,13 @@ function removeCulledMesh(
 
 
     /*
-       Dispose geometry.
+       IMPORTANT:
 
-       Your current world.js gives each block
-       its own geometry, so this is safe.
+       DO NOT dispose cube.geometry.
+
+       All normal blocks use the shared
+       BLOCK_GEOMETRY from world.js.
     */
-
-    if (
-        cube.geometry
-    ) {
-
-        cube.geometry.dispose();
-
-    }
 
 
     disposeCullingMaterial(
@@ -239,7 +199,7 @@ function removeCulledMesh(
 
 
 /* ======================================================
-   REVEAL EXISTING BLOCK
+   REVEAL BLOCK
 ====================================================== */
 
 function revealCulledBlock(
@@ -256,10 +216,6 @@ function revealCulledBlock(
         );
 
 
-    /*
-       No block exists there.
-    */
-
     if (
         !world.has(
             key
@@ -270,10 +226,6 @@ function revealCulledBlock(
 
     }
 
-
-    /*
-       It already has a mesh.
-    */
 
     if (
         meshes.has(
@@ -300,11 +252,10 @@ function revealCulledBlock(
 
 
     /*
-       The normal addBlock function refuses to create
-       a block when world.has(key) is already true.
+       addBlock refuses to create a block if
+       world already contains it.
 
-       Temporarily remove the data entry, recreate the
-       visual mesh, then restore the exact same block data.
+       Temporarily remove the world entry.
     */
 
     world.delete(
@@ -318,11 +269,6 @@ function revealCulledBlock(
         z,
         type
     );
-
-
-    /*
-       cullingOriginalAddBlock restores the world entry.
-    */
 
 }
 
@@ -346,9 +292,7 @@ function updateCulledBlock(
 
 
     /*
-       The block no longer exists.
-
-       Make sure an old mesh is gone.
+       No world block.
     */
 
     if (
@@ -375,24 +319,15 @@ function updateCulledBlock(
 
 
     /*
-       Check whether the block has at least
-       one exposed side.
+       Exposed block.
     */
 
-    const exposed =
+    if (
         isBlockExposed(
             x,
             y,
             z
-        );
-
-
-    /*
-       Exposed block needs a mesh.
-    */
-
-    if (
-        exposed
+        )
     ) {
 
         revealCulledBlock(
@@ -405,8 +340,7 @@ function updateCulledBlock(
 
 
     /*
-       Fully surrounded block does not
-       need a mesh.
+       Completely hidden block.
     */
 
     else {
@@ -421,7 +355,7 @@ function updateCulledBlock(
 
 
 /* ======================================================
-   UPDATE BLOCK + NEIGHBORS
+   UPDATE AROUND BLOCK
 ====================================================== */
 
 function updateCullingAround(
@@ -430,10 +364,6 @@ function updateCullingAround(
     z
 ) {
 
-    /*
-       Check the block itself.
-    */
-
     updateCulledBlock(
         x,
         y,
@@ -441,20 +371,19 @@ function updateCullingAround(
     );
 
 
-    /*
-       Check all six neighbors.
-    */
-
     CULLING_NEIGHBORS.forEach(
         offset => {
 
             updateCulledBlock(
 
-                x + offset[0],
+                x +
+                offset[0],
 
-                y + offset[1],
+                y +
+                offset[1],
 
-                z + offset[2]
+                z +
+                offset[2]
 
             );
 
@@ -465,16 +394,8 @@ function updateCullingAround(
 
 
 /* ======================================================
-   REPLACE ADD BLOCK
+   WRAP ADD BLOCK
 ====================================================== */
-
-/*
-   Every time a block is added:
-
-   1. The normal game creates it
-   2. We check it and its neighbors
-   3. Fully hidden blocks lose their mesh
-*/
 
 addBlock =
     function(
@@ -492,10 +413,6 @@ addBlock =
         );
 
 
-        /*
-           Update visibility.
-        */
-
         updateCullingAround(
             x,
             y,
@@ -508,13 +425,6 @@ addBlock =
 /* ======================================================
    WRAP BREAK BLOCK
 ====================================================== */
-
-/*
-   Your mining system already has breakBlock().
-
-   We save it and then add one extra step:
-   reveal neighboring blocks after a block disappears.
-*/
 
 const cullingOriginalBreakBlock =
     breakBlock;
@@ -532,11 +442,6 @@ breakBlock =
         }
 
 
-        /*
-           Remember the coordinates BEFORE the
-           original mining code removes the block.
-        */
-
         const parts =
             String(
                 cube.userData.key
@@ -550,10 +455,12 @@ breakBlock =
                 parts[0]
             );
 
+
         const y =
             Number(
                 parts[1]
             );
+
 
         const z =
             Number(
@@ -561,30 +468,24 @@ breakBlock =
             );
 
 
-        /*
-           Run the normal mining system.
-        */
-
         cullingOriginalBreakBlock(
             cube
         );
 
-
-        /*
-           The block above/below/left/right/front/back
-           may have just become visible.
-        */
 
         CULLING_NEIGHBORS.forEach(
             offset => {
 
                 updateCulledBlock(
 
-                    x + offset[0],
+                    x +
+                    offset[0],
 
-                    y + offset[1],
+                    y +
+                    offset[1],
 
-                    z + offset[2]
+                    z +
+                    offset[2]
 
                 );
 
@@ -594,10 +495,6 @@ breakBlock =
     };
 
 
-/* ======================================================
-   READY
-====================================================== */
-
 console.log(
-    "Hidden block culling enabled!"
+    "Hidden block culling enabled safely!"
 );

@@ -1,8 +1,19 @@
+/*
+=========================================================
+BLOCKWORLD
+Player
+=========================================================
+*/
+
 const PLAYER_HEIGHT = 2;
+
 const PLAYER_RADIUS = 0.3;
+
 const EYE_HEIGHT = 1.7;
 
+
 let velocityY = 0;
+
 let grounded = false;
 
 
@@ -10,29 +21,55 @@ let grounded = false;
    BLOCK COLLISION
 ====================================================== */
 
-function collidesAt(x, bottom, z) {
+function collidesAt(
+    x,
+    bottom,
+    z
+) {
 
     const minX =
-        Math.floor(x - PLAYER_RADIUS);
+        Math.floor(
+            x -
+            PLAYER_RADIUS
+        );
+
 
     const maxX =
-        Math.floor(x + PLAYER_RADIUS);
+        Math.floor(
+            x +
+            PLAYER_RADIUS
+        );
+
 
     const minY =
-        Math.floor(bottom + 0.001);
-
-    const maxY =
         Math.floor(
             bottom +
-            PLAYER_HEIGHT -
             0.001
         );
 
+
+    const maxY =
+        Math.floor(
+
+            bottom +
+            PLAYER_HEIGHT -
+            0.001
+
+        );
+
+
     const minZ =
-        Math.floor(z - PLAYER_RADIUS);
+        Math.floor(
+            z -
+            PLAYER_RADIUS
+        );
+
 
     const maxZ =
-        Math.floor(z + PLAYER_RADIUS);
+        Math.floor(
+            z +
+            PLAYER_RADIUS
+        );
 
 
     for (
@@ -83,7 +120,27 @@ function collidesAt(x, bottom, z) {
    PLAYER MOVEMENT
 ====================================================== */
 
-function updatePlayer(delta) {
+function updatePlayer(
+    delta
+) {
+
+    /*
+       Load the chunks around the player
+       before movement occurs.
+
+       This is what allows the player to
+       cross into new chunks safely.
+    */
+
+    if (
+        typeof updateChunksAroundPlayer ===
+        "function"
+    ) {
+
+        updateChunksAroundPlayer();
+
+    }
+
 
     const speed = 5;
 
@@ -95,22 +152,33 @@ function updatePlayer(delta) {
     const forward =
         new THREE.Vector3();
 
+
     camera.getWorldDirection(
         forward
     );
 
+
     forward.y = 0;
 
-    if (forward.length() > 0) {
+
+    if (
+        forward.length() > 0
+    ) {
+
         forward.normalize();
+
     }
 
 
     const right =
         new THREE.Vector3(
+
             forward.z,
+
             0,
+
             -forward.x
+
         );
 
 
@@ -122,20 +190,47 @@ function updatePlayer(delta) {
         new THREE.Vector3();
 
 
-    if (keys["KeyW"]) {
-        movement.add(forward);
+    if (
+        keys["KeyW"]
+    ) {
+
+        movement.add(
+            forward
+        );
+
     }
 
-    if (keys["KeyS"]) {
-        movement.sub(forward);
+
+    if (
+        keys["KeyS"]
+    ) {
+
+        movement.sub(
+            forward
+        );
+
     }
 
-    if (keys["KeyA"]) {
-        movement.sub(right);
+
+    if (
+        keys["KeyA"]
+    ) {
+
+        movement.sub(
+            right
+        );
+
     }
 
-    if (keys["KeyD"]) {
-        movement.add(right);
+
+    if (
+        keys["KeyD"]
+    ) {
+
+        movement.add(
+            right
+        );
+
     }
 
 
@@ -143,7 +238,9 @@ function updatePlayer(delta) {
        HORIZONTAL COLLISION
     ================================================== */
 
-    if (movement.length() > 0) {
+    if (
+        movement.length() > 0
+    ) {
 
         movement.normalize();
 
@@ -152,6 +249,7 @@ function updatePlayer(delta) {
             movement.x *
             speed *
             delta;
+
 
         const moveZ =
             movement.z *
@@ -164,9 +262,9 @@ function updatePlayer(delta) {
             EYE_HEIGHT;
 
 
-        /*
-           X movement.
-        */
+        /* ==================================================
+           X
+        ================================================== */
 
         const nextX =
             camera.position.x +
@@ -187,9 +285,9 @@ function updatePlayer(delta) {
         }
 
 
-        /*
-           Z movement.
-        */
+        /* ==================================================
+           Z
+        ================================================== */
 
         const nextZ =
             camera.position.z +
@@ -217,12 +315,14 @@ function updatePlayer(delta) {
     ================================================== */
 
     velocityY -=
-        20 * delta;
+        20 *
+        delta;
 
 
     const nextY =
         camera.position.y +
-        velocityY * delta;
+        velocityY *
+        delta;
 
 
     const nextBottom =
@@ -230,9 +330,9 @@ function updatePlayer(delta) {
         EYE_HEIGHT;
 
 
-    /*
-       Check vertical collision.
-    */
+    /* ==================================================
+       VERTICAL COLLISION
+    ================================================== */
 
     if (
         !collidesAt(
@@ -245,19 +345,21 @@ function updatePlayer(delta) {
         camera.position.y =
             nextY;
 
+
         grounded = false;
 
-    } else {
+    }
 
-        /*
-           If falling, we landed.
-        */
+    else {
 
-        if (velocityY < 0) {
+        if (
+            velocityY < 0
+        ) {
 
             grounded = true;
 
         }
+
 
         velocityY = 0;
 
@@ -265,44 +367,29 @@ function updatePlayer(delta) {
 
 
     /* ==================================================
-       WORLD BOUNDARY
-    ================================================== */
-
-    camera.position.x =
-        Math.max(
-            0.35,
-            Math.min(
-                23.65,
-                camera.position.x
-            )
-        );
-
-
-    camera.position.z =
-        Math.max(
-            0.35,
-            Math.min(
-                23.65,
-                camera.position.z
-            )
-        );
-
-
-    /* ==================================================
        FALL PROTECTION
     ================================================== */
 
     if (
-        camera.position.y < -20
+        camera.position.y <
+        -WORLD_DEPTH - 10
     ) {
 
         camera.position.set(
+
             12.5,
-            terrainHeight(12, 12)
-                + 1
-                + EYE_HEIGHT,
+
+            terrainHeight(
+                12,
+                12
+            )
+            + 1
+            + EYE_HEIGHT,
+
             12.5
+
         );
+
 
         velocityY = 0;
 
