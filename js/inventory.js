@@ -278,6 +278,9 @@ function getIconClass(type) {
         case "crafting_table":
             return "crafting-table-icon";
 
+        case "sticks":
+    return "sticks-icon";
+
         default:
             return "";
 
