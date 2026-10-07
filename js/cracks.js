@@ -33,7 +33,7 @@ function createCrackTexture(stage) {
     );
 
     ctx.strokeStyle =
-        "rgba(15,15,15,0.95)";
+        "rgba(10,10,10,0.95)";
 
     ctx.lineWidth = 5;
 
@@ -43,131 +43,198 @@ function createCrackTexture(stage) {
 
 
     /*
-       All crack patterns are deliberately
-       centered around approximately 64,64.
+       THE EXACT CENTER OF THE BLOCK
+    */
 
-       This prevents the cracks from looking
-       shifted toward one corner of the block.
+    const cx = 64;
+    const cy = 64;
+
+
+    /*
+       Every crack starts from the exact
+       center of the texture.
+
+       This keeps the visual center
+       locked to the center of the block.
     */
 
     const cracks = [
 
-        /*
-        Stage 0
-        No cracks yet.
-        */
+        /* ==================================================
+           STAGE 0
+        ================================================== */
+
         [],
 
 
-        /*
-        Stage 1
-        Small central crack.
-        */
+        /* ==================================================
+           STAGE 1
+        ================================================== */
+
         [
             [
-                [42,32],
-                [64,64],
-                [56,92]
+                [cx, cy],
+                [45, 43],
+                [35, 25]
+            ],
+
+            [
+                [cx, cy],
+                [80, 45],
+                [94, 28]
             ]
         ],
 
 
-        /*
-        Stage 2
-        Central crack + upper-right branch.
-        */
+        /* ==================================================
+           STAGE 2
+        ================================================== */
+
         [
             [
-                [42,32],
-                [64,64],
-                [56,92]
+                [cx, cy],
+                [45, 43],
+                [35, 25]
             ],
 
             [
-                [64,64],
-                [88,48],
-                [106,58]
+                [cx, cy],
+                [80, 45],
+                [94, 28]
+            ],
+
+            [
+                [cx, cy],
+                [47, 73],
+                [29, 91]
+            ],
+
+            [
+                [cx, cy],
+                [80, 75],
+                [98, 94]
             ]
         ],
 
 
-        /*
-        Stage 3
-        More branches spreading from the center.
-        */
+        /* ==================================================
+           STAGE 3
+        ================================================== */
+
         [
             [
-                [42,32],
-                [64,64],
-                [56,92]
+                [cx, cy],
+                [45, 43],
+                [35, 25]
             ],
 
             [
-                [64,64],
-                [88,48],
-                [106,58]
+                [cx, cy],
+                [80, 45],
+                [94, 28]
             ],
 
             [
-                [64,64],
-                [74,82],
-                [92,106]
+                [cx, cy],
+                [47, 73],
+                [29, 91]
             ],
 
             [
-                [56,92],
-                [34,108]
+                [cx, cy],
+                [80, 75],
+                [98, 94]
+            ],
+
+            [
+                [45, 43],
+                [24, 52],
+                [14, 38]
+            ],
+
+            [
+                [80, 45],
+                [104, 55],
+                [114, 41]
+            ],
+
+            [
+                [47, 73],
+                [42, 102],
+                [28, 113]
+            ],
+
+            [
+                [80, 75],
+                [86, 102],
+                [100, 114]
             ]
         ],
 
 
-        /*
-        Stage 4
-        Full crack pattern.
-        */
+        /* ==================================================
+           STAGE 4
+        ================================================== */
+
         [
             [
-                [42,32],
-                [64,64],
-                [56,92]
+                [cx, cy],
+                [45, 43],
+                [35, 25]
             ],
 
             [
-                [64,64],
-                [88,48],
-                [106,58]
+                [cx, cy],
+                [80, 45],
+                [94, 28]
             ],
 
             [
-                [64,64],
-                [74,82],
-                [92,106]
+                [cx, cy],
+                [47, 73],
+                [29, 91]
             ],
 
             [
-                [56,92],
-                [34,108]
+                [cx, cy],
+                [80, 75],
+                [98, 94]
             ],
 
             [
-                [88,48],
-                [82,22]
+                [45, 43],
+                [24, 52],
+                [14, 38]
             ],
 
             [
-                [74,82],
-                [108,82]
+                [80, 45],
+                [104, 55],
+                [114, 41]
             ],
 
             [
-                [88,48],
-                [104,28]
+                [47, 73],
+                [42, 102],
+                [28, 113]
             ],
 
             [
-                [64,64],
-                [36,52],
-                [20,68]
+                [80, 75],
+                [86, 102],
+                [100, 114]
+            ],
+
+            [
+                [cx, cy],
+                [64, 36],
+                [53, 18]
+            ],
+
+            [
+                [cx, cy],
+                [64, 91],
+                [76, 110]
             ]
         ]
 
@@ -286,8 +353,8 @@ function createCrackOverlay(
     crackOverlay =
         new THREE.Mesh(
             new THREE.PlaneGeometry(
-                1.002,
-                1.002
+                1.001,
+                1.001
             ),
             new THREE.MeshBasicMaterial({
 
@@ -320,8 +387,8 @@ function createCrackOverlay(
 
 
     /*
-       Start exactly at the center
-       of the selected block.
+       The target proxy is positioned at the
+       exact CENTER of the block.
     */
 
     crackOverlay.position.copy(
@@ -329,31 +396,27 @@ function createCrackOverlay(
     );
 
 
+    /*
+       Move directly toward the selected face.
+    */
+
     const normal =
         faceNormal
             .clone()
             .normalize();
 
 
-    /*
-       Move a tiny amount toward the
-       block face so the crack is visible
-       without floating noticeably.
-    */
-
     crackOverlay.position.add(
-        normal.clone()
-            .multiplyScalar(
-                0.503
-            )
+        normal.multiplyScalar(
+            0.501
+        )
     );
 
 
     /*
-       PlaneGeometry normally faces +Z.
+       PlaneGeometry faces +Z by default.
 
-       Rotate it so +Z points exactly
-       along the selected face normal.
+       Rotate +Z directly into the face normal.
     */
 
     crackOverlay.quaternion.setFromUnitVectors(
@@ -362,7 +425,7 @@ function createCrackOverlay(
             0,
             1
         ),
-        normal
+        faceNormal
     );
 
 
