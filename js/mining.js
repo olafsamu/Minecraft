@@ -4,6 +4,17 @@ BLOCKWORLD
 Mining + Block Placement
 Clean Chunk-Compatible Version
 =========================================================
+
+This file handles:
+
+- Looking at blocks
+- Breaking blocks
+- Block placement
+- Mouse input
+
+Terrain blocks are stored in the voxel world and rendered
+through the chunk system, so we do NOT raycast meshes.
+=========================================================
 */
 
 
@@ -35,6 +46,13 @@ let leftMouseDown = false;
    TARGET PROXY
 ====================================================== */
 
+/*
+   Invisible compatibility mesh.
+
+   The actual terrain does NOT use this mesh.
+   It simply gives the crack system a position.
+*/
+
 const targetProxy =
     new THREE.Mesh(
         BLOCK_GEOMETRY,
@@ -51,16 +69,6 @@ targetProxy.visible = false;
 /* ======================================================
    GET TARGET BLOCK
 ====================================================== */
-
-/*
-   Uses a simple ray march through the voxel world.
-
-   This is intentionally simple:
-   - reliable
-   - easy to debug
-   - only 6 blocks of reach
-   - does not raycast every rendered mesh
-*/
 
 function getTargetBlock() {
 
@@ -80,9 +88,14 @@ function getTargetBlock() {
     direction.normalize();
 
 
-    const stepSize =
-        0.05;
+    /*
+       Small-step voxel ray.
 
+       Six blocks of reach with 0.05 steps
+       means only 120 checks.
+    */
+
+    const stepSize = 0.05;
 
     const steps =
         Math.ceil(
@@ -90,6 +103,13 @@ function getTargetBlock() {
             stepSize
         );
 
+
+    /*
+       Remember the previous voxel.
+
+       This lets us determine which face was hit,
+       which is needed for block placement.
+    */
 
     let previousX =
         Math.floor(
@@ -117,16 +137,6 @@ function getTargetBlock() {
             i * stepSize;
 
 
-        if (
-            distance >
-            REACH_DISTANCE
-        ) {
-
-            break;
-
-        }
-
-
         const point =
             origin.clone()
                 .addScaledVector(
@@ -140,12 +150,10 @@ function getTargetBlock() {
                 point.x
             );
 
-
         const y =
             Math.floor(
                 point.y
             );
-
 
         const z =
             Math.floor(
@@ -154,28 +162,19 @@ function getTargetBlock() {
 
 
         /*
-           Skip the same voxel.
+           Ignore repeated checks of the same voxel.
         */
 
         if (
             x === previousX &&
             y === previousY &&
-            z === previousZ
+            z === previousZ &&
+            i !== 0
         ) {
 
             continue;
 
         }
-
-
-        previousX =
-            x;
-
-        previousY =
-            y;
-
-        previousZ =
-            z;
 
 
         const key =
@@ -187,7 +186,7 @@ function getTargetBlock() {
 
 
         /*
-           Did we hit a block?
+           Did we hit a real block?
         */
 
         if (
@@ -204,7 +203,91 @@ function getTargetBlock() {
 
             if (!type) {
 
+                targetedBlock =
+                    null;
+
                 return null;
+
+            }
+
+
+            /*
+               Work out the face we entered through.
+            */
+
+            let faceNormal =
+                new THREE.Vector3(
+                    previousX - x,
+                    previousY - y,
+                    previousZ - z
+                );
+
+
+            /*
+               If there is no useful previous voxel,
+               use the dominant camera direction.
+            */
+
+            if (
+                faceNormal.lengthSq() === 0
+            ) {
+
+                const ax =
+                    Math.abs(
+                        direction.x
+                    );
+
+                const ay =
+                    Math.abs(
+                        direction.y
+                    );
+
+                const az =
+                    Math.abs(
+                        direction.z
+                    );
+
+
+                if (
+                    ax >= ay &&
+                    ax >= az
+                ) {
+
+                    faceNormal.set(
+                        direction.x > 0
+                            ? -1
+                            : 1,
+                        0,
+                        0
+                    );
+
+                }
+
+                else if (
+                    ay >= az
+                ) {
+
+                    faceNormal.set(
+                        0,
+                        direction.y > 0
+                            ? -1
+                            : 1,
+                        0
+                    );
+
+                }
+
+                else {
+
+                    faceNormal.set(
+                        0,
+                        0,
+                        direction.z > 0
+                            ? -1
+                            : 1
+                    );
+
+                }
 
             }
 
@@ -214,13 +297,9 @@ function getTargetBlock() {
             */
 
             targetProxy.position.set(
-
                 x + 0.5,
-
                 y + 0.5,
-
                 z + 0.5
-
             );
 
 
@@ -244,139 +323,8 @@ function getTargetBlock() {
                 z;
 
 
-            /*
-               Determine which face was entered.
-
-               This is needed for block placement.
-            */
-
-            const previousPoint =
-                origin.clone()
-                    .addScaledVector(
-                        direction,
-                        Math.max(
-                            0,
-                            distance - stepSize
-                        )
-                    );
-
-
-            const previousVoxelX =
-                Math.floor(
-                    previousPoint.x
-                );
-
-
-            const previousVoxelY =
-                Math.floor(
-                    previousPoint.y
-                );
-
-
-            const previousVoxelZ =
-                Math.floor(
-                    previousPoint.z
-                );
-
-
-            const faceNormal =
-                new THREE.Vector3(
-
-                    previousVoxelX - x,
-
-                    previousVoxelY - y,
-
-                    previousVoxelZ - z
-
-                );
-
-
-            /*
-               If the previous voxel could not
-               determine the face, use the dominant
-               direction of the camera ray.
-            */
-
-            if (
-                faceNormal.lengthSq() === 0
-            ) {
-
-                const ax =
-                    Math.abs(
-                        direction.x
-                    );
-
-
-                const ay =
-                    Math.abs(
-                        direction.y
-                    );
-
-
-                const az =
-                    Math.abs(
-                        direction.z
-                    );
-
-
-                if (
-                    ax >= ay &&
-                    ax >= az
-                ) {
-
-                    faceNormal.set(
-
-                        direction.x > 0
-                            ? -1
-                            : 1,
-
-                        0,
-
-                        0
-
-                    );
-
-                }
-
-                else if (
-                    ay >= az
-                ) {
-
-                    faceNormal.set(
-
-                        0,
-
-                        direction.y > 0
-                            ? -1
-                            : 1,
-
-                        0
-
-                    );
-
-                }
-
-                else {
-
-                    faceNormal.set(
-
-                        0,
-
-                        0,
-
-                        direction.z > 0
-                            ? -1
-                            : 1
-
-                    );
-
-                }
-
-            }
-
-
             targetProxy.userData.faceNormal =
-                faceNormal;
+                faceNormal.clone();
 
 
             targetedBlock =
@@ -386,6 +334,13 @@ function getTargetBlock() {
             return targetProxy;
 
         }
+
+
+        previousX = x;
+
+        previousY = y;
+
+        previousZ = z;
 
     }
 
@@ -400,7 +355,7 @@ function getTargetBlock() {
 
 
 /* ======================================================
-   CAN BREAK
+   CHECK IF BLOCK CAN BE BROKEN
 ====================================================== */
 
 function canBreak(
@@ -415,7 +370,7 @@ function canBreak(
 
 
     /*
-       Normal blocks.
+       Most normal blocks are breakable by hand.
     */
 
     if (
@@ -428,68 +383,59 @@ function canBreak(
 
 
     /*
-       Blocks requiring a pickaxe.
+       Some versions of blocks.js may use
+       "pickaxe" as the breakable value.
     */
 
     if (
         type.breakable === "pickaxe"
     ) {
 
+        const selected =
+            typeof getSelectedItem ===
+            "function"
+                ? getSelectedItem()
+                : null;
+
+
+        if (!selected) {
+
+            return false;
+
+        }
+
+
         /*
-           Check the selected hotbar item.
+           Support several possible naming styles
+           for the wooden pickaxe.
         */
 
-        if (
-            typeof hotbar === "undefined"
-        ) {
-
-            return false;
-
-        }
-
-
-        if (
-            typeof selectedBlock === "undefined"
-        ) {
-
-            return false;
-
-        }
-
-
-        const selectedItem =
-            hotbar[
-                selectedBlock
-            ];
-
-
-        if (!selectedItem) {
-
-            return false;
-
-        }
-
-
         return (
-            selectedItem.id ===
-            "wood_pickaxe"
+            selected.type === "pickaxe" ||
+            selected.type === "wood_pickaxe" ||
+            selected.id === "wood_pickaxe"
         );
 
     }
 
 
     /*
-       Also support the older
-       requiresTool system.
+       Also support requiresTool / requiredTool,
+       if blocks.js uses that structure.
     */
 
     if (
         type.requiresTool
     ) {
 
-        if (
-            typeof hotbar === "undefined"
-        ) {
+        const selected =
+            typeof getSelectedItem ===
+            "function"
+                ? getSelectedItem()
+                : null;
+
+
+        if (!selected) {
 
             return false;
 
@@ -497,41 +443,16 @@ function canBreak(
 
 
         if (
-            typeof selectedBlock === "undefined"
-        ) {
-
-            return false;
-
-        }
-
-
-        const selectedItem =
-            hotbar[
-                selectedBlock
-            ];
-
-
-        if (!selectedItem) {
-
-            return false;
-
-        }
-
-
-        if (
-            type.requiredTool ===
-            "pickaxe"
+            type.requiredTool === "pickaxe"
         ) {
 
             return (
-                selectedItem.id ===
-                "wood_pickaxe"
+                selected.type === "pickaxe" ||
+                selected.type === "wood_pickaxe" ||
+                selected.id === "wood_pickaxe"
             );
 
         }
-
-
-        return false;
 
     }
 
@@ -547,35 +468,32 @@ function canBreak(
 
 function startMining() {
 
-    console.log("MINING: left click detected");
-
-
     const target =
         getTargetBlock();
 
 
-    console.log(
-        "MINING: target =",
-        target
-    );
-
-
     if (!target) {
-
-        console.log(
-            "MINING: NO BLOCK TARGETED"
-        );
 
         return;
 
     }
 
 
-    console.log(
-        "MINING: BLOCK TARGETED:",
-        target.userData.type,
-        target.userData.key
-    );
+    const type =
+        target.userData.type;
+
+
+    if (
+        !canBreak(type)
+    ) {
+
+        return;
+
+    }
+
+
+    const key =
+        target.userData.key;
 
 
     breaking =
@@ -583,16 +501,27 @@ function startMining() {
 
 
     breakingKey =
-        target.userData.key;
+        key;
 
 
     breakingStart =
         performance.now();
 
 
-    console.log(
-        "MINING: STARTED"
-    );
+    /*
+       Start the crack visual if available.
+    */
+
+    if (
+        typeof createCrackOverlay ===
+        "function"
+    ) {
+
+        createCrackOverlay(
+            target
+        );
+
+    }
 
 }
 
@@ -606,17 +535,27 @@ function updateMining(
 ) {
 
     /*
-       Stop if the mouse is no longer held.
+       Mining only happens while left mouse
+       is being held.
     */
 
     if (
-        !mouseLocked ||
-        (
-            typeof craftingOpen !==
-            "undefined" &&
-            craftingOpen
-        ) ||
         !leftMouseDown
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+       If crafting is open, don't mine.
+    */
+
+    if (
+        typeof craftingOpen !==
+        "undefined" &&
+        craftingOpen
     ) {
 
         stopMining();
@@ -629,10 +568,6 @@ function updateMining(
     const target =
         getTargetBlock();
 
-
-    /*
-       Player stopped looking at a block.
-    */
 
     if (!target) {
 
@@ -663,8 +598,8 @@ function updateMining(
 
 
     /*
-       Player moved the crosshair
-       onto another block.
+       Looking at another block starts
+       a new mining operation.
     */
 
     if (
@@ -683,6 +618,18 @@ function updateMining(
         breakingStart =
             performance.now();
 
+
+        if (
+            typeof createCrackOverlay ===
+            "function"
+        ) {
+
+            createCrackOverlay(
+                target
+            );
+
+        }
+
     }
 
 
@@ -693,85 +640,23 @@ function updateMining(
 
     const progress =
         Math.min(
-
             1,
-
             elapsed /
-            (
-                BREAK_TIME *
-                1000
-            )
-
+            (BREAK_TIME * 1000)
         );
 
 
     /*
-       Use the existing crack system
-       if it exists.
+       Update crack visual.
     */
 
     if (
-        typeof drawCracks ===
+        typeof updateCrackOverlay ===
         "function"
     ) {
 
-        drawCracks(
-            Math.max(
-                0.1,
-                progress
-            )
-        );
-
-    }
-
-
-    /*
-       Keep compatibility with
-       crackMesh systems.
-    */
-
-    if (
-        typeof crackMesh !==
-        "undefined" &&
-        crackMesh
-    ) {
-
-        crackMesh.position.set(
-
-            target.userData.x +
-            0.5,
-
-            target.userData.y +
-            0.5,
-
-            target.userData.z +
-            0.5
-
-        );
-
-
-        crackMesh.visible =
-            true;
-
-    }
-
-
-    /*
-       Optional breaking text.
-    */
-
-    const breakingText =
-        document.getElementById(
-            "breakingText"
-        );
-
-
-    if (
-        breakingText
-    ) {
-
-        breakingText.classList.add(
-            "show"
+        updateCrackOverlay(
+            progress
         );
 
     }
@@ -814,6 +699,10 @@ function breakBlock(
     }
 
 
+    const key =
+        target.userData.key;
+
+
     const x =
         target.userData.x;
 
@@ -824,10 +713,6 @@ function breakBlock(
 
     const z =
         target.userData.z;
-
-
-    const key =
-        target.userData.key;
 
 
     /*
@@ -859,55 +744,10 @@ function breakBlock(
 
 
     /*
-       Remove special mesh if one exists.
-    */
-
-    if (
-        typeof meshes !==
-        "undefined" &&
-        meshes.has(key)
-    ) {
-
-        const mesh =
-            meshes.get(key);
-
-
-        if (
-            mesh.parent
-        ) {
-
-            mesh.parent.remove(
-                mesh
-            );
-
-        }
-
-
-        meshes.delete(
-            key
-        );
-
-    }
-
-
-    /*
        Remove from chunk membership.
     */
 
     if (
-        typeof removeBlockFromChunkMembers ===
-        "function"
-    ) {
-
-        removeBlockFromChunkMembers(
-            x,
-            y,
-            z
-        );
-
-    }
-
-    else if (
         typeof chunkMembers !==
         "undefined"
     ) {
@@ -950,58 +790,60 @@ function breakBlock(
 
 
     /*
-       Give the block to the player.
+       Remove an old individual mesh if one exists.
+
+       Important:
+       We do NOT dispose shared terrain geometry.
     */
 
     if (
-        typeof addItem ===
-        "function"
-    ) {
-
-        addItem(
-
-            blockType.name,
-
-            1
-
-        );
-
-    }
-
-    else if (
-        typeof inventory !==
+        typeof meshes !==
         "undefined" &&
-        blockType.id
+        meshes.has(key)
     ) {
 
+        const mesh =
+            meshes.get(key);
+
+
         if (
-            inventory[
-                blockType.id
-            ] !==
-            undefined
+            mesh.parent
         ) {
 
-            inventory[
-                blockType.id
-            ]++;
+            mesh.parent.remove(
+                mesh
+            );
 
         }
 
 
-        if (
-            typeof updateHotbar ===
-            "function"
-        ) {
-
-            updateHotbar();
-
-        }
+        meshes.delete(
+            key
+        );
 
     }
 
 
     /*
-       Rebuild affected chunks.
+       Give the block to the inventory.
+    */
+
+    if (
+        blockType &&
+        typeof addItem ===
+        "function"
+    ) {
+
+        addItem(
+            blockType.name,
+            1
+        );
+
+    }
+
+
+    /*
+       Rebuild the affected chunk.
     */
 
     if (
@@ -1010,33 +852,17 @@ function breakBlock(
     ) {
 
         refreshChunkAroundBlock(
-
             x,
-
             y,
-
             z
-
         );
 
     }
 
 
-    if (
-        typeof showMessage ===
-        "function"
-    ) {
-
-        showMessage(
-
-            "Collected " +
-            blockType.name +
-            "!"
-
-        );
-
-    }
-
+    /*
+       Stop mining.
+    */
 
     stopMining();
 
@@ -1061,41 +887,87 @@ function stopMining() {
         0;
 
 
-    /*
-       Hide old crack mesh.
-    */
-
     if (
-        typeof crackMesh !==
-        "undefined" &&
-        crackMesh
+        typeof removeCrackOverlay ===
+        "function"
     ) {
 
-        crackMesh.visible =
-            false;
+        removeCrackOverlay();
+
+    }
+
+}
+
+
+/* ======================================================
+   GET BLOCK TYPE FROM ITEM
+====================================================== */
+
+function getBlockTypeFromItem(
+    item
+) {
+
+    if (!item) {
+
+        return null;
+
+    }
+
+
+    const id =
+        item.id ||
+        item.type;
+
+
+    if (
+        typeof BLOCKS ===
+        "undefined"
+    ) {
+
+        return null;
+
+    }
+
+
+    if (
+        BLOCKS[id]
+    ) {
+
+        return BLOCKS[id];
 
     }
 
 
     /*
-       Hide breaking text.
+       Some inventory systems use names
+       instead of IDs.
     */
 
-    const breakingText =
-        document.getElementById(
-            "breakingText"
-        );
-
-
     if (
-        breakingText
+        item.name
     ) {
 
-        breakingText.classList.remove(
-            "show"
-        );
+        const name =
+            item.name
+                .toLowerCase()
+                .replaceAll(
+                    " ",
+                    "_"
+                );
+
+
+        if (
+            BLOCKS[name]
+        ) {
+
+            return BLOCKS[name];
+
+        }
 
     }
+
+
+    return null;
 
 }
 
@@ -1105,6 +977,70 @@ function stopMining() {
 ====================================================== */
 
 function placeBlock() {
+
+    if (
+        typeof getSelectedItem !==
+        "function"
+    ) {
+
+        return;
+
+    }
+
+
+    const item =
+        getSelectedItem();
+
+
+    if (!item) {
+
+        return;
+
+    }
+
+
+    /*
+       Tools and non-placeable items
+       cannot be placed.
+    */
+
+    if (
+        item.placeable === false
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        item.placeable ===
+        undefined &&
+        (
+            item.type === "pickaxe" ||
+            item.type === "sticks"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+       Make sure there is actually an item.
+    */
+
+    if (
+        item.amount !==
+        undefined &&
+        item.amount <= 0
+    ) {
+
+        return;
+
+    }
+
 
     const target =
         getTargetBlock();
@@ -1116,82 +1052,6 @@ function placeBlock() {
 
     }
 
-
-    if (
-        typeof hotbar ===
-        "undefined"
-    ) {
-
-        return;
-
-    }
-
-
-    const item =
-        hotbar[
-            selectedBlock
-        ];
-
-
-    if (
-        !item ||
-        !item.placeable
-    ) {
-
-        if (
-            typeof showMessage ===
-            "function"
-        ) {
-
-            showMessage(
-                "That item cannot be placed."
-            );
-
-        }
-
-        return;
-
-    }
-
-
-    if (
-        typeof inventory ===
-        "undefined"
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        !inventory[item.id] ||
-        inventory[item.id] <= 0
-    ) {
-
-        if (
-            typeof showMessage ===
-            "function"
-        ) {
-
-            showMessage(
-
-                "You don't have any " +
-                item.name +
-                "!"
-
-            );
-
-        }
-
-        return;
-
-    }
-
-
-    /*
-       Use the face detected by the voxel ray.
-    */
 
     const normal =
         target.userData.faceNormal;
@@ -1206,17 +1066,23 @@ function placeBlock() {
 
     const x =
         target.userData.x +
-        normal.x;
+        Math.round(
+            normal.x
+        );
 
 
     const y =
         target.userData.y +
-        normal.y;
+        Math.round(
+            normal.y
+        );
 
 
     const z =
         target.userData.z +
-        normal.z;
+        Math.round(
+            normal.z
+        );
 
 
     const key =
@@ -1241,7 +1107,7 @@ function placeBlock() {
 
 
     /*
-       Player collision box.
+       Player collision check.
     */
 
     const bottom =
@@ -1251,41 +1117,43 @@ function placeBlock() {
 
     if (
 
-        camera.position.x +
-            PLAYER_RADIUS >
-            x &&
-
+        x + 1 >
         camera.position.x -
-            PLAYER_RADIUS <
-            x + 1 &&
+        PLAYER_RADIUS &&
 
-        camera.position.z +
-            PLAYER_RADIUS >
-            z &&
+        x <
+        camera.position.x +
+        PLAYER_RADIUS &&
 
-        camera.position.z -
-            PLAYER_RADIUS <
-            z + 1 &&
+        y + 1 >
+        bottom &&
 
+        y <
         bottom +
-            PLAYER_HEIGHT >
-            y &&
+        PLAYER_HEIGHT &&
 
-        bottom <
-            y + 1
+        z + 1 >
+        camera.position.z -
+        PLAYER_RADIUS &&
+
+        z <
+        camera.position.z +
+        PLAYER_RADIUS
 
     ) {
 
-        if (
-            typeof showMessage ===
-            "function"
-        ) {
+        return;
 
-            showMessage(
-                "You cannot place a block here!"
-            );
+    }
 
-        }
+
+    const blockType =
+        getBlockTypeFromItem(
+            item
+        );
+
+
+    if (!blockType) {
 
         return;
 
@@ -1293,39 +1161,34 @@ function placeBlock() {
 
 
     /*
-       Add through the chunk-aware
-       world system.
+       Add through the chunk system.
     */
 
     addBlock(
-
         x,
-
         y,
-
         z,
-
-        item
-
+        blockType
     );
 
 
     /*
-       Remove one item.
+       Remove one item from the selected slot.
     */
 
-    inventory[item.id]--;
-
-
     if (
-        inventory[item.id] <= 0
+        item.amount !==
+        undefined
     ) {
 
-        inventory[item.id] =
-            0;
+        item.amount--;
 
     }
 
+
+    /*
+       Update inventory UI.
+    */
 
     if (
         typeof updateHotbar ===
@@ -1336,18 +1199,12 @@ function placeBlock() {
 
     }
 
-
-    if (
-        typeof showMessage ===
+    else if (
+        typeof updateHotbarUI ===
         "function"
     ) {
 
-        showMessage(
-
-            "Placed " +
-            item.name
-
-        );
+        updateHotbarUI();
 
     }
 
@@ -1362,15 +1219,16 @@ document.addEventListener(
     "mousedown",
     function(event) {
 
-        console.log(
-            "MOUSE DOWN:",
-            event.button,
-            "locked:",
-            mouseLocked
-        );
+        /*
+           Don't interact with the world
+           while a crafting menu is open.
+        */
 
-
-        if (craftingOpen) {
+        if (
+            typeof craftingOpen !==
+            "undefined" &&
+            craftingOpen
+        ) {
 
             return;
 
@@ -1381,13 +1239,13 @@ document.addEventListener(
            LEFT CLICK = MINING
         */
 
-        if (event.button === 0) {
+        if (
+            event.button === 0
+        ) {
 
-            leftMouseDown = true;
+            leftMouseDown =
+                true;
 
-            console.log(
-                "STARTING MINING"
-            );
 
             startMining();
 
@@ -1395,13 +1253,44 @@ document.addEventListener(
 
 
         /*
-           RIGHT CLICK = BLOCK PLACEMENT
+           RIGHT CLICK = PLACING
         */
 
         if (
-            event.button === 2 &&
-            mouseLocked
+            event.button === 2
         ) {
+
+            /*
+               If the right-clicked block is a
+               crafting table, open it instead.
+            */
+
+            const target =
+                getTargetBlock();
+
+
+            if (
+                target &&
+                typeof BLOCKS !==
+                "undefined" &&
+                target.userData.type ===
+                BLOCKS.crafting_table
+            ) {
+
+                if (
+                    typeof openCraftingTable ===
+                    "function"
+                ) {
+
+                    openCraftingTable();
+
+                }
+
+
+                return;
+
+            }
+
 
             placeBlock();
 
@@ -1419,9 +1308,13 @@ document.addEventListener(
     "mouseup",
     function(event) {
 
-        if (event.button === 0) {
+        if (
+            event.button === 0
+        ) {
 
-            leftMouseDown = false;
+            leftMouseDown =
+                false;
+
 
             stopMining();
 
