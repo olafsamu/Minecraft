@@ -3,24 +3,6 @@
 BLOCKWORLD
 Mining + Block Placement
 =========================================================
-
-Handles:
-
-- Block targeting
-- Mining
-- Crack animation
-- Block breaking
-- Block placement
-- Mouse input
-
-Compatible with the current:
-
-blocks.js
-chunks.js
-inventory.js
-crafting.js
-cracks.js
-=========================================================
 */
 
 
@@ -30,7 +12,7 @@ cracks.js
 
 const REACH_DISTANCE = 6;
 
-const BREAK_TIME = 0.5;
+const DEFAULT_BREAK_TIME = 500;
 
 
 /* ======================================================
@@ -45,19 +27,15 @@ let breakingKey = null;
 
 let breakingStart = 0;
 
+let currentBreakTime =
+    DEFAULT_BREAK_TIME;
+
 let leftMouseDown = false;
 
 
 /* ======================================================
    TARGET PROXY
 ====================================================== */
-
-/*
-   This invisible mesh is NOT rendered.
-
-   It is only used to give the crack system a position
-   in the world.
-*/
 
 const targetProxy =
     new THREE.Mesh(
@@ -69,11 +47,12 @@ const targetProxy =
         })
     );
 
+
 targetProxy.visible = false;
 
 
 /* ======================================================
-   FIND BLOCK THE PLAYER IS LOOKING AT
+   TARGET BLOCK
 ====================================================== */
 
 function getTargetBlock() {
@@ -94,39 +73,34 @@ function getTargetBlock() {
     direction.normalize();
 
 
-    const stepSize = 0.05;
+    const step =
+        0.02;
 
-    const steps =
+
+    const maxSteps =
         Math.ceil(
-            REACH_DISTANCE /
-            stepSize
+            REACH_DISTANCE / step
         );
 
 
     let previousX =
-        Math.floor(
-            origin.x
-        );
+        Math.floor(origin.x);
 
     let previousY =
-        Math.floor(
-            origin.y
-        );
+        Math.floor(origin.y);
 
     let previousZ =
-        Math.floor(
-            origin.z
-        );
+        Math.floor(origin.z);
 
 
     for (
         let i = 0;
-        i <= steps;
+        i <= maxSteps;
         i++
     ) {
 
         const distance =
-            i * stepSize;
+            i * step;
 
 
         const point =
@@ -138,27 +112,17 @@ function getTargetBlock() {
 
 
         const x =
-            Math.floor(
-                point.x
-            );
+            Math.floor(point.x);
 
         const y =
-            Math.floor(
-                point.y
-            );
+            Math.floor(point.y);
 
         const z =
-            Math.floor(
-                point.z
-            );
+            Math.floor(point.z);
 
-
-        /*
-           Skip the same voxel repeatedly.
-        */
 
         if (
-            i !== 0 &&
+            i > 0 &&
             x === previousX &&
             y === previousY &&
             z === previousZ
@@ -177,10 +141,6 @@ function getTargetBlock() {
             );
 
 
-        /*
-           We found a block.
-        */
-
         if (
             world.has(key)
         ) {
@@ -191,130 +151,126 @@ function getTargetBlock() {
 
             if (!type) {
 
-                targetedBlock =
-                    null;
-
                 return null;
 
             }
 
 
             /*
-               Determine which face was hit.
+               Determine the actual face
+               that the ray entered.
+
+               We use the hit point instead of
+               relying on the movement between
+               voxels, which is more reliable
+               when looking diagonally.
             */
 
-            const faceNormal =
-                new THREE.Vector3(
-                    previousX - x,
-                    previousY - y,
-                    previousZ - z
-                );
+            const centerX =
+                x + 0.5;
+
+            const centerY =
+                y + 0.5;
+
+            const centerZ =
+                z + 0.5;
 
 
-            /*
-               If the first voxel was somehow
-               the target, determine the face
-               from the camera direction.
-            */
+            const localX =
+                point.x - centerX;
+
+            const localY =
+                point.y - centerY;
+
+            const localZ =
+                point.z - centerZ;
+
+
+            const distanceToX =
+                0.5 - Math.abs(localX);
+
+            const distanceToY =
+                0.5 - Math.abs(localY);
+
+            const distanceToZ =
+                0.5 - Math.abs(localZ);
+
+
+            let faceNormal;
+
 
             if (
-                faceNormal.lengthSq() === 0
+                distanceToX <=
+                    distanceToY &&
+                distanceToX <=
+                    distanceToZ
             ) {
 
-                const ax =
-                    Math.abs(
-                        direction.x
-                    );
-
-                const ay =
-                    Math.abs(
-                        direction.y
-                    );
-
-                const az =
-                    Math.abs(
-                        direction.z
-                    );
-
-
-                if (
-                    ax >= ay &&
-                    ax >= az
-                ) {
-
-                    faceNormal.set(
-                        direction.x > 0
-                            ? -1
-                            : 1,
+                faceNormal =
+                    new THREE.Vector3(
+                        localX >= 0
+                            ? 1
+                            : -1,
                         0,
                         0
                     );
 
-                }
+            }
 
-                else if (
-                    ay >= az
-                ) {
+            else if (
+                distanceToY <=
+                    distanceToZ
+            ) {
 
-                    faceNormal.set(
+                faceNormal =
+                    new THREE.Vector3(
                         0,
-                        direction.y > 0
-                            ? -1
-                            : 1,
+                        localY >= 0
+                            ? 1
+                            : -1,
                         0
                     );
 
-                }
+            }
 
-                else {
+            else {
 
-                    faceNormal.set(
+                faceNormal =
+                    new THREE.Vector3(
                         0,
                         0,
-                        direction.z > 0
-                            ? -1
-                            : 1
+                        localZ >= 0
+                            ? 1
+                            : -1
                     );
-
-                }
 
             }
 
 
-            /*
-               Store all target information
-               on the invisible proxy.
-            */
-
             targetProxy.position.set(
-                x + 0.5,
-                y + 0.5,
-                z + 0.5
+                centerX,
+                centerY,
+                centerZ
             );
 
 
             targetProxy.userData.key =
                 key;
 
-
             targetProxy.userData.type =
                 type;
-
 
             targetProxy.userData.x =
                 x;
 
-
             targetProxy.userData.y =
                 y;
-
 
             targetProxy.userData.z =
                 z;
 
-
             targetProxy.userData.faceNormal =
-                faceNormal.clone();
+                faceNormal;
 
 
             targetedBlock =
@@ -345,7 +301,7 @@ function getTargetBlock() {
 
 
 /* ======================================================
-   CHECK WHETHER BLOCK CAN BE BROKEN
+   CAN BREAK?
 ====================================================== */
 
 function canBreak(
@@ -360,16 +316,7 @@ function canBreak(
 
 
     /*
-    ------------------------------------------------------
-    BLOCKS THAT DO NOT REQUIRE A TOOL
-
-    Your blocks.js contains:
-
-        requiresTool: false
-
-    for grass, dirt, wood, leaves, planks,
-    and crafting tables.
-    ------------------------------------------------------
+       Hand-breakable blocks.
     */
 
     if (
@@ -382,9 +329,7 @@ function canBreak(
 
 
     /*
-    ------------------------------------------------------
-    BLOCKS THAT REQUIRE A PICKAXE
-    ------------------------------------------------------
+       Pickaxe blocks.
     */
 
     if (
@@ -402,25 +347,19 @@ function canBreak(
         }
 
 
-        const selected =
+        const item =
             getSelectedItem();
 
 
-        if (!selected) {
+        if (!item) {
 
             return false;
 
         }
 
 
-        /*
-           Your ITEMS.pickaxe is:
-
-               type: "pickaxe"
-        */
-
         return (
-            selected.type === "pickaxe"
+            item.type === "pickaxe"
         );
 
     }
@@ -461,25 +400,24 @@ function startMining() {
     }
 
 
-    const key =
-        target.userData.key;
-
-
     breaking =
         true;
 
 
     breakingKey =
-        key;
+        target.userData.key;
 
 
     breakingStart =
         performance.now();
 
 
-    /*
-       Start crack animation.
-    */
+    currentBreakTime =
+        typeof type.breakTime ===
+        "number"
+            ? type.breakTime
+            : DEFAULT_BREAK_TIME;
+
 
     if (
         typeof createCrackOverlay ===
@@ -487,7 +425,8 @@ function startMining() {
     ) {
 
         createCrackOverlay(
-            target
+            target,
+            target.userData.faceNormal
         );
 
     }
@@ -503,11 +442,6 @@ function updateMining(
     delta
 ) {
 
-    /*
-       Nothing to mine if the mouse
-       is not being held.
-    */
-
     if (
         !leftMouseDown
     ) {
@@ -516,10 +450,6 @@ function updateMining(
 
     }
 
-
-    /*
-       Don't mine while crafting.
-    */
 
     if (
         typeof craftingOpen !==
@@ -538,11 +468,6 @@ function updateMining(
         getTargetBlock();
 
 
-    /*
-       Player is no longer looking at
-       a block.
-    */
-
     if (!target) {
 
         stopMining();
@@ -555,11 +480,6 @@ function updateMining(
     const type =
         target.userData.type;
 
-
-    /*
-       Block cannot be mined with the
-       currently selected tool.
-    */
 
     if (
         !canBreak(type)
@@ -577,9 +497,8 @@ function updateMining(
 
 
     /*
-       Player changed target block.
-
-       Restart mining.
+       The player looked at a different block.
+       Restart the mining timer.
     */
 
     if (
@@ -587,28 +506,9 @@ function updateMining(
         breakingKey !== key
     ) {
 
-        breaking =
-            true;
+        startMining();
 
-
-        breakingKey =
-            key;
-
-
-        breakingStart =
-            performance.now();
-
-
-        if (
-            typeof createCrackOverlay ===
-            "function"
-        ) {
-
-            createCrackOverlay(
-                target
-            );
-
-        }
+        return;
 
     }
 
@@ -622,13 +522,9 @@ function updateMining(
         Math.min(
             1,
             elapsed /
-            (BREAK_TIME * 1000)
+            currentBreakTime
         );
 
-
-    /*
-       Update crack animation.
-    */
 
     if (
         typeof updateCrackOverlay ===
@@ -641,10 +537,6 @@ function updateMining(
 
     }
 
-
-    /*
-       Block has finished breaking.
-    */
 
     if (
         progress >= 1
@@ -668,8 +560,7 @@ function breakBlock(
 ) {
 
     if (
-        !target ||
-        !target.userData.key
+        !target
     ) {
 
         stopMining();
@@ -695,10 +586,6 @@ function breakBlock(
         target.userData.z;
 
 
-    /*
-       Make sure the block still exists.
-    */
-
     if (
         !world.has(key)
     ) {
@@ -715,7 +602,7 @@ function breakBlock(
 
 
     /*
-       Remove block from the world.
+       Remove world data.
     */
 
     world.delete(
@@ -724,7 +611,7 @@ function breakBlock(
 
 
     /*
-       Remove it from chunk membership.
+       Remove chunk membership.
     */
 
     if (
@@ -734,15 +621,12 @@ function breakBlock(
 
         const chunkX =
             Math.floor(
-                x /
-                CHUNK_SIZE
+                x / CHUNK_SIZE
             );
-
 
         const chunkZ =
             Math.floor(
-                z /
-                CHUNK_SIZE
+                z / CHUNK_SIZE
             );
 
 
@@ -770,8 +654,7 @@ function breakBlock(
 
 
     /*
-       Remove an old individual mesh
-       if one exists.
+       Remove special mesh if present.
     */
 
     if (
@@ -795,15 +678,13 @@ function breakBlock(
         }
 
 
-        meshes.delete(
-            key
-        );
+        meshes.delete(key);
 
     }
 
 
     /*
-       Give the block to the player.
+       Give the item to the player.
     */
 
     if (
@@ -821,7 +702,7 @@ function breakBlock(
 
 
     /*
-       Rebuild the affected chunk.
+       Update chunks.
     */
 
     if (
@@ -861,6 +742,10 @@ function stopMining() {
         0;
 
 
+    currentBreakTime =
+        DEFAULT_BREAK_TIME;
+
+
     if (
         typeof removeCrackOverlay ===
         "function"
@@ -874,7 +759,7 @@ function stopMining() {
 
 
 /* ======================================================
-   GET BLOCK TYPE FROM INVENTORY ITEM
+   GET BLOCK FROM ITEM
 ====================================================== */
 
 function getBlockTypeFromItem(
@@ -903,10 +788,6 @@ function getBlockTypeFromItem(
         item.type;
 
 
-    /*
-       Direct ID lookup.
-    */
-
     if (
         id &&
         BLOCKS[id]
@@ -916,10 +797,6 @@ function getBlockTypeFromItem(
 
     }
 
-
-    /*
-       Name lookup.
-    */
 
     if (
         item.name
@@ -977,24 +854,8 @@ function placeBlock() {
     }
 
 
-    /*
-       Tools cannot be placed.
-    */
-
     if (
-        item.type === "pickaxe"
-    ) {
-
-        return;
-
-    }
-
-
-    /*
-       Sticks cannot be placed.
-    */
-
-    if (
+        item.type === "pickaxe" ||
         item.type === "sticks"
     ) {
 
@@ -1002,10 +863,6 @@ function placeBlock() {
 
     }
 
-
-    /*
-       Make sure an item actually exists.
-    */
 
     if (
         item.amount !==
@@ -1042,23 +899,17 @@ function placeBlock() {
 
     const x =
         target.userData.x +
-        Math.round(
-            normal.x
-        );
+        Math.round(normal.x);
 
 
     const y =
         target.userData.y +
-        Math.round(
-            normal.y
-        );
+        Math.round(normal.y);
 
 
     const z =
         target.userData.z +
-        Math.round(
-            normal.z
-        );
+        Math.round(normal.z);
 
 
     const key =
@@ -1068,10 +919,6 @@ function placeBlock() {
             z
         );
 
-
-    /*
-       Don't place inside an existing block.
-    */
 
     if (
         world.has(key)
@@ -1083,7 +930,8 @@ function placeBlock() {
 
 
     /*
-       Don't place a block inside the player.
+       Prevent placing a block inside
+       the player.
     */
 
     const bottom =
@@ -1091,7 +939,7 @@ function placeBlock() {
         EYE_HEIGHT;
 
 
-    const intersectsPlayer =
+    const insidePlayer =
 
         x + 1 >
         camera.position.x -
@@ -1118,7 +966,7 @@ function placeBlock() {
 
 
     if (
-        intersectsPlayer
+        insidePlayer
     ) {
 
         return;
@@ -1139,10 +987,6 @@ function placeBlock() {
     }
 
 
-    /*
-       Add block to the world.
-    */
-
     addBlock(
         x,
         y,
@@ -1150,10 +994,6 @@ function placeBlock() {
         blockType
     );
 
-
-    /*
-       Remove one item.
-    */
 
     if (
         item.amount !==
@@ -1164,10 +1004,6 @@ function placeBlock() {
 
     }
 
-
-    /*
-       Refresh hotbar.
-    */
 
     if (
         typeof updateHotbar ===
@@ -1198,10 +1034,6 @@ document.addEventListener(
     "mousedown",
     function(event) {
 
-        /*
-           Don't interact while crafting.
-        */
-
         if (
             typeof craftingOpen !==
             "undefined" &&
@@ -1214,8 +1046,7 @@ document.addEventListener(
 
 
         /*
-           LEFT CLICK
-           = START MINING
+           LEFT CLICK = MINE
         */
 
         if (
@@ -1232,8 +1063,7 @@ document.addEventListener(
 
 
         /*
-           RIGHT CLICK
-           = PLACE BLOCK
+           RIGHT CLICK = PLACE
         */
 
         if (
@@ -1245,11 +1075,13 @@ document.addEventListener(
 
 
             /*
-               Right-click crafting table.
+               Crafting table interaction.
             */
 
             if (
                 target &&
+                typeof BLOCKS !==
+                "undefined" &&
                 target.userData.type ===
                 BLOCKS.crafting_table
             ) {
@@ -1302,7 +1134,7 @@ document.addEventListener(
 
 
 /* ======================================================
-   DISABLE BROWSER RIGHT-CLICK MENU
+   RIGHT CLICK MENU
 ====================================================== */
 
 document.addEventListener(
