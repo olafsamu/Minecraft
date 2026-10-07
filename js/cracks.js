@@ -3,14 +3,28 @@
 BLOCKWORLD
 Mining Crack Visuals
 =========================================================
+
+Creates a Minecraft-style crack overlay on the
+EXACT FACE of the block being mined.
+
+Only one face is drawn at a time.
+=========================================================
 */
+
+
+/* ======================================================
+   STATE
+====================================================== */
 
 let crackOverlay = null;
 
 
 /* ======================================================
-   CREATE CRACK TEXTURE
+   CRACK TEXTURES
 ====================================================== */
+
+const crackTextures = [];
+
 
 function createCrackTexture(stage) {
 
@@ -19,6 +33,7 @@ function createCrackTexture(stage) {
 
     canvas.width = 128;
     canvas.height = 128;
+
 
     const ctx =
         canvas.getContext("2d");
@@ -32,12 +47,8 @@ function createCrackTexture(stage) {
     );
 
 
-    /*
-       Crack appearance
-    */
-
     ctx.strokeStyle =
-        "rgba(15, 15, 15, 0.95)";
+        "rgba(15,15,15,0.95)";
 
     ctx.lineWidth = 5;
 
@@ -46,112 +57,94 @@ function createCrackTexture(stage) {
     ctx.lineJoin = "round";
 
 
-    /*
-       Crack stages
-    */
-
     const cracks = [
-
-        /* Stage 0 */
 
         [],
 
-
-        /* Stage 1 */
-
         [
             [
-                [20, 15],
-                [48, 48],
-                [35, 75]
+                [20,15],
+                [48,48],
+                [35,75]
             ]
         ],
 
-
-        /* Stage 2 */
-
         [
             [
-                [20, 15],
-                [48, 48],
-                [35, 75]
+                [20,15],
+                [48,48],
+                [35,75]
             ],
 
             [
-                [48, 48],
-                [78, 30],
-                [108, 45]
+                [48,48],
+                [78,30],
+                [108,45]
             ]
         ],
 
-
-        /* Stage 3 */
-
         [
             [
-                [20, 15],
-                [48, 48],
-                [35, 75]
+                [20,15],
+                [48,48],
+                [35,75]
             ],
 
             [
-                [48, 48],
-                [78, 30],
-                [108, 45]
+                [48,48],
+                [78,30],
+                [108,45]
             ],
 
             [
-                [48, 48],
-                [63, 75],
-                [92, 108]
+                [48,48],
+                [63,75],
+                [92,108]
             ],
 
             [
-                [35, 75],
-                [15, 108]
+                [35,75],
+                [15,108]
             ]
         ],
 
-
-        /* Stage 4 */
-
         [
             [
-                [20, 15],
-                [48, 48],
-                [35, 75]
+                [20,15],
+                [48,48],
+                [35,75]
             ],
 
             [
-                [48, 48],
-                [78, 30],
-                [108, 45]
+                [48,48],
+                [78,30],
+                [108,45]
             ],
 
             [
-                [48, 48],
-                [63, 75],
-                [92, 108]
+                [48,48],
+                [63,75],
+                [92,108]
             ],
 
             [
-                [35, 75],
-                [15, 108]
+                [35,75],
+                [15,108]
             ],
 
             [
-                [78, 30],
-                [68, 8]
+                [78,30],
+                [68,8]
             ],
 
             [
-                [63, 75],
-                [112, 75]
+                [63,75],
+                [112,75]
             ],
 
             [
-                [78, 30],
-                [98, 8]
+                [78,30],
+                [98,8]
             ]
         ]
 
@@ -167,20 +160,14 @@ function createCrackTexture(stage) {
         ];
 
 
-    /*
-       Draw cracks.
-    */
-
     selectedCracks.forEach(
         crack => {
 
             ctx.beginPath();
 
+
             crack.forEach(
-                (
-                    point,
-                    index
-                ) => {
+                (point,index) => {
 
                     if (
                         index === 0
@@ -191,7 +178,9 @@ function createCrackTexture(stage) {
                             point[1]
                         );
 
-                    } else {
+                    }
+
+                    else {
 
                         ctx.lineTo(
                             point[0],
@@ -203,15 +192,52 @@ function createCrackTexture(stage) {
                 }
             );
 
+
             ctx.stroke();
 
         }
     );
 
 
-    return new THREE.CanvasTexture(
-        canvas
-    );
+    const texture =
+        new THREE.CanvasTexture(
+            canvas
+        );
+
+
+    texture.needsUpdate = true;
+
+    return texture;
+
+}
+
+
+/* ======================================================
+   BUILD TEXTURE CACHE
+====================================================== */
+
+function initCrackTextures() {
+
+    if (
+        crackTextures.length > 0
+    ) {
+
+        return;
+
+    }
+
+
+    for (
+        let i = 0;
+        i < 5;
+        i++
+    ) {
+
+        crackTextures.push(
+            createCrackTexture(i)
+        );
+
+    }
 
 }
 
@@ -220,199 +246,130 @@ function createCrackTexture(stage) {
    CREATE CRACK OVERLAY
 ====================================================== */
 
-function createCrackOverlay(block) {
+function createCrackOverlay(
+    block,
+    faceNormal
+) {
 
     removeCrackOverlay();
 
 
-    /*
-       Create a group containing
-       six crack planes.
+    initCrackTextures();
 
-       This makes cracks visible
-       from every side of the block.
-    */
+
+    if (
+        !block
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        !faceNormal
+    ) {
+
+        return;
+
+    }
+
 
     crackOverlay =
-        new THREE.Group();
+        new THREE.Mesh(
+            new THREE.PlaneGeometry(
+                1.006,
+                1.006
+            ),
+            new THREE.MeshBasicMaterial({
 
+                map:
+                    crackTextures[0],
 
-    const texture =
-        createCrackTexture(0);
+                transparent:
+                    true,
+
+                depthWrite:
+                    false,
+
+                depthTest:
+                    true,
+
+                side:
+                    THREE.FrontSide,
+
+                polygonOffset:
+                    true,
+
+                polygonOffsetFactor:
+                    -1,
+
+                polygonOffsetUnits:
+                    -1
+
+            })
+        );
 
 
     /*
-       Front / Back
-    */
-
-    const front =
-        new THREE.Mesh(
-            new THREE.PlaneGeometry(
-                1.01,
-                1.01
-            ),
-            new THREE.MeshBasicMaterial({
-                map: texture,
-                transparent: true,
-                depthWrite: false,
-                side: THREE.DoubleSide
-            })
-        );
-
-
-    front.position.z =
-        0.506;
-
-
-    crackOverlay.add(front);
-
-
-    const back =
-        new THREE.Mesh(
-            new THREE.PlaneGeometry(
-                1.01,
-                1.01
-            ),
-            new THREE.MeshBasicMaterial({
-                map: texture,
-                transparent: true,
-                depthWrite: false,
-                side: THREE.DoubleSide
-            })
-        );
-
-
-    back.position.z =
-        -0.506;
-
-
-    back.rotation.y =
-        Math.PI;
-
-
-    crackOverlay.add(back);
-
-
-    /*
-       Left / Right
-    */
-
-    const right =
-        new THREE.Mesh(
-            new THREE.PlaneGeometry(
-                1.01,
-                1.01
-            ),
-            new THREE.MeshBasicMaterial({
-                map: texture,
-                transparent: true,
-                depthWrite: false,
-                side: THREE.DoubleSide
-            })
-        );
-
-
-    right.position.x =
-        0.506;
-
-
-    right.rotation.y =
-        Math.PI / 2;
-
-
-    crackOverlay.add(right);
-
-
-    const left =
-        new THREE.Mesh(
-            new THREE.PlaneGeometry(
-                1.01,
-                1.01
-            ),
-            new THREE.MeshBasicMaterial({
-                map: texture,
-                transparent: true,
-                depthWrite: false,
-                side: THREE.DoubleSide
-            })
-        );
-
-
-    left.position.x =
-        -0.506;
-
-
-    left.rotation.y =
-        -Math.PI / 2;
-
-
-    crackOverlay.add(left);
-
-
-    /*
-       Top / Bottom
-    */
-
-    const top =
-        new THREE.Mesh(
-            new THREE.PlaneGeometry(
-                1.01,
-                1.01
-            ),
-            new THREE.MeshBasicMaterial({
-                map: texture,
-                transparent: true,
-                depthWrite: false,
-                side: THREE.DoubleSide
-            })
-        );
-
-
-    top.position.y =
-        0.506;
-
-
-    top.rotation.x =
-        -Math.PI / 2;
-
-
-    crackOverlay.add(top);
-
-
-    const bottom =
-        new THREE.Mesh(
-            new THREE.PlaneGeometry(
-                1.01,
-                1.01
-            ),
-            new THREE.MeshBasicMaterial({
-                map: texture,
-                transparent: true,
-                depthWrite: false,
-                side: THREE.DoubleSide
-            })
-        );
-
-
-    bottom.position.y =
-        -0.506;
-
-
-    bottom.rotation.x =
-        Math.PI / 2;
-
-
-    crackOverlay.add(bottom);
-
-
-    /*
-       Put the entire crack system
-       on the block.
+       Put crack plane directly on the
+       selected face.
     */
 
     crackOverlay.position.copy(
         block.position
     );
+
+
+    const normal =
+        faceNormal.clone().normalize();
+
+
+    const offset =
+        0.504;
+
+
+    crackOverlay.position.add(
+        normal.clone().multiplyScalar(
+            offset
+        )
+    );
+
+
+    /*
+       Rotate the plane to the correct face.
+    */
+
+    if (
+        Math.abs(normal.x) > 0.5
+    ) {
+
+        crackOverlay.rotation.y =
+            normal.x > 0
+                ? Math.PI / 2
+                : -Math.PI / 2;
+
+    }
+
+    else if (
+        Math.abs(normal.y) > 0.5
+    ) {
+
+        crackOverlay.rotation.x =
+            normal.y > 0
+                ? -Math.PI / 2
+                : Math.PI / 2;
+
+    }
+
+    else {
+
+        crackOverlay.rotation.y =
+            normal.z > 0
+                ? 0
+                : Math.PI;
+
+    }
 
 
     scene.add(
@@ -423,13 +380,19 @@ function createCrackOverlay(block) {
 
 
 /* ======================================================
-   UPDATE CRACKS
+   UPDATE CRACK
 ====================================================== */
 
-function updateCrackOverlay(progress) {
+function updateCrackOverlay(
+    progress
+) {
 
-    if (!crackOverlay) {
+    if (
+        !crackOverlay
+    ) {
+
         return;
+
     }
 
 
@@ -440,80 +403,70 @@ function updateCrackOverlay(progress) {
 
 
     stage =
-        Math.min(
-            stage,
-            4
+        Math.max(
+            0,
+            Math.min(
+                stage,
+                4
+            )
         );
 
 
-    const texture =
-        createCrackTexture(stage);
+    crackOverlay.material.map =
+        crackTextures[stage];
 
 
-    /*
-       Give every face the new texture.
-    */
-
-    crackOverlay.children.forEach(
-        face => {
-
-            if (
-                face.material.map
-            ) {
-
-                face.material.map.dispose();
-
-            }
-
-
-            face.material.map =
-                texture;
-
-            face.material.needsUpdate =
-                true;
-
-        }
-    );
+    crackOverlay.material.needsUpdate =
+        true;
 
 }
 
 
 /* ======================================================
-   REMOVE CRACKS
+   REMOVE CRACK
 ====================================================== */
 
 function removeCrackOverlay() {
 
-    if (!crackOverlay) {
+    if (
+        !crackOverlay
+    ) {
+
         return;
+
     }
 
 
-    scene.remove(
-        crackOverlay
-    );
+    if (
+        crackOverlay.parent
+    ) {
+
+        crackOverlay.parent.remove(
+            crackOverlay
+        );
+
+    }
 
 
-    crackOverlay.children.forEach(
-        face => {
+    if (
+        crackOverlay.geometry
+    ) {
 
-            if (
-                face.material.map
-            ) {
+        crackOverlay.geometry.dispose();
 
-                face.material.map.dispose();
-
-            }
+    }
 
 
-            face.geometry.dispose();
+    if (
+        crackOverlay.material
+    ) {
 
-            face.material.dispose();
+        crackOverlay.material.dispose();
 
-        }
-    );
+    }
 
 
-    crackOverlay = null;
+    crackOverlay =
+        null;
 
 }
