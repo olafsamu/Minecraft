@@ -2,18 +2,24 @@
 =========================================================
 BLOCKWORLD
 Mining + Block Placement
-Clean Chunk-Compatible Version
 =========================================================
 
-This file handles:
+Handles:
 
-- Looking at blocks
-- Breaking blocks
+- Block targeting
+- Mining
+- Crack animation
+- Block breaking
 - Block placement
 - Mouse input
 
-Terrain blocks are stored in the voxel world and rendered
-through the chunk system, so we do NOT raycast meshes.
+Compatible with the current:
+
+blocks.js
+chunks.js
+inventory.js
+crafting.js
+cracks.js
 =========================================================
 */
 
@@ -47,10 +53,10 @@ let leftMouseDown = false;
 ====================================================== */
 
 /*
-   Invisible compatibility mesh.
+   This invisible mesh is NOT rendered.
 
-   The actual terrain does NOT use this mesh.
-   It simply gives the crack system a position.
+   It is only used to give the crack system a position
+   in the world.
 */
 
 const targetProxy =
@@ -67,7 +73,7 @@ targetProxy.visible = false;
 
 
 /* ======================================================
-   GET TARGET BLOCK
+   FIND BLOCK THE PLAYER IS LOOKING AT
 ====================================================== */
 
 function getTargetBlock() {
@@ -88,13 +94,6 @@ function getTargetBlock() {
     direction.normalize();
 
 
-    /*
-       Small-step voxel ray.
-
-       Six blocks of reach with 0.05 steps
-       means only 120 checks.
-    */
-
     const stepSize = 0.05;
 
     const steps =
@@ -103,13 +102,6 @@ function getTargetBlock() {
             stepSize
         );
 
-
-    /*
-       Remember the previous voxel.
-
-       This lets us determine which face was hit,
-       which is needed for block placement.
-    */
 
     let previousX =
         Math.floor(
@@ -162,14 +154,14 @@ function getTargetBlock() {
 
 
         /*
-           Ignore repeated checks of the same voxel.
+           Skip the same voxel repeatedly.
         */
 
         if (
+            i !== 0 &&
             x === previousX &&
             y === previousY &&
-            z === previousZ &&
-            i !== 0
+            z === previousZ
         ) {
 
             continue;
@@ -186,19 +178,15 @@ function getTargetBlock() {
 
 
         /*
-           Did we hit a real block?
+           We found a block.
         */
 
         if (
-            world.has(
-                key
-            )
+            world.has(key)
         ) {
 
             const type =
-                world.get(
-                    key
-                );
+                world.get(key);
 
 
             if (!type) {
@@ -212,10 +200,10 @@ function getTargetBlock() {
 
 
             /*
-               Work out the face we entered through.
+               Determine which face was hit.
             */
 
-            let faceNormal =
+            const faceNormal =
                 new THREE.Vector3(
                     previousX - x,
                     previousY - y,
@@ -224,8 +212,9 @@ function getTargetBlock() {
 
 
             /*
-               If there is no useful previous voxel,
-               use the dominant camera direction.
+               If the first voxel was somehow
+               the target, determine the face
+               from the camera direction.
             */
 
             if (
@@ -293,7 +282,8 @@ function getTargetBlock() {
 
 
             /*
-               Store target information.
+               Store all target information
+               on the invisible proxy.
             */
 
             targetProxy.position.set(
@@ -355,7 +345,7 @@ function getTargetBlock() {
 
 
 /* ======================================================
-   CHECK IF BLOCK CAN BE BROKEN
+   CHECK WHETHER BLOCK CAN BE BROKEN
 ====================================================== */
 
 function canBreak(
@@ -370,11 +360,20 @@ function canBreak(
 
 
     /*
-       Most normal blocks are breakable by hand.
+    ------------------------------------------------------
+    BLOCKS THAT DO NOT REQUIRE A TOOL
+
+    Your blocks.js contains:
+
+        requiresTool: false
+
+    for grass, dirt, wood, leaves, planks,
+    and crafting tables.
+    ------------------------------------------------------
     */
 
     if (
-        type.breakable === true
+        type.requiresTool === false
     ) {
 
         return true;
@@ -383,19 +382,28 @@ function canBreak(
 
 
     /*
-       Some versions of blocks.js may use
-       "pickaxe" as the breakable value.
+    ------------------------------------------------------
+    BLOCKS THAT REQUIRE A PICKAXE
+    ------------------------------------------------------
     */
 
     if (
-        type.breakable === "pickaxe"
+        type.requiresTool === true &&
+        type.requiredTool === "pickaxe"
     ) {
 
-        const selected =
-            typeof getSelectedItem ===
+        if (
+            typeof getSelectedItem !==
             "function"
-                ? getSelectedItem()
-                : null;
+        ) {
+
+            return false;
+
+        }
+
+
+        const selected =
+            getSelectedItem();
 
 
         if (!selected) {
@@ -406,53 +414,14 @@ function canBreak(
 
 
         /*
-           Support several possible naming styles
-           for the wooden pickaxe.
+           Your ITEMS.pickaxe is:
+
+               type: "pickaxe"
         */
 
         return (
-            selected.type === "pickaxe" ||
-            selected.type === "wood_pickaxe" ||
-            selected.id === "wood_pickaxe"
+            selected.type === "pickaxe"
         );
-
-    }
-
-
-    /*
-       Also support requiresTool / requiredTool,
-       if blocks.js uses that structure.
-    */
-
-    if (
-        type.requiresTool
-    ) {
-
-        const selected =
-            typeof getSelectedItem ===
-            "function"
-                ? getSelectedItem()
-                : null;
-
-
-        if (!selected) {
-
-            return false;
-
-        }
-
-
-        if (
-            type.requiredTool === "pickaxe"
-        ) {
-
-            return (
-                selected.type === "pickaxe" ||
-                selected.type === "wood_pickaxe" ||
-                selected.id === "wood_pickaxe"
-            );
-
-        }
 
     }
 
@@ -509,7 +478,7 @@ function startMining() {
 
 
     /*
-       Start the crack visual if available.
+       Start crack animation.
     */
 
     if (
@@ -535,8 +504,8 @@ function updateMining(
 ) {
 
     /*
-       Mining only happens while left mouse
-       is being held.
+       Nothing to mine if the mouse
+       is not being held.
     */
 
     if (
@@ -549,7 +518,7 @@ function updateMining(
 
 
     /*
-       If crafting is open, don't mine.
+       Don't mine while crafting.
     */
 
     if (
@@ -569,6 +538,11 @@ function updateMining(
         getTargetBlock();
 
 
+    /*
+       Player is no longer looking at
+       a block.
+    */
+
     if (!target) {
 
         stopMining();
@@ -581,6 +555,11 @@ function updateMining(
     const type =
         target.userData.type;
 
+
+    /*
+       Block cannot be mined with the
+       currently selected tool.
+    */
 
     if (
         !canBreak(type)
@@ -598,8 +577,9 @@ function updateMining(
 
 
     /*
-       Looking at another block starts
-       a new mining operation.
+       Player changed target block.
+
+       Restart mining.
     */
 
     if (
@@ -647,7 +627,7 @@ function updateMining(
 
 
     /*
-       Update crack visual.
+       Update crack animation.
     */
 
     if (
@@ -663,7 +643,7 @@ function updateMining(
 
 
     /*
-       Finished!
+       Block has finished breaking.
     */
 
     if (
@@ -735,7 +715,7 @@ function breakBlock(
 
 
     /*
-       Remove from world data.
+       Remove block from the world.
     */
 
     world.delete(
@@ -744,7 +724,7 @@ function breakBlock(
 
 
     /*
-       Remove from chunk membership.
+       Remove it from chunk membership.
     */
 
     if (
@@ -766,7 +746,7 @@ function breakBlock(
             );
 
 
-        const cKey =
+        const chunkKey =
             chunkX +
             "," +
             chunkZ;
@@ -774,7 +754,7 @@ function breakBlock(
 
         const members =
             chunkMembers.get(
-                cKey
+                chunkKey
             );
 
 
@@ -790,10 +770,8 @@ function breakBlock(
 
 
     /*
-       Remove an old individual mesh if one exists.
-
-       Important:
-       We do NOT dispose shared terrain geometry.
+       Remove an old individual mesh
+       if one exists.
     */
 
     if (
@@ -825,7 +803,7 @@ function breakBlock(
 
 
     /*
-       Give the block to the inventory.
+       Give the block to the player.
     */
 
     if (
@@ -859,10 +837,6 @@ function breakBlock(
 
     }
 
-
-    /*
-       Stop mining.
-    */
 
     stopMining();
 
@@ -900,7 +874,7 @@ function stopMining() {
 
 
 /* ======================================================
-   GET BLOCK TYPE FROM ITEM
+   GET BLOCK TYPE FROM INVENTORY ITEM
 ====================================================== */
 
 function getBlockTypeFromItem(
@@ -914,11 +888,6 @@ function getBlockTypeFromItem(
     }
 
 
-    const id =
-        item.id ||
-        item.type;
-
-
     if (
         typeof BLOCKS ===
         "undefined"
@@ -929,7 +898,17 @@ function getBlockTypeFromItem(
     }
 
 
+    const id =
+        item.id ||
+        item.type;
+
+
+    /*
+       Direct ID lookup.
+    */
+
     if (
+        id &&
         BLOCKS[id]
     ) {
 
@@ -939,8 +918,7 @@ function getBlockTypeFromItem(
 
 
     /*
-       Some inventory systems use names
-       instead of IDs.
+       Name lookup.
     */
 
     if (
@@ -1000,26 +978,11 @@ function placeBlock() {
 
 
     /*
-       Tools and non-placeable items
-       cannot be placed.
+       Tools cannot be placed.
     */
 
     if (
-        item.placeable === false
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        item.placeable ===
-        undefined &&
-        (
-            item.type === "pickaxe" ||
-            item.type === "sticks"
-        )
+        item.type === "pickaxe"
     ) {
 
         return;
@@ -1028,7 +991,20 @@ function placeBlock() {
 
 
     /*
-       Make sure there is actually an item.
+       Sticks cannot be placed.
+    */
+
+    if (
+        item.type === "sticks"
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+       Make sure an item actually exists.
     */
 
     if (
@@ -1094,7 +1070,7 @@ function placeBlock() {
 
 
     /*
-       Don't place inside another block.
+       Don't place inside an existing block.
     */
 
     if (
@@ -1107,7 +1083,7 @@ function placeBlock() {
 
 
     /*
-       Player collision check.
+       Don't place a block inside the player.
     */
 
     const bottom =
@@ -1115,7 +1091,7 @@ function placeBlock() {
         EYE_HEIGHT;
 
 
-    if (
+    const intersectsPlayer =
 
         x + 1 >
         camera.position.x -
@@ -1138,8 +1114,11 @@ function placeBlock() {
 
         z <
         camera.position.z +
-        PLAYER_RADIUS
+        PLAYER_RADIUS;
 
+
+    if (
+        intersectsPlayer
     ) {
 
         return;
@@ -1161,7 +1140,7 @@ function placeBlock() {
 
 
     /*
-       Add through the chunk system.
+       Add block to the world.
     */
 
     addBlock(
@@ -1173,7 +1152,7 @@ function placeBlock() {
 
 
     /*
-       Remove one item from the selected slot.
+       Remove one item.
     */
 
     if (
@@ -1187,7 +1166,7 @@ function placeBlock() {
 
 
     /*
-       Update inventory UI.
+       Refresh hotbar.
     */
 
     if (
@@ -1212,7 +1191,7 @@ function placeBlock() {
 
 
 /* ======================================================
-   MOUSE INPUT
+   MOUSE DOWN
 ====================================================== */
 
 document.addEventListener(
@@ -1220,8 +1199,7 @@ document.addEventListener(
     function(event) {
 
         /*
-           Don't interact with the world
-           while a crafting menu is open.
+           Don't interact while crafting.
         */
 
         if (
@@ -1236,7 +1214,8 @@ document.addEventListener(
 
 
         /*
-           LEFT CLICK = MINING
+           LEFT CLICK
+           = START MINING
         */
 
         if (
@@ -1253,26 +1232,24 @@ document.addEventListener(
 
 
         /*
-           RIGHT CLICK = PLACING
+           RIGHT CLICK
+           = PLACE BLOCK
         */
 
         if (
             event.button === 2
         ) {
 
-            /*
-               If the right-clicked block is a
-               crafting table, open it instead.
-            */
-
             const target =
                 getTargetBlock();
 
 
+            /*
+               Right-click crafting table.
+            */
+
             if (
                 target &&
-                typeof BLOCKS !==
-                "undefined" &&
                 target.userData.type ===
                 BLOCKS.crafting_table
             ) {
@@ -1301,7 +1278,7 @@ document.addEventListener(
 
 
 /* ======================================================
-   MOUSE RELEASE
+   MOUSE UP
 ====================================================== */
 
 document.addEventListener(
@@ -1325,7 +1302,7 @@ document.addEventListener(
 
 
 /* ======================================================
-   PREVENT RIGHT CLICK MENU
+   DISABLE BROWSER RIGHT-CLICK MENU
 ====================================================== */
 
 document.addEventListener(
