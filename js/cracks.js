@@ -42,84 +42,132 @@ function createCrackTexture(stage) {
     ctx.lineJoin = "round";
 
 
+    /*
+       All crack patterns are deliberately
+       centered around approximately 64,64.
+
+       This prevents the cracks from looking
+       shifted toward one corner of the block.
+    */
+
     const cracks = [
 
+        /*
+        Stage 0
+        No cracks yet.
+        */
         [],
 
+
+        /*
+        Stage 1
+        Small central crack.
+        */
         [
             [
-                [20,15],
-                [48,48],
-                [35,75]
+                [42,32],
+                [64,64],
+                [56,92]
             ]
         ],
 
+
+        /*
+        Stage 2
+        Central crack + upper-right branch.
+        */
         [
             [
-                [20,15],
-                [48,48],
-                [35,75]
+                [42,32],
+                [64,64],
+                [56,92]
             ],
+
             [
-                [48,48],
-                [78,30],
-                [108,45]
+                [64,64],
+                [88,48],
+                [106,58]
             ]
         ],
 
+
+        /*
+        Stage 3
+        More branches spreading from the center.
+        */
         [
             [
-                [20,15],
-                [48,48],
-                [35,75]
+                [42,32],
+                [64,64],
+                [56,92]
             ],
+
             [
-                [48,48],
-                [78,30],
-                [108,45]
+                [64,64],
+                [88,48],
+                [106,58]
             ],
+
             [
-                [48,48],
-                [63,75],
-                [92,108]
+                [64,64],
+                [74,82],
+                [92,106]
             ],
+
             [
-                [35,75],
-                [15,108]
+                [56,92],
+                [34,108]
             ]
         ],
 
+
+        /*
+        Stage 4
+        Full crack pattern.
+        */
         [
             [
-                [20,15],
-                [48,48],
-                [35,75]
+                [42,32],
+                [64,64],
+                [56,92]
             ],
+
             [
-                [48,48],
-                [78,30],
-                [108,45]
+                [64,64],
+                [88,48],
+                [106,58]
             ],
+
             [
-                [48,48],
-                [63,75],
-                [92,108]
+                [64,64],
+                [74,82],
+                [92,106]
             ],
+
             [
-                [35,75],
-                [15,108]
+                [56,92],
+                [34,108]
             ],
+
             [
-                [78,30],
-                [68,8]
+                [88,48],
+                [82,22]
             ],
+
             [
-                [63,75],
-                [112,75]
+                [74,82],
+                [108,82]
             ],
+
             [
-                [78,30],
-                [98,8]
+                [88,48],
+                [104,28]
+            ],
+
+            [
+                [64,64],
+                [36,52],
+                [20,68]
             ]
         ]
 
@@ -195,6 +243,7 @@ function initCrackTextures() {
 
     }
 
+
     for (
         let i = 0;
         i < 5;
@@ -206,6 +255,7 @@ function initCrackTextures() {
         );
 
     }
+
 }
 
 
@@ -270,9 +320,14 @@ function createCrackOverlay(
 
 
     /*
-       Put the crack exactly on the
-       selected block face.
+       Start exactly at the center
+       of the selected block.
     */
+
+    crackOverlay.position.copy(
+        block.position
+    );
+
 
     const normal =
         faceNormal
@@ -280,10 +335,11 @@ function createCrackOverlay(
             .normalize();
 
 
-    crackOverlay.position.copy(
-        block.position
-    );
-
+    /*
+       Move a tiny amount toward the
+       block face so the crack is visible
+       without floating noticeably.
+    */
 
     crackOverlay.position.add(
         normal.clone()
@@ -294,10 +350,10 @@ function createCrackOverlay(
 
 
     /*
-       PlaneGeometry faces +Z by default.
+       PlaneGeometry normally faces +Z.
 
-       Rotate that +Z normal so it points
-       in exactly the direction of the block face.
+       Rotate it so +Z points exactly
+       along the selected face normal.
     */
 
     crackOverlay.quaternion.setFromUnitVectors(
@@ -352,6 +408,7 @@ function updateCrackOverlay(
 
     crackOverlay.material.map =
         crackTextures[stage];
+
 
     crackOverlay.material.needsUpdate =
         true;
