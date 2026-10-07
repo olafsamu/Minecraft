@@ -47,12 +47,11 @@ const targetProxy =
         })
     );
 
-
 targetProxy.visible = false;
 
 
 /* ======================================================
-   TARGET BLOCK
+   VOXEL RAYCAST
 ====================================================== */
 
 function getTargetBlock() {
@@ -73,65 +72,193 @@ function getTargetBlock() {
     direction.normalize();
 
 
-    const step =
-        0.02;
+    /*
+       Current voxel.
+    */
+
+    let x =
+        Math.floor(origin.x);
+
+    let y =
+        Math.floor(origin.y);
+
+    let z =
+        Math.floor(origin.z);
 
 
-    const maxSteps =
-        Math.ceil(
-            REACH_DISTANCE / step
+    /*
+       Direction through the voxel grid.
+    */
+
+    const stepX =
+        direction.x > 0
+            ? 1
+            : direction.x < 0
+                ? -1
+                : 0;
+
+    const stepY =
+        direction.y > 0
+            ? 1
+            : direction.y < 0
+                ? -1
+                : 0;
+
+    const stepZ =
+        direction.z > 0
+            ? 1
+            : direction.z < 0
+                ? -1
+                : 0;
+
+
+    /*
+       Distance along the ray to the next
+       voxel boundary.
+    */
+
+    let tMaxX;
+
+    let tMaxY;
+
+    let tMaxZ;
+
+
+    let tDeltaX;
+
+    let tDeltaY;
+
+    let tDeltaZ;
+
+
+    if (
+        stepX !== 0
+    ) {
+
+        const nextBoundaryX =
+            stepX > 0
+                ? x + 1
+                : x;
+
+        tMaxX =
+            (
+                nextBoundaryX -
+                origin.x
+            ) /
+            direction.x;
+
+        tDeltaX =
+            1 /
+            Math.abs(
+                direction.x
+            );
+
+    } else {
+
+        tMaxX =
+            Infinity;
+
+        tDeltaX =
+            Infinity;
+
+    }
+
+
+    if (
+        stepY !== 0
+    ) {
+
+        const nextBoundaryY =
+            stepY > 0
+                ? y + 1
+                : y;
+
+        tMaxY =
+            (
+                nextBoundaryY -
+                origin.y
+            ) /
+            direction.y;
+
+        tDeltaY =
+            1 /
+            Math.abs(
+                direction.y
+            );
+
+    } else {
+
+        tMaxY =
+            Infinity;
+
+        tDeltaY =
+            Infinity;
+
+    }
+
+
+    if (
+        stepZ !== 0
+    ) {
+
+        const nextBoundaryZ =
+            stepZ > 0
+                ? z + 1
+                : z;
+
+        tMaxZ =
+            (
+                nextBoundaryZ -
+                origin.z
+            ) /
+            direction.z;
+
+        tDeltaZ =
+            1 /
+            Math.abs(
+                direction.z
+            );
+
+    } else {
+
+        tMaxZ =
+            Infinity;
+
+        tDeltaZ =
+            Infinity;
+
+    }
+
+
+    /*
+       Face normal of the face we entered through.
+    */
+
+    let faceNormal =
+        new THREE.Vector3(
+            0,
+            0,
+            0
         );
 
 
-    let previousX =
-        Math.floor(origin.x);
+    /*
+       Maximum number of voxel crossings.
+    */
 
-    let previousY =
-        Math.floor(origin.y);
-
-    let previousZ =
-        Math.floor(origin.z);
+    const maxSteps =
+        REACH_DISTANCE * 4;
 
 
     for (
         let i = 0;
-        i <= maxSteps;
+        i < maxSteps;
         i++
     ) {
 
-        const distance =
-            i * step;
-
-
-        const point =
-            origin.clone()
-                .addScaledVector(
-                    direction,
-                    distance
-                );
-
-
-        const x =
-            Math.floor(point.x);
-
-        const y =
-            Math.floor(point.y);
-
-        const z =
-            Math.floor(point.z);
-
-
-        if (
-            i > 0 &&
-            x === previousX &&
-            y === previousY &&
-            z === previousZ
-        ) {
-
-            continue;
-
-        }
-
+        /*
+           Check the current voxel.
+        */
 
         const key =
             blockKey(
@@ -156,101 +283,10 @@ function getTargetBlock() {
             }
 
 
-            /*
-               Determine the actual face
-               that the ray entered.
-
-               We use the hit point instead of
-               relying on the movement between
-               voxels, which is more reliable
-               when looking diagonally.
-            */
-
-            const centerX =
-                x + 0.5;
-
-            const centerY =
-                y + 0.5;
-
-            const centerZ =
-                z + 0.5;
-
-
-            const localX =
-                point.x - centerX;
-
-            const localY =
-                point.y - centerY;
-
-            const localZ =
-                point.z - centerZ;
-
-
-            const distanceToX =
-                0.5 - Math.abs(localX);
-
-            const distanceToY =
-                0.5 - Math.abs(localY);
-
-            const distanceToZ =
-                0.5 - Math.abs(localZ);
-
-
-            let faceNormal;
-
-
-            if (
-                distanceToX <=
-                    distanceToY &&
-                distanceToX <=
-                    distanceToZ
-            ) {
-
-                faceNormal =
-                    new THREE.Vector3(
-                        localX >= 0
-                            ? 1
-                            : -1,
-                        0,
-                        0
-                    );
-
-            }
-
-            else if (
-                distanceToY <=
-                    distanceToZ
-            ) {
-
-                faceNormal =
-                    new THREE.Vector3(
-                        0,
-                        localY >= 0
-                            ? 1
-                            : -1,
-                        0
-                    );
-
-            }
-
-            else {
-
-                faceNormal =
-                    new THREE.Vector3(
-                        0,
-                        0,
-                        localZ >= 0
-                            ? 1
-                            : -1
-                    );
-
-            }
-
-
             targetProxy.position.set(
-                centerX,
-                centerY,
-                centerZ
+                x + 0.5,
+                y + 0.5,
+                z + 0.5
             );
 
 
@@ -270,7 +306,7 @@ function getTargetBlock() {
                 z;
 
             targetProxy.userData.faceNormal =
-                faceNormal;
+                faceNormal.clone();
 
 
             targetedBlock =
@@ -282,11 +318,82 @@ function getTargetBlock() {
         }
 
 
-        previousX = x;
+        /*
+           Move to the next voxel.
+        */
 
-        previousY = y;
+        if (
+            tMaxX <
+            tMaxY &&
+            tMaxX <
+            tMaxZ
+        ) {
 
-        previousZ = z;
+            x += stepX;
+
+            tMaxX += tDeltaX;
+
+            faceNormal.set(
+                -stepX,
+                0,
+                0
+            );
+
+        }
+
+        else if (
+            tMaxY <
+            tMaxZ
+        ) {
+
+            y += stepY;
+
+            tMaxY += tDeltaY;
+
+            faceNormal.set(
+                0,
+                -stepY,
+                0
+            );
+
+        }
+
+        else {
+
+            z += stepZ;
+
+            tMaxZ += tDeltaZ;
+
+            faceNormal.set(
+                0,
+                0,
+                -stepZ
+            );
+
+        }
+
+
+        /*
+           Stop once we've travelled beyond
+           the player's reach.
+        */
+
+        const distance =
+            Math.min(
+                tMaxX,
+                tMaxY,
+                tMaxZ
+            );
+
+
+        if (
+            distance >
+            REACH_DISTANCE
+        ) {
+
+            break;
+
+        }
 
     }
 
@@ -316,7 +423,7 @@ function canBreak(
 
 
     /*
-       Hand-breakable blocks.
+       Hand-breakable.
     */
 
     if (
@@ -329,7 +436,7 @@ function canBreak(
 
 
     /*
-       Pickaxe blocks.
+       Pickaxe required.
     */
 
     if (
@@ -497,8 +604,7 @@ function updateMining(
 
 
     /*
-       The player looked at a different block.
-       Restart the mining timer.
+       New block = restart mining.
     */
 
     if (
@@ -559,9 +665,7 @@ function breakBlock(
     target
 ) {
 
-    if (
-        !target
-    ) {
+    if (!target) {
 
         stopMining();
 
@@ -602,7 +706,7 @@ function breakBlock(
 
 
     /*
-       Remove world data.
+       Remove from world.
     */
 
     world.delete(
@@ -621,12 +725,14 @@ function breakBlock(
 
         const chunkX =
             Math.floor(
-                x / CHUNK_SIZE
+                x /
+                CHUNK_SIZE
             );
 
         const chunkZ =
             Math.floor(
-                z / CHUNK_SIZE
+                z /
+                CHUNK_SIZE
             );
 
 
@@ -678,13 +784,15 @@ function breakBlock(
         }
 
 
-        meshes.delete(key);
+        meshes.delete(
+            key
+        );
 
     }
 
 
     /*
-       Give the item to the player.
+       Add block to inventory.
     */
 
     if (
@@ -702,7 +810,7 @@ function breakBlock(
 
 
     /*
-       Update chunks.
+       Refresh affected chunks.
     */
 
     if (
@@ -766,14 +874,8 @@ function getBlockTypeFromItem(
     item
 ) {
 
-    if (!item) {
-
-        return null;
-
-    }
-
-
     if (
+        !item ||
         typeof BLOCKS ===
         "undefined"
     ) {
@@ -890,7 +992,9 @@ function placeBlock() {
         target.userData.faceNormal;
 
 
-    if (!normal) {
+    if (
+        !normal
+    ) {
 
         return;
 
@@ -899,17 +1003,23 @@ function placeBlock() {
 
     const x =
         target.userData.x +
-        Math.round(normal.x);
+        Math.round(
+            normal.x
+        );
 
 
     const y =
         target.userData.y +
-        Math.round(normal.y);
+        Math.round(
+            normal.y
+        );
 
 
     const z =
         target.userData.z +
-        Math.round(normal.z);
+        Math.round(
+            normal.z
+        );
 
 
     const key =
@@ -928,11 +1038,6 @@ function placeBlock() {
 
     }
 
-
-    /*
-       Prevent placing a block inside
-       the player.
-    */
 
     const bottom =
         camera.position.y -
@@ -1027,7 +1132,7 @@ function placeBlock() {
 
 
 /* ======================================================
-   MOUSE DOWN
+   MOUSE INPUT
 ====================================================== */
 
 document.addEventListener(
@@ -1056,7 +1161,6 @@ document.addEventListener(
             leftMouseDown =
                 true;
 
-
             startMining();
 
         }
@@ -1073,10 +1177,6 @@ document.addEventListener(
             const target =
                 getTargetBlock();
 
-
-            /*
-               Crafting table interaction.
-            */
 
             if (
                 target &&
@@ -1095,7 +1195,6 @@ document.addEventListener(
 
                 }
 
-
                 return;
 
             }
@@ -1110,7 +1209,7 @@ document.addEventListener(
 
 
 /* ======================================================
-   MOUSE UP
+   MOUSE RELEASE
 ====================================================== */
 
 document.addEventListener(
@@ -1124,7 +1223,6 @@ document.addEventListener(
             leftMouseDown =
                 false;
 
-
             stopMining();
 
         }
@@ -1134,7 +1232,7 @@ document.addEventListener(
 
 
 /* ======================================================
-   RIGHT CLICK MENU
+   DISABLE RIGHT CLICK MENU
 ====================================================== */
 
 document.addEventListener(
